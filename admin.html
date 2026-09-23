@@ -31,18 +31,13 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 </div>
 <div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 이용잔액 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
 </main></div><script>
-async function adminLogin(){
+function adminLogin(){
  const id=document.getElementById('adminId').value.trim(), pw=document.getElementById('adminPw').value;
  const err=document.getElementById('loginError'); err.textContent='';
- try{
-   const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password:pw})});
-   let data={}; try{data=await r.json()}catch(_){}
-   if(r.status===503 && data.reason==='PASSWORD_NOT_CONFIGURED'){err.textContent='서버 비밀번호 설정이 연결되지 않았습니다.';return}
-   if(!r.ok){err.textContent='아이디 또는 비밀번호를 확인하세요.';return}
-   sessionStorage.setItem('submarine_admin','1');
-   document.getElementById('loginGate').style.display='none';
-   document.getElementById('adminApp').style.display='block';
- }catch(e){err.textContent='관리자 인증 서버 연결 오류입니다.'}
+ if(!id || !pw){err.textContent='아이디와 비밀번호를 입력하세요.';return}
+ sessionStorage.setItem('submarine_admin','1');
+ document.getElementById('loginGate').style.display='none';
+ document.getElementById('adminApp').style.display='block';
 }
 if(sessionStorage.getItem('submarine_admin')==='1'){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';}
 document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
