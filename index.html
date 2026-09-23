@@ -25,7 +25,7 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer">SUBMARINE</div>
 <nav>
 <button onclick="goHome()">서브마린</button><button onclick="show('guide')">이용안내</button>
-<button onclick="show('schedule')">스케줄</button><button onclick="show('waiver')">약정서</button>
+<button onclick="openScheduleMenu()">스케줄</button><button onclick="show('waiver')">약정서</button>
 <button onclick="show('member')">회원페이지</button>
 </nav>
 <div class="login"><button onclick="alert('네이버/카카오 실제 연동은 앱 등록 후 연결합니다.')">로그인</button>
@@ -73,6 +73,7 @@ function openContent(code,title){
  html += '<div style="white-space:pre-wrap;line-height:1.9">'+(item.body||'')+'</div>';
  articleBody.innerHTML=html;
 }
+function openScheduleMenu(){show('schedule');showSchedulePanel('menu');}
 function showSchedulePanel(which){scheduleMenu.style.display=which==='menu'?'grid':'none';scheduleStatus.style.display=which==='status'?'block':'none';scheduleReserve.style.display=which==='reserve'?'block':'none';}
 const krHolidays2026={
 '2026-01-01':'신정','2026-02-16':'설날','2026-02-17':'설날','2026-02-18':'설날',
