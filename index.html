@@ -20,9 +20,9 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 </style>
 </head>
 <body>
-<header><div class="wrap top"><div class="logo">SUBMARINE</div>
+<header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer">SUBMARINE</div>
 <nav>
-<button onclick="show('home')">서브마린</button><button onclick="show('guide')">이용안내</button>
+<button onclick="goHome()">서브마린</button><button onclick="show('guide')">이용안내</button>
 <button onclick="show('schedule')">스케줄</button><button onclick="show('waiver')">약정서</button>
 <button onclick="show('member')">회원페이지</button>
 </nav>
@@ -48,6 +48,7 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 <section id="article" class="page"><div class="wrap"><button onclick="show('home')">← 돌아가기</button><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
 </main>
 <script>
+function goHome(){show('home');history.replaceState(null,'',location.pathname);}
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 function openContent(code,title){
  let data=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');
