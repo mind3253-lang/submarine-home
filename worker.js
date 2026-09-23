@@ -16,6 +16,12 @@ export default {
       }
     }
 
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    if (url.pathname.endsWith(".html") || url.pathname === "/") {
+      const fresh = new Response(response.body, response);
+      fresh.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+      return fresh;
+    }
+    return response;
   }
 };
