@@ -16,6 +16,8 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 .card h3{margin-top:0}.page{display:none;padding:50px 0}.page.active{display:block}
 .content{background:#fff;border-radius:15px;padding:34px;min-height:300px}
 .badge{display:inline-block;padding:6px 10px;background:#edf2f5;border-radius:20px;font-size:12px}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.calhead button{border:1px solid #d8e0e5;background:#fff;border-radius:8px;padding:9px 14px;cursor:pointer}.calgrid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #e3e8ec;border-left:1px solid #e3e8ec}.dow,.day{border-right:1px solid #e3e8ec;border-bottom:1px solid #e3e8ec;padding:10px}.dow{text-align:center;font-weight:700;background:#f5f7f8}.day{min-height:145px;background:#fff}.day.empty{background:#fafbfc}.date{font-weight:700;margin-bottom:8px}.times{font-size:12px;line-height:1.65;color:#53616b}.sun{color:#c62828}.sat{color:#1565c0}
+@media(max-width:650px){.day{min-height:105px;padding:6px}.times{font-size:10px}.dow{padding:7px 2px}}
 @media(max-width:800px){nav{display:none}.cards{grid-template-columns:1fr}.hero h1{font-size:34px}}
 </style>
 </head>
@@ -42,7 +44,7 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 <div class="card" onclick="openContent('B-1','이용 요금')"><h3>이용 요금</h3></div>
 <div class="card" onclick="openContent('B-2','할인 이용권')"><h3>할인 이용권</h3></div>
 <div class="card" onclick="openContent('B-3','환불 규정')"><h3>환불 규정</h3></div></div></div></section>
-<section id="schedule" class="page"><div class="wrap"><h1>스케줄</h1><div class="content"><h2>C-1 예약 현황</h2><p>월간 달력 및 타임별 예약 가능 인원이 들어갈 자리입니다.</p><hr><h2>C-2 예약</h2><p>회원 로그인·이용잔액과 연결할 기능 영역입니다.</p></div></div></section>
+<section id="schedule" class="page"><div class="wrap"><h1>스케줄</h1><div class="content"><h2>C-1 예약 현황</h2><div class="calhead"><button id="calPrev" type="button">← 이번 달</button><strong id="calTitle"></strong><button id="calNext" type="button">다음 달 →</button></div><div class="calgrid" id="calendar"></div></div></div></section>
 <section id="waiver" class="page"><div class="wrap"><h1>약정서</h1><div class="content"><h2>D-1 시설 약정서</h2><p>전자서명 기능 예정</p><h2>D-2 교육 약정서</h2><p>전자서명 기능 예정</p></div></div></section>
 <section id="member" class="page"><div class="wrap"><h1>회원페이지</h1><div class="content"><h2>이용잔액</h2><p>로그인 회원의 이용잔액과 이용내역이 표시될 자리입니다.</p><h2>교육자료실</h2><p>카테고리형 게시판 예정</p></div></div></section>
 <section id="article" class="page"><div class="wrap"><button onclick="goHome()">← 메인으로</button><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
@@ -64,5 +66,24 @@ function openContent(code,title){
  html += '<div style="white-space:pre-wrap;line-height:1.9">'+(item.body||'')+'</div>';
  articleBody.innerHTML=html;
 }
+let calOffset=0;
+function renderCalendar(){
+ const now=new Date(), y=now.getFullYear(), m=now.getMonth()+calOffset;
+ const first=new Date(y,m,1), last=new Date(y,m+1,0);
+ calTitle.textContent=first.getFullYear()+'년 '+(first.getMonth()+1)+'월';
+ calPrev.style.visibility=calOffset===0?'hidden':'visible';
+ calNext.style.visibility=calOffset===1?'hidden':'visible';
+ const names=['일','월','화','수','목','금','토'];
+ let html=names.map((n,i)=>'<div class="dow '+(i===0?'sun':i===6?'sat':'')+'">'+n+'</div>').join('');
+ for(let i=0;i<first.getDay();i++) html+='<div class="day empty"></div>';
+ for(let d=1;d<=last.getDate();d++){
+   const wd=new Date(first.getFullYear(),first.getMonth(),d).getDay();
+   html+='<div class="day"><div class="date '+(wd===0?'sun':wd===6?'sat':'')+'">'+d+'</div><div class="times">1타임 예약 가능<br>2타임 예약 가능<br>3타임 예약 가능<br>4타임 예약 가능<br>5타임 예약 가능</div></div>';
+ }
+ calendar.innerHTML=html;
+}
+calPrev.addEventListener('click',()=>{calOffset=0;renderCalendar()});
+calNext.addEventListener('click',()=>{calOffset=1;renderCalendar()});
+renderCalendar();
 </script>
 </body></html>
