@@ -6,13 +6,6 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
-    "run_worker_first": [
-      "/api/*"
-    ]
-  },
-  "secrets": {
-    "required": [
-      "ADMIN_PASSWORD"
-    ]
+    "run_worker_first": ["/api/*"]
   }
 }
