@@ -9,7 +9,9 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 .primary{background:#17212b;color:#fff}.note{font-size:13px;color:#6c7880}.cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}.cat{border:1px solid #ccd4da;background:#fff;border-radius:8px;padding:10px 14px;cursor:pointer}.cat.active{background:#17212b;color:#fff}.drop{border:2px dashed #c7d0d6;border-radius:12px;padding:25px;text-align:center;margin:8px 0 16px}
 .preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:12px 0}
 .pic{position:relative}.pic img{width:100%;height:120px;object-fit:cover;border-radius:9px}.pic button{position:absolute;right:5px;top:5px;border:0;border-radius:50%;width:27px;height:27px;cursor:pointer}
+#loginGate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}#loginBox{width:100%;max-width:390px;background:#fff;padding:30px;border-radius:14px}#adminApp{display:none}.error{color:#c62828;font-size:13px;margin-top:8px}
 </style></head><body>
+<div id="loginGate"><div id="loginBox"><h2>관리자 로그인</h2><label>아이디</label><input id="adminId" autocomplete="username"><label>비밀번호</label><input id="adminPw" type="password" autocomplete="current-password"><button class="btn primary" onclick="adminLogin()">로그인</button><div id="loginError" class="error"></div></div></div><div id="adminApp">
 <header><a href="index.html" style="color:#fff;text-decoration:none;cursor:pointer">SUBMARINE</a><span style="margin-left:10px">· 관리자 페이지</span></header><main>
 <div class="box"><h2>콘텐츠 관리</h2>
 <div class="cats">
@@ -28,7 +30,17 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 <button class="btn primary" onclick="save()">저장</button><button class="btn" onclick="location.href='index.html'">홈페이지 보기</button>
 </div>
 <div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 이용잔액 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
-</main><script>
+</main></div><script>
+async function adminLogin(){
+ const id=document.getElementById('adminId').value.trim(), pw=document.getElementById('adminPw').value;
+ const err=document.getElementById('loginError'); err.textContent='';
+ try{const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,password:pw})});
+ if(!r.ok){err.textContent='아이디 또는 비밀번호를 확인하세요.';return}
+ sessionStorage.setItem('submarine_admin','1'); document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';
+ }catch(e){err.textContent='관리자 인증 서버 연결이 필요합니다.'}
+}
+if(sessionStorage.getItem('submarine_admin')==='1'){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';}
+document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
 const slot=document.getElementById('slot'), body=document.getElementById('body'), inp=document.getElementById('images'), preview=document.getElementById('preview');
 let currentImages=[];
 const menus={
