@@ -16,7 +16,7 @@ nav button,.login button{border:0;background:none;padding:12px 10px;font-size:15
 .card h3{margin-top:0}.page{display:none;padding:50px 0}.page.active{display:block}
 .content{background:#fff;border-radius:15px;padding:34px;min-height:300px}
 .badge{display:inline-block;padding:6px 10px;background:#edf2f5;border-radius:20px;font-size:12px}
-.calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.calhead button{border:1px solid #d8e0e5;background:#fff;border-radius:8px;padding:9px 14px;cursor:pointer}.calgrid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #e3e8ec;border-left:1px solid #e3e8ec}.dow,.day{border-right:1px solid #e3e8ec;border-bottom:1px solid #e3e8ec;padding:10px}.dow{text-align:center;font-weight:700;background:#f5f7f8}.day{min-height:145px;background:#fff}.day.empty{background:#fafbfc}.date{font-weight:700;margin-bottom:8px}.times{font-size:12px;line-height:1.65;color:#53616b}.sun{color:#c62828}.sat{color:#1565c0}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.calhead button{border:1px solid #d8e0e5;background:#fff;border-radius:8px;padding:9px 14px;cursor:pointer}.calgrid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #e3e8ec;border-left:1px solid #e3e8ec}.dow,.day{border-right:1px solid #e3e8ec;border-bottom:1px solid #e3e8ec;padding:10px}.dow{text-align:center;font-weight:700;background:#f5f7f8}.day{min-height:145px;background:#fff}.day.empty{background:#fafbfc}.date{font-weight:700;margin-bottom:8px}.times{font-size:12px;line-height:1.65;color:#53616b}.sun{color:#c62828}.sat{color:#1565c0}.holiday{color:#c62828}.holidayname{font-size:10px;color:#c62828;font-weight:600;margin-left:4px}
 @media(max-width:650px){.day{min-height:105px;padding:6px}.times{font-size:10px}.dow{padding:7px 2px}}
 @media(max-width:800px){nav{display:none}.cards{grid-template-columns:1fr}.hero h1{font-size:34px}}
 </style>
@@ -66,6 +66,12 @@ function openContent(code,title){
  html += '<div style="white-space:pre-wrap;line-height:1.9">'+(item.body||'')+'</div>';
  articleBody.innerHTML=html;
 }
+const krHolidays2026={
+'2026-01-01':'신정','2026-02-16':'설날','2026-02-17':'설날','2026-02-18':'설날',
+'2026-03-01':'삼일절','2026-03-02':'대체공휴일','2026-05-05':'어린이날','2026-05-24':'부처님오신날','2026-05-25':'대체공휴일',
+'2026-06-03':'지방선거','2026-06-06':'현충일','2026-08-15':'광복절','2026-08-17':'대체공휴일',
+'2026-09-24':'추석연휴','2026-09-25':'추석','2026-09-26':'추석연휴','2026-10-03':'개천절','2026-10-05':'대체공휴일',
+'2026-10-09':'한글날','2026-12-25':'성탄절'};
 let calOffset=0;
 function renderCalendar(){
  const now=new Date(), y=now.getFullYear(), m=now.getMonth()+calOffset;
@@ -78,7 +84,8 @@ function renderCalendar(){
  for(let i=0;i<first.getDay();i++) html+='<div class="day empty"></div>';
  for(let d=1;d<=last.getDate();d++){
    const wd=new Date(first.getFullYear(),first.getMonth(),d).getDay();
-   html+='<div class="day"><div class="date '+(wd===0?'sun':wd===6?'sat':'')+'">'+d+'</div><div class="times">1타임 예약 가능<br>2타임 예약 가능<br>3타임 예약 가능<br>4타임 예약 가능<br>5타임 예약 가능</div></div>';
+   const key=first.getFullYear()+'-'+String(first.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), hn=krHolidays2026[key]||'';
+   html+='<div class="day"><div class="date '+(wd===0||hn?'holiday':wd===6?'sat':'')+'">'+d+(hn?'<span class="holidayname">'+hn+'</span>':'')+'</div><div class="times">1타임 예약 가능<br>2타임 예약 가능<br>3타임 예약 가능<br>4타임 예약 가능<br>5타임 예약 가능</div></div>';
  }
  calendar.innerHTML=html;
 }
