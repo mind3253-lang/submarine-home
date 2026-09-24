@@ -36,7 +36,7 @@ nav{display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-wrap:n
 <section id="submarineMenu" class="page"><div class="wrap"><div class="visual-menu">
 <div class="visual-card" onclick="openContent('A-1','소개')"><img src="A-1.webp" alt="소개"><div class="visual-label"><strong>Introduction</strong><span>— 소개</span></div></div>
 <div class="visual-card" onclick="openContent('A-2','오시는 길')"><img src="A-2.webp" alt="오시는 길"><div class="visual-label"><strong>Location</strong><span>— 오시는 길</span></div></div>
-<div class="visual-card" onclick="show('products')"><img src="https://images.unsplash.com/photo-1709303919613-3c321cb15e05?auto=format&fit=crop&w=1200&q=85&v=20260925" alt="교육상품"><div class="visual-label"><strong>Education</strong><span>— 교육상품</span></div></div>
+<div class="visual-card" onclick="show('products')"><img src="A-3.webp" alt="교육상품"><div class="visual-label"><strong>Education</strong><span>— 교육상품</span></div></div>
 </div></div></section>
 <section id="products" class="page"><div class="wrap"><button type="button" onclick="goHome()">← 메인으로</button><h1>교육상품</h1><div id="productRows" class="content"></div></div></section>
 <section id="guide" class="page"><div class="wrap"><div class="visual-menu">
@@ -45,16 +45,16 @@ nav{display:flex;align-items:center;justify-content:flex-end;gap:2px;flex-wrap:n
 <div class="visual-card" onclick="openContent('B-3','환불 규정')"><img src="B-3.webp" alt="환불 규정"><div class="visual-label"><strong>Refund policy</strong><span>— 환불 규정</span></div></div>
 </div></div></section>
 <section id="schedule" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
-<div class="visual-card" onclick="show('status')"><img src="https://storage.hidabroot.org/media/Storage/110f8ee1-8130-4eea-960c-f490c93884b0.jpg?v=20260925" alt="예약현황"><div class="visual-label"><strong>Schedule</strong><span>— 예약현황</span></div></div>
-<div class="visual-card" onclick="show('reservation')"><img src="https://happygardens.com/cdn/shop/articles/Sundial_in_Grass.png?v=20260925" alt="예약"><div class="visual-label"><strong>Reservation</strong><span>— 예약</span></div></div>
+<div class="visual-card" onclick="show('status')"><img src="C-1.webp" alt="예약현황"><div class="visual-label"><strong>Schedule</strong><span>— 예약현황</span></div></div>
+<div class="visual-card" onclick="show('reservation')"><img src="C-2.webp" alt="예약"><div class="visual-label"><strong>Reservation</strong><span>— 예약</span></div></div>
 </div></div></section>
 <section id="waiver" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
-<div class="visual-card" onclick="show('facilityWaiver')"><img src="https://gotoasia.travel/en/public/writable/ueditor/image/20250702/1751437433886832.jpeg?v=20260925" alt="시설 약정서"><div class="visual-label"><strong>Facility agreement</strong><span>— 시설 약정서</span></div></div>
-<div class="visual-card" onclick="show('educationWaiver')"><img src="https://www.cmyk.bg/media/7/1296.jpeg?v=20260925" alt="교육 약정서"><div class="visual-label"><strong>Education agreement</strong><span>— 교육 약정서</span></div></div>
+<div class="visual-card" onclick="show('facilityWaiver')"><img src="D-1.webp" alt="시설 약정서"><div class="visual-label"><strong>Facility agreement</strong><span>— 시설 약정서</span></div></div>
+<div class="visual-card" onclick="show('educationWaiver')"><img src="D-2.webp" alt="교육 약정서"><div class="visual-label"><strong>Education agreement</strong><span>— 교육 약정서</span></div></div>
 </div></div></section>
 <section id="member" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
-<div class="visual-card" onclick="openMemberE1()"><img src="https://delta-eco.com/upload/iblock/394/68p9ixasfxzf8sntqoswm4vy7xnie3o2.jpeg?v=20260925" alt="나의 기록"><div class="visual-label"><strong>My page</strong><span>— 나의 기록</span></div></div>
-<div class="visual-card" onclick="openEducationLibrary()"><img src="https://www.aubmed.ac.cy/PublishingImages/Pages/Office-of-the-Registrar/General-Academic-Information.jpg?v=20260925" alt="교육자료실"><div class="visual-label"><strong>Academy</strong><span>— 교육자료실</span></div></div>
+<div class="visual-card" onclick="openMemberE1()"><img src="E-1.webp" alt="나의 기록"><div class="visual-label"><strong>My page</strong><span>— 나의 기록</span></div></div>
+<div class="visual-card" onclick="openEducationLibrary()"><img src="E-2.webp" alt="교육자료실"><div class="visual-label"><strong>Academy</strong><span>— 교육자료실</span></div></div>
 </div><div id="memberE1" class="content" style="display:none;margin-top:20px"><button type="button" onclick="memberE1.style.display='none'">← My Submarine</button><h2>나의 기록</h2><input id="memberSearch" placeholder="이름을 검색하세요" style="padding:12px;border:1px solid #ccd4da;border-radius:7px;width:100%;max-width:360px" oninput="findMember()"><div id="memberSearchResult" style="margin-top:18px"></div></div></div></section>
 <section id="education" class="page"><div class="wrap"><button type="button" onclick="show('member')">← My Submarine</button><h1>교육자료실</h1><div id="eduCategoryBar" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0"></div><div id="eduList" class="content"></div><div id="eduDetail" class="content" style="display:none"></div></div></section>
 <section id="article" class="page"><div class="wrap"><button onclick="goHome()">← 메인으로</button><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
