@@ -23,15 +23,14 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 </div>
 <p class="note">카테고리를 선택한 뒤 해당 게시판을 편집합니다.</p>
 <div id="scheduleAdmin" class="schedule-admin"><h3>스케줄 등록 테스트</h3><div style="display:flex;justify-content:space-between;align-items:center"><button class="btn" onclick="adminCalOffset=0;drawAdminCalendar()">← 이번 달</button><strong id="adminCalTitle"></strong><button class="btn" onclick="adminCalOffset=1;drawAdminCalendar()">다음 달 →</button></div><div id="adminCalendar" class="admincal"></div><div id="schedModal" class="sched-modal" onclick="if(event.target===this)closeSchedModal()"><div class="sched-modal-box"><button class="btn" onclick="closeSchedModal()" style="float:right">×</button><h3 id="schedModalTitle">예약 등록</h3><label>회원 검색<input id="schedMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchSchedMember()"></label><div id="schedMemberResults" style="margin:-8px 0 16px"></div><input id="schedMemberNo" type="hidden"><div id="schedSelectedMember" class="note" style="margin-bottom:12px">회원을 선택하세요.</div><div class="sched-row"><label>날짜<input id="schedDate" type="date"></label><label>타임<select id="schedTime"><option>1타임</option><option>2타임</option><option>3타임</option><option>4타임</option><option>5타임</option></select></label><label>구분<select id="schedType"><option>강습</option><option>스킬업</option><option>펀다</option><option>독립군</option></select></label><label>확정 인원<input id="schedPeople" type="number" min="1" value="1"></label><button class="btn primary" onclick="addSchedule()">등록</button></div></div></div><div id="schedList" class="sched-list"></div></div>
-<div id="contentEditor">
-<label>게시판 선택</label><select id="slot"></select>
+<div id="contentEditor"><div style="display:flex;gap:8px;align-items:end"><div style="flex:1"><label>게시판 선택</label><select id="slot"></select></div><button class="btn" onclick="addBoard()">+ 게시판 추가</button></div>
 <label>이미지</label>
 <div class="drop"><input id="images" type="file" accept="image/*" multiple><div>여러 장 선택 가능</div></div>
 <div id="preview" class="preview"></div>
 <label>본문</label><textarea id="body" placeholder="텍스트를 입력하세요."></textarea>
 <button class="btn primary" onclick="save()">저장</button><button class="btn" onclick="location.href='index.html'">홈페이지 보기</button>
 </div>
-</div><div class="box"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:18px"><label>회원 검색<input id="moneyMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchMoneyMember()"></label><label>캐시 충전<input id="moneyCash" type="number" min="0" value="0"></label><label>포인트 지급<input id="moneyPoint" type="number" min="0" value="0"></label><button class="btn primary" onclick="addMemberMoney()">반영</button></div><div id="moneyMemberResults"></div><input id="moneyMemberNo" type="hidden"><div id="moneySelectedMember" class="note" style="margin-bottom:15px">회원을 선택하세요.</div><div id="memberTestList"></div><div id="adminMemberHistory" style="margin-top:20px"></div></div>
+</div><div id="memberDbBox" class="box" style="display:none"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:18px"><label>회원 검색<input id="moneyMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchMoneyMember()"></label><label>캐시 충전<input id="moneyCash" type="number" min="0" value="0"></label><label>포인트 지급<input id="moneyPoint" type="number" min="0" value="0"></label><button class="btn primary" onclick="addMemberMoney()">반영</button></div><div id="moneyMemberResults"></div><input id="moneyMemberNo" type="hidden"><div id="moneySelectedMember" class="note" style="margin-bottom:15px">회원을 선택하세요.</div><div id="memberTestList"></div><div id="adminMemberHistory" style="margin-top:20px"></div></div>
 <div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 캐시/포인트 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
 </main></div><script>
 function adminLogin(){
@@ -76,9 +75,10 @@ const menus={
  D:[['D-1','D-1 시설 약정서'],['D-2','D-2 교육 약정서']],
  E:[['E-1','E-1 회원'],['E-2','E-2 교육자료실']]
 };
-function setCat(cat,btn){
+let currentCat='A';function addBoard(){const name=prompt('추가할 게시판 이름을 입력하세요.');if(!name)return;const n=menus[currentCat].length+1,key=currentCat+'-'+n;menus[currentCat].push([key,key+' '+name]);slot.innerHTML=menus[currentCat].map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');slot.value=key;load()}
+function setCat(cat,btn){currentCat=cat;
  document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active')); if(btn)btn.classList.add('active');
- const isC=cat==='C'; document.getElementById('scheduleAdmin').classList.toggle('active',isC); document.getElementById('contentEditor').style.display=isC?'none':'block';
+ const isC=cat==='C'; document.getElementById('scheduleAdmin').classList.toggle('active',isC); document.getElementById('contentEditor').style.display=isC?'none':'block';document.getElementById('memberDbBox').style.display=isC?'block':'none';
  slot.innerHTML=menus[cat].map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join(''); load(); if(isC)drawSchedules();
 }
 function openSchedModal(date){schedDate.value=date;schedModalTitle.textContent=date+' 예약 등록';schedModal.classList.add('open')}
