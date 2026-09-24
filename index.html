@@ -5,7 +5,7 @@
 <title>SUBMARINE TEST</title>
 <style>
 *{box-sizing:border-box} html{font-size:16px} body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;color:#17212b;background:#f7f9fb;font-size:16px;line-height:1.55}
-header{background:white;border-bottom:1px solid #e5e9ed;position:sticky;top:0}body.home-mode header{display:none}
+header{background:white;border-bottom:1px solid #e5e9ed;position:sticky;top:0}
 .wrap{max-width:1180px;margin:auto;padding:0 24px}.top{height:76px;display:flex;align-items:center;gap:32px}
 .logo{font-size:22px;font-weight:800;letter-spacing:2px;margin-right:auto}
 nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16px;font-weight:600;cursor:pointer}
@@ -24,7 +24,7 @@ nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16
 <body>
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer">SUBMARINE</div>
 <nav>
-<button onclick="goHome()">서브마린</button><button onclick="show('guide')">이용안내</button>
+<button onclick="openSubmarineMenu()">서브마린</button><button onclick="show('guide')">이용안내</button>
 <button onclick="openScheduleMenu()">스케줄</button><button onclick="openWaiverMenu()">약정서</button>
 <button onclick="show('member')">회원페이지</button>
 </nav>
@@ -61,7 +61,7 @@ nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16
 <script>
 function goHome(){show('home');history.replaceState(null,'',location.pathname);}
 function openSubmarineMenu(){show('submarineMenu');}
-function show(id){document.body.classList.toggle('home-mode',id==='home');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
+function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 function openContent(code,title){
  let data=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');
  show('article'); articleTitle.textContent=title;
@@ -140,7 +140,6 @@ resPrev.addEventListener('click',()=>{resOffset=0;renderReserveCalendar()});resN
 let reserveKind='';
 document.querySelectorAll('.reserveType').forEach(b=>b.addEventListener('click',()=>{reserveKind=b.textContent;document.querySelectorAll('.reserveType').forEach(x=>x.style.background='');b.style.background='#dfe8ed'}));
 reserveConfirm.addEventListener('click',()=>{if(!reserveKind||!reserveDate.value){reserveResult.textContent='예약 구분과 날짜를 선택하세요.';return}reserveResult.textContent=reserveDate.value+' · '+reserveTime.value+' · '+reserveKind+' '+reservePeople.value+'명 예약이 확정되었습니다.'});
-document.body.classList.add('home-mode');
 openEducationFromUrl();
 </script>
 </body></html>
