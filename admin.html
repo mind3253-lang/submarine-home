@@ -80,8 +80,8 @@ const CLOUDINARY_CLOUD='kxt8uoj',CLOUDINARY_PRESET='submarine_upload';
 async function uploadImageFile(file){
  if(!file)return '';
  if(file.size>2621440)throw new Error('2.5MB 이하 이미지를 올려주세요.');
- const form=new FormData();form.append('file',file);form.append('upload_preset',CLOUDINARY_PRESET);form.append('folder','submarine');
- const res=await fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/image/upload',{method:'POST',body:form});
+ const form=new FormData();form.append('file',file);form.append('upload_preset',CLOUDINARY_PRESET);
+ const res=await fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/upload',{method:'POST',body:form});
  if(!res.ok){let msg='이미지 업로드에 실패했습니다.';try{const j=await res.json();if(j?.error?.message)msg+=' '+j.error.message}catch(e){}throw new Error(msg)}
  const j=await res.json();return j.secure_url;
 }
