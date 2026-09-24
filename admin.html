@@ -31,7 +31,7 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 <label>본문</label><textarea id="body" placeholder="텍스트를 입력하세요."></textarea>
 <button class="btn primary" onclick="save()">저장</button><button class="btn" onclick="location.href='index.html'">홈페이지 보기</button>
 </div>
-</div><div class="box"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div id="memberTestList"></div></div>
+</div><div class="box"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:18px"><label>회원 검색<input id="moneyMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchMoneyMember()"></label><label>캐시 충전<input id="moneyCash" type="number" min="0" value="0"></label><label>포인트 지급<input id="moneyPoint" type="number" min="0" value="0"></label><button class="btn primary" onclick="addMemberMoney()">반영</button></div><div id="moneyMemberResults"></div><input id="moneyMemberNo" type="hidden"><div id="moneySelectedMember" class="note" style="margin-bottom:15px">회원을 선택하세요.</div><div id="memberTestList"></div></div>
 <div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 캐시/포인트 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
 </main></div><script>
 function adminLogin(){
@@ -56,6 +56,9 @@ const testMembers=[
 {no:'S0005',name:'오하늘',gender:'여',phone:'010-0000-0009',free:'1레벨',mermaid:'-',scuba:'-',cash:100000,point:5000},
 {no:'M0005',name:'임도윤',gender:'남',phone:'010-0000-0010',free:'2레벨',mermaid:'-',scuba:'오픈워터',cash:500000,point:75000}
 ];
+function searchMoneyMember(){const q=moneyMemberSearch.value.trim().toLowerCase();moneyMemberResults.innerHTML=q?testMembers.filter(m=>m.name.toLowerCase().includes(q)||m.phone.includes(q)||m.no.toLowerCase().includes(q)).map(m=>'<button class="btn" onclick="selectMoneyMember(\''+m.no+'\')">'+m.name+' · '+m.no+'</button>').join(''):''}
+function selectMoneyMember(no){const m=testMembers.find(x=>x.no===no);moneyMemberNo.value=no;moneySelectedMember.textContent='선택: '+m.name+' · '+m.no;moneyMemberSearch.value=m.name;moneyMemberResults.innerHTML=''}
+function addMemberMoney(){if(!moneyMemberNo.value){alert('회원을 선택하세요.');return}const m=testMembers.find(x=>x.no===moneyMemberNo.value),s=memberState(),bal=s[m.no]||{cash:m.cash,point:m.point},cash=Math.max(0,Number(moneyCash.value)||0),point=Math.max(0,Number(moneyPoint.value)||0);bal.cash+=cash;bal.point+=point;s[m.no]=bal;localStorage.setItem('submarine_member_state_v1',JSON.stringify(s));drawTestMembers();moneyCash.value=0;moneyPoint.value=0;alert('캐시 '+cash.toLocaleString()+'원 / 포인트 '+point.toLocaleString()+'P 반영했습니다.')}
 function drawTestMembers(){const el=document.getElementById('memberTestList');if(!el)return;const s=memberState();testMembers.forEach(m=>{if(s[m.no]){m.cash=s[m.no].cash;m.point=s[m.no].point}});el.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>회원번호</th><th>이름</th><th>성별</th><th>전화</th><th>프리</th><th>머메이드</th><th>스쿠버</th><th>캐시</th><th>포인트</th></tr></thead><tbody>'+testMembers.map(m=>'<tr>'+[m.no,m.name,m.gender,m.phone,m.free,m.mermaid,m.scuba,m.cash.toLocaleString(),m.point.toLocaleString()+'P'].map(v=>'<td style="padding:9px;border-bottom:1px solid #e5eaee;white-space:nowrap">'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
 drawTestMembers();
 const slot=document.getElementById('slot'), body=document.getElementById('body'), inp=document.getElementById('images'), preview=document.getElementById('preview');
