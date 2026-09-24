@@ -92,8 +92,10 @@ function renderCalendar(){
  for(let i=0;i<first.getDay();i++) html+='<div class="day empty"></div>';
  for(let d=1;d<=last.getDate();d++){
    const wd=new Date(first.getFullYear(),first.getMonth(),d).getDay();
-   const key=first.getFullYear()+'-'+String(first.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), hn=krHolidays2026[key]||'';
-   html+='<div class="day"><div class="date '+(wd===0||hn?'holiday':wd===6?'sat':'')+'">'+d+(hn?'<span class="holidayname">'+hn+'</span>':'')+'</div><div class="booking-summary"></div></div>';
+   const key=first.getFullYear()+'-'+String(first.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), hn=krHolidays2026[key]||'', items=JSON.parse(localStorage.getItem('submarine_schedules_v1')||'[]').filter(x=>x.date===key), groups={};
+   items.forEach(x=>{const k=x.time+' '+x.type;groups[k]=(groups[k]||0)+Number(x.people||0)});
+   const summary=Object.entries(groups).map(([k,n])=>'<span>'+k+' '+n+'명</span>').join('');
+   html+='<div class="day"><div class="date '+(wd===0||hn?'holiday':wd===6?'sat':'')+'">'+d+(hn?'<span class="holidayname">'+hn+'</span>':'')+'</div><div class="booking-summary">'+summary+'</div></div>';
  }
  calendar.innerHTML=html;
 }
