@@ -38,11 +38,10 @@ nav button,.login button{border:0;background:none;padding:14px 16px;font-size:18
 <div class="visual-card" onclick="show('products')"><img src="https://images.unsplash.com/photo-1709303919613-3c321cb15e05?auto=format&fit=crop&w=1200&q=85" alt="교육상품"><div class="visual-label"><strong>교육상품</strong><span>A-3</span></div></div>
 </div></div></section>
 <section id="products" class="page"><div class="wrap"><button type="button" onclick="goHome()">← 메인으로</button><h1>A-3 교육상품</h1><div id="productRows" class="content"></div></div></section>
-<section id="guide" class="page"><div class="wrap"><div class="visual-menu">
-<div class="visual-card" onclick="openContent('B-1','이용 요금')"><img src="https://images.unsplash.com/photo-1560089000-7433a4ebbd64?auto=format&fit=crop&w=1200&q=85" alt="이용 요금"><div class="visual-label"><strong>이용 요금</strong><span>B-1</span></div></div>
-<div class="visual-card" onclick="openContent('B-2','할인 이용권')"><img src="https://images.unsplash.com/photo-1544550285-f813152fb2fd?auto=format&fit=crop&w=1200&q=85" alt="할인 이용권"><div class="visual-label"><strong>할인 이용권</strong><span>B-2</span></div></div>
-<div class="visual-card" onclick="openContent('B-3','환불 규정')"><img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=85" alt="환불 규정"><div class="visual-label"><strong>환불 규정</strong><span>B-3</span></div></div>
-</div></div></section>
+<section id="guide" class="page"><div class="wrap"><h1>이용안내</h1><div class="cards">
+<div class="card" onclick="openContent('B-1','이용 요금')"><h3>이용 요금</h3></div>
+<div class="card" onclick="openContent('B-2','할인 이용권')"><h3>할인 이용권</h3></div>
+<div class="card" onclick="openContent('B-3','환불 규정')"><h3>환불 규정</h3></div></div></div></section>
 <section id="schedule" class="page"><div class="wrap"><h1>스케줄</h1>
 <div id="scheduleMenu" class="cards">
 <div class="card" onclick="showSchedulePanel('status')"><h3>예약 현황</h3><p>C-1</p></div>
