@@ -5,7 +5,7 @@
 <title>SUBMARINE TEST</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box} html{font-size:16px} body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;color:#17212b;background:#f7f9fb;font-size:16px;line-height:1.55}
+*{box-sizing:border-box} html{font-size:16px} body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;color:#17212b;background:#fff;font-size:16px;line-height:1.55}
 header{background:white;border-bottom:1px solid #e5e9ed;position:sticky;top:0}
 .wrap{max-width:1180px;margin:auto;padding:0 24px}.top{height:88px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px;white-space:nowrap}
 .logo{font-size:24px;font-weight:800;letter-spacing:2px;justify-self:start}
@@ -14,11 +14,11 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:38px 0}.visual-menu{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:36px 0 70px}.visual-menu-two{grid-template-columns:repeat(2,minmax(0,1fr));max-width:820px;margin-left:auto;margin-right:auto}.visual-card{position:relative;height:460px;border-radius:16px;overflow:hidden;cursor:pointer;background:#111}.visual-card img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease,opacity .35s ease}.visual-card:after{content:'';position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.28),rgba(0,0,0,.03) 62%)}.visual-card:hover img{transform:scale(1.035)}.visual-label{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;background:rgba(0,0,0,.46);padding:20px 28px 22px;text-shadow:0 1px 8px rgba(0,0,0,.2)}.visual-label strong{display:block;font-family:'Bodoni Moda',serif;font-size:34px;font-weight:600;line-height:1.05;letter-spacing:.01em}.visual-label span{display:block;margin-top:7px;font-size:18px;font-weight:400;opacity:.96;letter-spacing:.01em}
 .card{background:#fff;border:1px solid #e6eaee;border-radius:15px;padding:28px;min-height:150px;cursor:pointer}
 .card h3{margin-top:0}.page{display:none;padding:50px 0}.page.active{display:block}
-.content{background:#fff;border-radius:15px;padding:34px;min-height:300px}
+.content{background:#fff;border-radius:0;padding:0;min-height:300px}.inner-brand{padding:38px 0 24px;text-align:center;background:#fff}.inner-brand-logo{font-size:32px;font-weight:800;letter-spacing:6px;color:#17212b;cursor:pointer}.inner-subnav{display:flex;justify-content:center;gap:12px;padding:0 0 28px;border-bottom:1px solid #e8edf1;background:#fff}.inner-subnav button{width:126px;border:0;background:none;padding:0;cursor:pointer;color:#26333d}.inner-subnav img{width:126px;height:82px;object-fit:cover;border-radius:8px;display:block}.inner-subnav span{display:block;margin-top:7px;font-size:13px;font-weight:400}.article-shell{max-width:980px;margin:auto;padding:34px 24px 70px}.article-shell h1{margin:0 0 28px}.article-media{display:grid;gap:0;margin:0}.article-media img{display:block;width:100%;height:auto;object-fit:contain;background:#fff}.article-text{white-space:pre-wrap;line-height:1.9;padding:30px 0}
 .badge{display:inline-block;padding:6px 10px;background:#edf2f5;border-radius:20px;font-size:12px}
 .calhead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.calhead button{border:1px solid #d8e0e5;background:#fff;border-radius:8px;padding:9px 14px;cursor:pointer}.calgrid{display:grid;grid-template-columns:repeat(7,1fr);border-top:1px solid #e3e8ec;border-left:1px solid #e3e8ec}.dow,.day{border-right:1px solid #e3e8ec;border-bottom:1px solid #e3e8ec;padding:10px}.dow{text-align:center;font-weight:700;background:#f5f7f8}.day{min-height:145px;background:#fff}.day.empty{background:#fafbfc}.date{font-weight:700;margin-bottom:8px}.times{font-size:14px;line-height:1.65;color:#53616b}.sun{color:#c62828}.sat{color:#1565c0}.booking-summary{font-size:14px;line-height:1.7;color:#53616b}.booking-summary span{display:block}.pastday{background:#eef1f3!important;color:#a6adb3;cursor:not-allowed!important}.reserve-modal{position:fixed;inset:0;background:rgba(0,0,0,.38);display:none;align-items:center;justify-content:center;z-index:1000}.reserve-modal.open{display:flex}.reserve-modal-box{background:#fff;border-radius:14px;padding:24px;width:min(520px,calc(100% - 32px));max-height:85vh;overflow:auto}.holiday{color:#c62828}.holidayname{font-size:12px;color:#c62828;font-weight:600;margin-left:4px}
 @media(max-width:650px){.day{min-height:105px;padding:6px}.times{font-size:10px}.dow{padding:7px 2px}}
-@media(max-width:800px){.top{display:flex}.logo{margin-right:auto}nav{display:none}.cards{grid-template-columns:1fr}.visual-menu,.visual-menu-two{grid-template-columns:1fr;max-width:none}.visual-card{height:360px}.hero h1{font-size:34px}}
+@media(max-width:800px){.inner-subnav{justify-content:flex-start;overflow-x:auto;padding-left:18px;padding-right:18px}.inner-subnav button{flex:0 0 108px;width:108px}.inner-subnav img{width:108px;height:72px}.article-shell{padding:28px 18px 55px}.top{display:flex}.logo{margin-right:auto}nav{display:none}.cards{grid-template-columns:1fr}.visual-menu,.visual-menu-two{grid-template-columns:1fr;max-width:none}.visual-card{height:360px}.hero h1{font-size:34px}}
 </style>
 </head>
 <body>
@@ -57,24 +57,38 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div class="visual-card" onclick="openEducationLibrary()"><img src="E-2.webp" alt="교육자료실"><div class="visual-label"><strong>Academy</strong><span>— 교육자료실</span></div></div>
 </div><div id="memberE1" class="content" style="display:none;margin-top:20px"><button type="button" onclick="memberE1.style.display='none'">← My Submarine</button><h2>나의 기록</h2><input id="memberSearch" placeholder="이름을 검색하세요" style="padding:12px;border:1px solid #ccd4da;border-radius:7px;width:100%;max-width:360px" oninput="findMember()"><div id="memberSearchResult" style="margin-top:18px"></div></div></div></section>
 <section id="education" class="page"><div class="wrap"><button type="button" onclick="show('member')">← My Submarine</button><h1>교육자료실</h1><div id="eduCategoryBar" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0"></div><div id="eduList" class="content"></div><div id="eduDetail" class="content" style="display:none"></div></div></section>
-<section id="article" class="page"><div class="wrap"><button onclick="goHome()">← 메인으로</button><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
+<section id="article" class="page"><div id="articleBrand"></div><div class="article-shell"><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
 </main>
 <script>
 function goHome(){show('home');history.replaceState(null,'',location.pathname);}
 function openSubmarineMenu(){show('submarineMenu');}
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
+
+const menuGroups={
+ A:[['A-1.webp','Introduction',()=>openContent('A-1','소개')],['A-2.webp','Location',()=>openContent('A-2','오시는 길')],['A-3.webp','Education',()=>show('products')]],
+ B:[['B-1.webp','Rates',()=>openContent('B-1','사용료')],['B-2.webp','Discount pass',()=>openContent('B-2','할인권')],['B-3.webp','Refund policy',()=>openContent('B-3','환불 규정')]],
+ C:[['C-1.webp','Schedule',()=>show('status')],['C-2.webp','Reservation',()=>show('reservation')]],
+ D:[['D-1.webp','Facility agreement',()=>show('facilityWaiver')],['D-2.webp','Education agreement',()=>show('educationWaiver')]],
+ E:[['E-1.webp','My page',()=>openMemberE1()],['E-2.webp','Academy',()=>openEducationLibrary()]]
+};
+function innerBrand(group){
+ const items=menuGroups[group]||[];
+ articleBrand.innerHTML='<div class="inner-brand"><div class="inner-brand-logo" onclick="goHome()">SUBMARINE</div></div><div class="inner-subnav">'+items.map((x,i)=>'<button type="button" data-i="'+i+'"><img src="'+x[0]+'" alt=""><span>'+x[1]+'</span></button>').join('')+'</div>';
+ articleBrand.querySelectorAll('button').forEach((b,i)=>b.onclick=items[i][2]);
+}
+
 function openContent(code,title){
  let data=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');
- show('article'); articleTitle.textContent=title;
+ show('article'); articleTitle.textContent=title; innerBrand(code.charAt(0));
  const item=data[code];
  if(!item){articleBody.innerHTML='<p>아직 작성된 내용이 없습니다. 관리자 페이지에서 '+code+' 콘텐츠를 작성하세요.</p>';return;}
  let html='';
  if(item.images && item.images.length){
-   html += '<div style="display:grid;gap:18px;margin-bottom:26px">';
-   item.images.forEach(src=>html+='<img src="'+src+'" style="width:100%;max-height:650px;object-fit:contain;border-radius:12px;background:#f4f6f7">');
+   html += '<div class="article-media">';
+   item.images.forEach(src=>html+='<img src="'+src+'">');
    html += '</div>';
  }
- html += '<div style="white-space:pre-wrap;line-height:1.9">'+(item.body||'')+'</div>';
+ html += '<div class="article-text">'+(item.body||'')+'</div>';
  articleBody.innerHTML=html;
 }
 function openWaiverMenu(){show('waiver');waiverMenu.style.display='grid';waiverDetail.style.display='none';}
