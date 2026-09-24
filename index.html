@@ -5,7 +5,7 @@
 <title>SUBMARINE TEST</title>
 <style>
 *{box-sizing:border-box} html{font-size:16px} body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;color:#17212b;background:#f7f9fb;font-size:16px;line-height:1.55}
-header{background:white;border-bottom:1px solid #e5e9ed;position:sticky;top:0}
+header{background:white;border-bottom:1px solid #e5e9ed;position:sticky;top:0}body.home-mode header{display:none}
 .wrap{max-width:1180px;margin:auto;padding:0 24px}.top{height:76px;display:flex;align-items:center;gap:32px}
 .logo{font-size:22px;font-weight:800;letter-spacing:2px;margin-right:auto}
 nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16px;font-weight:600;cursor:pointer}
@@ -34,13 +34,13 @@ nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16
 <main>
 <section id="home" class="page active">
 <div class="hero"><div class="wrap"><span class="badge">최대수심 15m</span><h1>SUBMARINE DIVING POOL</h1>
-<p>관리자에서 작성한 콘텐츠가 이 영역에 표시되는 홈페이지 1차 껍데기입니다.<br>A-1 소개부터 실제 콘텐츠를 채워갑니다.</p></div></div>
-<div class="wrap cards">
+<p>메인 이미지는 이 영역에 한 장만 표시합니다.</p><button type="button" onclick="openSubmarineMenu()" style="margin-top:18px;padding:12px 20px;border:1px solid #d8e0e5;border-radius:8px;background:#fff;cursor:pointer;font-size:16px">서브마린</button></div></div>
+</section>
+<section id="submarineMenu" class="page"><div class="wrap"><h1>서브마린</h1><div class="cards">
 <div class="card" onclick="openContent('A-1','소개')"><h3>소개</h3><p>A-1 · 관리자 작성형</p></div>
 <div class="card" onclick="openContent('A-2','오시는 길')"><h3>오시는 길</h3><p>A-2 · 관리자 작성형 · 이미지/본문</p></div>
 <div class="card" onclick="show('products')"><h3>상품/결제</h3><p>A-3</p></div>
-</div></section>
-
+</div></div></section>
 <section id="products" class="page"><div class="wrap"><button type="button" onclick="goHome()">← 메인으로</button><h1>A-3 상품/결제</h1><div id="productRows" class="content"></div></div></section>
 <section id="guide" class="page"><div class="wrap"><h1>이용안내</h1><div class="cards">
 <div class="card" onclick="openContent('B-1','이용 요금')"><h3>이용 요금</h3></div>
@@ -60,7 +60,8 @@ nav button,.login button{border:0;background:none;padding:12px 12px;font-size:16
 </main>
 <script>
 function goHome(){show('home');history.replaceState(null,'',location.pathname);}
-function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
+function openSubmarineMenu(){show('submarineMenu');}
+function show(id){document.body.classList.toggle('home-mode',id==='home');document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 function openContent(code,title){
  let data=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');
  show('article'); articleTitle.textContent=title;
@@ -139,6 +140,7 @@ resPrev.addEventListener('click',()=>{resOffset=0;renderReserveCalendar()});resN
 let reserveKind='';
 document.querySelectorAll('.reserveType').forEach(b=>b.addEventListener('click',()=>{reserveKind=b.textContent;document.querySelectorAll('.reserveType').forEach(x=>x.style.background='');b.style.background='#dfe8ed'}));
 reserveConfirm.addEventListener('click',()=>{if(!reserveKind||!reserveDate.value){reserveResult.textContent='예약 구분과 날짜를 선택하세요.';return}reserveResult.textContent=reserveDate.value+' · '+reserveTime.value+' · '+reserveKind+' '+reservePeople.value+'명 예약이 확정되었습니다.'});
+document.body.classList.add('home-mode');
 openEducationFromUrl();
 </script>
 </body></html>
