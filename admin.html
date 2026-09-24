@@ -54,7 +54,10 @@ const testMembers=[
 {no:'S0004',name:'한소희',gender:'여',phone:'010-0000-0007',free:'2레벨',mermaid:'베이직',scuba:'오픈워터',cash:200000,point:18000},
 {no:'M0004',name:'윤태호',gender:'남',phone:'010-0000-0008',free:'4레벨',mermaid:'-',scuba:'레스큐',cash:300000,point:33000},
 {no:'S0005',name:'오하늘',gender:'여',phone:'010-0000-0009',free:'1레벨',mermaid:'-',scuba:'-',cash:100000,point:5000},
-{no:'M0005',name:'임도윤',gender:'남',phone:'010-0000-0010',free:'2레벨',mermaid:'-',scuba:'오픈워터',cash:500000,point:75000}
+{no:'M0005',name:'임도윤',gender:'남',phone:'010-0000-0010',free:'2레벨',mermaid:'-',scuba:'오픈워터',cash:500000,point:75000},
+{no:'S0006',name:'김서연',gender:'여',phone:'010-0000-0011',free:'1레벨',mermaid:'-',scuba:'-',cash:100000,point:5000},
+{no:'M0006',name:'최민석',gender:'남',phone:'010-0000-0012',free:'3레벨',mermaid:'-',scuba:'오픈워터',cash:200000,point:14000},
+{no:'S0007',name:'박지민',gender:'여',phone:'010-0000-0013',free:'2레벨',mermaid:'베이직',scuba:'-',cash:300000,point:27000}
 ];
 function searchMoneyMember(){const q=moneyMemberSearch.value.trim().toLowerCase();moneyMemberResults.innerHTML=q?testMembers.filter(m=>m.name.toLowerCase().includes(q)||m.phone.includes(q)||m.no.toLowerCase().includes(q)).map(m=>'<button class="btn" onclick="selectMoneyMember(\''+m.no+'\')">'+m.name+' · '+m.no+'</button>').join(''):''}
 function selectMoneyMember(no){const m=testMembers.find(x=>x.no===no);moneyMemberNo.value=no;moneySelectedMember.textContent='선택: '+m.name+' · '+m.no;moneyMemberSearch.value=m.name;moneyMemberResults.innerHTML=''}
