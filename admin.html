@@ -11,7 +11,7 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 .pic{position:relative}.pic img{width:100%;height:120px;object-fit:cover;border-radius:9px}.pic button{position:absolute;right:5px;top:5px;border:0;border-radius:50%;width:27px;height:27px;cursor:pointer}
 #loginGate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}#loginBox{width:100%;max-width:390px;background:#fff;padding:30px;border-radius:14px}#adminApp{display:none}.error{color:#c62828;font-size:13px;margin-top:8px}
 </style></head><body>
-<div id="loginGate"><div id="loginBox"><h2>관리자 로그인</h2><label>아이디</label><input id="adminId" autocomplete="username"><label>비밀번호</label><input id="adminPw" type="password" autocomplete="current-password"><button class="btn primary" onclick="adminLogin()">로그인</button><div id="loginError" class="error"></div></div></div><div id="adminApp">
+<div id="loginGate" style="display:none"></div><div id="adminApp" style="display:block">
 <header><a href="index.html" style="color:#fff;text-decoration:none;cursor:pointer">SUBMARINE</a><span style="margin-left:10px">· 관리자 페이지</span></header><main>
 <div class="box"><h2>콘텐츠 관리</h2>
 <div class="cats">
@@ -28,16 +28,7 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 </div><div id="instructorBox" class="box" style="display:none"><h2>F · 강사정산</h2><p class="note">C 회원관리에서 필요한 회원만 찾아 F 강사정산 목록으로 불러옵니다.</p><div style="margin-bottom:18px"><label>회원에서 강사 불러오기<input id="instructorMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchInstructorMember()"></label><div id="instructorMemberResults"></div></div><label>등록된 강사 검색<input id="instructorSearch" placeholder="이름 · 회원번호" oninput="drawInstructors()"></label><div id="instructorList"></div><div id="instructorEntry" style="display:none;margin-top:22px;padding-top:18px;border-top:1px solid #e5eaee"><h3 id="instructorEntryTitle">강사 정산 등록</h3><div style="display:grid;grid-template-columns:1.2fr repeat(6,1fr);gap:8px;align-items:end"><label>일자<input id="instDate" type="date"></label><label>바우처<input id="instVoucher" type="number" min="0" value="0"></label><label>체험<input id="instExperience" type="number" min="0" value="0"></label><label>강습<input id="instLesson" type="number" min="0" value="0"></label><label>스킬업<input id="instSkillup" type="number" min="0" value="0"></label><label>성공보수<input id="instSuccess" type="number" min="0" value="0"></label><label>3레벨교육<input id="instLevel3" type="number" min="0" value="0"></label></div><button class="btn primary" onclick="addInstructorSettlement()">등록</button><div id="instructorSettlementList" style="margin-top:18px"></div><div id="instructorClosing" style="margin-top:20px"></div></div></div><div id="memberDbBox" class="box" style="display:none"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:18px"><label>회원 검색<input id="moneyMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchMoneyMember()"></label><label>캐시 충전<input id="moneyCash" type="number" min="0" value="0"></label><label>포인트 지급<input id="moneyPoint" type="number" min="0" value="0"></label><button class="btn primary" onclick="addMemberMoney()">반영</button></div><div id="moneyMemberResults"></div><input id="moneyMemberNo" type="hidden"><div id="moneySelectedMember" class="note" style="margin-bottom:15px">회원을 선택하세요.</div><div id="memberTestList"></div><div id="adminMemberHistory" style="margin-top:20px"></div></div>
 <div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 캐시/포인트 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
 </main></div><script>
-function adminLogin(){
- const id=document.getElementById('adminId').value.trim(), pw=document.getElementById('adminPw').value;
- const err=document.getElementById('loginError'); err.textContent='';
- if(!id || !pw){err.textContent='아이디와 비밀번호를 입력하세요.';return}
- sessionStorage.setItem('submarine_admin','1');
- document.getElementById('loginGate').style.display='none';
- document.getElementById('adminApp').style.display='block';
-}
-if(sessionStorage.getItem('submarine_admin')==='1'){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';}
-document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
+
 const testMembers=[
 {no:'S0001',name:'김서연',gender:'여',phone:'010-0000-0001',free:'2레벨',mermaid:'-',scuba:'-',cash:200000,point:15000},
 {no:'M0001',name:'이준호',gender:'남',phone:'010-0000-0002',free:'3레벨',mermaid:'-',scuba:'오픈워터',cash:100000,point:7000},
