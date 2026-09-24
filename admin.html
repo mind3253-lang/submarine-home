@@ -31,7 +31,8 @@ textarea{min-height:280px;line-height:1.7}.btn{border:0;border-radius:7px;paddin
 <label>본문</label><textarea id="body" placeholder="텍스트를 입력하세요."></textarea>
 <button class="btn primary" onclick="save()">저장</button><button class="btn" onclick="location.href='index.html'">홈페이지 보기</button>
 </div>
-</div><div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 이용잔액 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
+</div><div class="box"><h2>회원 DB 테스트</h2><p class="note">테스트용 가상회원 10명 · 실제 회원 아님</p><div id="memberTestList"></div></div>
+<div class="box"><h2>기능 메뉴 껍데기</h2><p>회원 DB · 캐시/포인트 원장 · 예약 · 취소/환불 · 약정서 · 강사 교육비 정산 · 교육자료실</p></div>
 </main></div><script>
 function adminLogin(){
  const id=document.getElementById('adminId').value.trim(), pw=document.getElementById('adminPw').value;
@@ -43,6 +44,20 @@ function adminLogin(){
 }
 if(sessionStorage.getItem('submarine_admin')==='1'){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';}
 document.getElementById('adminPw').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
+const testMembers=[
+{no:'S0001',name:'김서연',gender:'여',phone:'010-0000-0001',free:'2레벨',mermaid:'-',scuba:'-',cash:200000,point:15000},
+{no:'M0001',name:'이준호',gender:'남',phone:'010-0000-0002',free:'3레벨',mermaid:'-',scuba:'오픈워터',cash:100000,point:7000},
+{no:'S0002',name:'박지민',gender:'여',phone:'010-0000-0003',free:'1레벨',mermaid:'베이직',scuba:'-',cash:300000,point:27000},
+{no:'M0002',name:'최민석',gender:'남',phone:'010-0000-0004',free:'2레벨',mermaid:'-',scuba:'어드밴스',cash:500000,point:65000},
+{no:'S0003',name:'정유진',gender:'여',phone:'010-0000-0005',free:'3레벨',mermaid:'-',scuba:'-',cash:40000,point:5000},
+{no:'M0003',name:'강현우',gender:'남',phone:'010-0000-0006',free:'1레벨',mermaid:'-',scuba:'-',cash:55000,point:5000},
+{no:'S0004',name:'한소희',gender:'여',phone:'010-0000-0007',free:'2레벨',mermaid:'베이직',scuba:'오픈워터',cash:200000,point:18000},
+{no:'M0004',name:'윤태호',gender:'남',phone:'010-0000-0008',free:'4레벨',mermaid:'-',scuba:'레스큐',cash:300000,point:33000},
+{no:'S0005',name:'오하늘',gender:'여',phone:'010-0000-0009',free:'1레벨',mermaid:'-',scuba:'-',cash:100000,point:5000},
+{no:'M0005',name:'임도윤',gender:'남',phone:'010-0000-0010',free:'2레벨',mermaid:'-',scuba:'오픈워터',cash:500000,point:75000}
+];
+function drawTestMembers(){const el=document.getElementById('memberTestList');if(!el)return;el.innerHTML='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>회원번호</th><th>이름</th><th>성별</th><th>전화</th><th>프리</th><th>머메이드</th><th>스쿠버</th><th>캐시</th><th>포인트</th></tr></thead><tbody>'+testMembers.map(m=>'<tr>'+[m.no,m.name,m.gender,m.phone,m.free,m.mermaid,m.scuba,m.cash.toLocaleString(),m.point.toLocaleString()+'P'].map(v=>'<td style="padding:9px;border-bottom:1px solid #e5eaee;white-space:nowrap">'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
+drawTestMembers();
 const slot=document.getElementById('slot'), body=document.getElementById('body'), inp=document.getElementById('images'), preview=document.getElementById('preview');
 let currentImages=[];
 const menus={
