@@ -200,6 +200,11 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/member-balance" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
+      try{const d=await request.json(),memberNo=String(d.memberNo||""),cash=Math.max(0,Number(d.cash)||0),point=Math.max(0,Number(d.point)||0),key="system/members.json";let members=[];const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text());const i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});members[i].cash=Number(members[i].cash||0)+cash;members[i].point=Number(members[i].point||0)+point;members[i].balanceUpdatedAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,member:members[i]})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/member/withdraw" && request.method === "POST") {
       try {
         const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\s*)submarine_session=([^;]+)/)||[])[1];
