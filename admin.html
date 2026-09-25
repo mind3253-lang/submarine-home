@@ -76,19 +76,16 @@ function historyRows(no){let rows=ledger().filter(x=>x.memberNo===no&&x.kind!=='
 let activeHistoryMember='';function showAdminHistory(no){activeHistoryMember=no;const m=testMembers.find(x=>x.no===no),rows=historyRows(no).reverse();adminMemberHistory.innerHTML='<h3>'+m.name+' 결제·사용내역</h3>'+(rows.length?rows.map(x=>'<div class="sched-item"><span>'+x.at+' · '+x.kind+' · '+x.note+'</span><strong>'+(x.cash?x.cash.toLocaleString()+'원 ':'')+(x.point?x.point.toLocaleString()+'P':'')+'</strong></div>').join(''):'<p class="note">내역이 없습니다.</p>')}
 function drawTestMembers(){const el=document.getElementById('memberTestList');if(!el)return;const s=memberState();testMembers.forEach(m=>{if(s[m.no]){m.cash=s[m.no].cash;m.point=s[m.no].point}});el.innerHTML='<p class="note">회원 이름을 클릭하면 결제·사용내역이 열립니다.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>회원번호</th><th>이름</th><th>성별</th><th>전화</th><th>프리</th><th>머메이드</th><th>스쿠버</th><th>캐시</th><th>포인트</th></tr></thead><tbody>'+testMembers.map(m=>'<tr style="cursor:pointer" onclick="showAdminHistory(\''+m.no+'\')">'+[m.no,m.name,m.gender,m.phone,m.free,m.mermaid,m.scuba,m.cash.toLocaleString(),m.point.toLocaleString()+'P'].map(v=>'<td style="padding:9px;border-bottom:1px solid #e5eaee;white-space:nowrap">'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
 drawTestMembers();
-const CLOUDINARY_CLOUD='kxt8uoj',CLOUDINARY_PRESET='submarine_upload';
 async function uploadImageFile(file){
  if(!file)return '';
- if(file.size>2621440)throw new Error('2.5MB 이하 이미지를 올려주세요.');
- const form=new FormData();form.append('file',file);form.append('upload_preset',CLOUDINARY_PRESET);
- const endpoint='https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/upload';
- alert('[진단] 업로드 함수 실행\\ncloud='+CLOUDINARY_CLOUD+'\\npreset='+CLOUDINARY_PRESET+'\\nendpoint='+endpoint);
- const res=await fetch(endpoint,{method:'POST',body:form});
+ if(file.size>2621440)throw new Error('파일당 최대 2.5MB까지 업로드할 수 있습니다.');
+ const form=new FormData();form.append('file',file);
+ const res=await fetch('/api/upload-image',{method:'POST',body:form});
  const raw=await res.text();
- if(!res.ok)throw new Error('[진단] HTTP '+res.status+' '+res.statusText+' / '+raw);
- let j;try{j=JSON.parse(raw)}catch(e){throw new Error('[진단] 응답 JSON 아님 / '+raw)}
- if(!j.secure_url)throw new Error('[진단] secure_url 없음 / '+raw);
- return j.secure_url;
+ let j={};try{j=JSON.parse(raw)}catch(e){}
+ if(!res.ok)throw new Error(j.error||('이미지 업로드에 실패했습니다. HTTP '+res.status));
+ if(!j.url)throw new Error('이미지 주소를 받지 못했습니다.');
+ return j.url;
 }
 function data(){try{return JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}')}catch(e){return {}}}
 function draw(){const p=document.getElementById('preview');p.innerHTML='';currentImages.forEach((src,i)=>{const d=document.createElement('div');d.className='pic';d.innerHTML='<img src="'+src+'"><button type="button" onclick="removeImg('+i+')">×</button>';p.appendChild(d)})}
