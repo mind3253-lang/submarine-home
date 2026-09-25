@@ -183,11 +183,13 @@ function renderReserveCalendar(){
  for(let d=1;d<=last.getDate();d++){const dateObj=new Date(first.getFullYear(),first.getMonth(),d), wd=dateObj.getDay(), key=first.getFullYear()+'-'+String(first.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'), hn=krHolidays2026[key]||'', today=new Date();today.setHours(0,0,0,0);const past=dateObj<today;html+='<div class="day '+(past?'pastday':'')+'" '+(past?'':'style="cursor:pointer" onclick="pickReserveDate(\''+key+'\')"')+'><div class="date '+(wd===0||hn?'holiday':wd===6?'sat':'')+'">'+d+(hn?'<span class="holidayname">'+hn+'</span>':'')+'</div></div>'}
  reserveCalendar.innerHTML=html;
 }
-function reserveMileageBalance(){let s={};try{s=JSON.parse(localStorage.getItem('submarine_member_state_v1')||'{}')}catch(e){}const no=localStorage.getItem('submarine_current_member_no')||'S0001';return Number((s[no]&&s[no].point)||0)}
+let reserveMemberBalance=0;
+async function refreshReserveMemberBalance(){try{const r=await fetch('/api/auth/me',{cache:'no-store'}),j=await r.json();reserveMemberBalance=(r.ok&&j.ok&&j.member)?Number(j.member.point||0):0;return reserveMemberBalance}catch(e){reserveMemberBalance=0;return 0}}
+function reserveMileageBalance(){return Number(reserveMemberBalance||0)}
 function reserveMinimum(v){const d=new Date(v+'T00:00:00'),weekend=d.getDay()===0||d.getDay()===6,holiday=!!krHolidays2026[v];return weekend||holiday?55000:40000}
 function independentTimes(v){let a=[];try{a=JSON.parse(localStorage.getItem('submarine_independent_times_v1')||'[]')}catch(e){}return a.filter(x=>x.date===v).map(x=>x.time)}
 function updateIndependentChoice(){const b=document.getElementById('independentReserveType'),ok=independentTimes(reserveDate.value).includes(reserveTime.value);b.disabled=!ok;b.title=ok?'독립군 예약 가능 타임':'관리자가 독립군으로 지정한 타임만 선택할 수 있습니다.';if(!ok&&reserveKind==='독립군'){reserveKind='';b.classList.remove('active')}}
-function pickReserveDate(v){const min=reserveMinimum(v),balance=reserveMileageBalance();if(balance<min){reserveMileageAlert.classList.add('open');return}reserveDate.value=v;reserveModalTitle.textContent=v+' 예약';reserveResult.textContent='';reserveBalance.textContent='보유 마일리지 '+balance.toLocaleString()+'P · 예약 가능 기준 '+min.toLocaleString()+'P 이상';reserveKind='';document.querySelectorAll('.reserveType').forEach(x=>x.classList.remove('active'));updateIndependentChoice();reserveModal.classList.add('open')}
+async function pickReserveDate(v){const min=reserveMinimum(v),balance=await refreshReserveMemberBalance();if(balance<min){reserveMileageAlert.classList.add('open');return}reserveDate.value=v;reserveModalTitle.textContent=v+' 예약';reserveResult.textContent='';reserveBalance.textContent='보유 마일리지 '+balance.toLocaleString()+'P · 예약 가능 기준 '+min.toLocaleString()+'P 이상';reserveKind='';document.querySelectorAll('.reserveType').forEach(x=>x.classList.remove('active'));updateIndependentChoice();reserveModal.classList.add('open')}
 function closeReserveModal(){reserveModal.classList.remove('open')}
 resPrev.addEventListener('click',()=>{resOffset=0;renderReserveCalendar()});resNext.addEventListener('click',()=>{resOffset=1;renderReserveCalendar()});renderReserveCalendar();
 let reserveKind='';
@@ -227,7 +229,7 @@ async function refreshLoginState(){
     }
   }catch(e){}
 }
-refreshLoginState();
+refreshLoginState();refreshReserveMemberBalance();
 
 
 let SITE_BRAND_ASSETS={};function applyWordmarks(root=document){if(!SITE_BRAND_ASSETS.wordmark)return;(root||document).querySelectorAll('.siteWordmark').forEach(el=>{el.src=SITE_BRAND_ASSETS.wordmark})}
