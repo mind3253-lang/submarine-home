@@ -198,10 +198,19 @@ export default {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
     }
-    if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,status:x.status||"confirmed"}))})}
+    if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled").map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,status:x.status||"confirmed"}))})}
     if (url.pathname === "/api/reservations" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",date:d.date,time:d.time,type:d.type,people,status:"confirmed",createdAt:new Date().toISOString()};rows.push(row);await writeReservations(rows);return Response.json({ok:true,reservation:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
+    if (url.pathname === "/api/reservations/cancel" && request.method === "POST") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const d=await request.json(),rows=await readReservations(),i=rows.findIndex(x=>x.id===d.id&&x.memberNo===member.memberNo);if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});if(rows[i].status==="cancelled")return Response.json({ok:false,error:"이미 취소된 예약입니다."},{status:400});const now=new Date(),useDate=new Date(rows[i].date+"T00:00:00"),today=new Date(now.getFullYear(),now.getMonth(),now.getDate()),days=Math.ceil((useDate-today)/86400000);let refundRate=0;if(days>=4)refundRate=100;else if(days===3)refundRate=70;else if(days===2)refundRate=50;else if(days===1)refundRate=30;rows[i]={...rows[i],status:"cancelled",cancelledAt:new Date().toISOString(),refundRate,refundStatus:"requested"};await writeReservations(rows);return Response.json({ok:true,reservation:rows[i],refundRate})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/refund-request" && request.method === "POST") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const d=await request.json(),key="system/refund-requests.json";let rows=[];try{const o=await env.IMAGES.get(key);if(o)rows=JSON.parse(await o.text())}catch{}rows.push({id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",program:String(d.program||"교육 프로그램"),type:"education",status:"requested",submittedAt:new Date().toISOString(),termsAcknowledged:true});await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
     if (url.pathname === "/api/admin/member-balance-adjust" && request.method === "POST") {
