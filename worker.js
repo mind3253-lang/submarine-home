@@ -271,8 +271,9 @@ export default {
         if(!member) return Response.json({ok:false,error:"로그인 후 약정서를 제출할 수 있습니다."},{status:401});
         const data=await request.json();
         if(!["D-1","D-2"].includes(data.waiverCode)||!data.lessonDate||!data.lessonTime||!data.signatureData) return Response.json({ok:false,error:"약정서 제출정보가 부족합니다."},{status:400});
+        const selected=new Date(String(data.lessonDate)+"T00:00:00"),n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());if(selected<today)return Response.json({ok:false,error:"지난 날짜에는 약정서를 제출할 수 없습니다."},{status:400});
         const rows=await readWaivers(), now=new Date().toISOString();
-        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:data.lessonDate,lessonTime:data.lessonTime,educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
+        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:String(data.lessonDate),lessonTime:String(data.lessonTime).replace(/[^1-5]/g,"").slice(0,1),educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",memberNo:member.memberNo||"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
         rows.push(row); await writeWaivers(rows);
         return Response.json({ok:true,id:row.id});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
