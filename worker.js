@@ -108,8 +108,25 @@ export default {
         if(!valid) return Response.json({ok:false},{status:401});
         const pp=payload.replaceAll("-","+").replaceAll("_","/") + "=".repeat((4-payload.length%4)%4);
         const member=JSON.parse(decodeURIComponent(escape(atob(pp))));
-        return Response.json({ok:true,member});
+        let stored=null;try{const o=await env.IMAGES.get("system/members.json");const ms=o?JSON.parse(await o.text()):[];stored=ms.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&x.phone===member.phone))||null}catch{}
+        return Response.json({ok:true,member:stored||member});
       } catch { return Response.json({ok:false},{status:401}); }
+    }
+
+    if (url.pathname === "/api/member/profile" && request.method === "POST") {
+      try {
+        const member=await sessionMember();
+        if(!member) return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+        const data=await request.json(), licenses=Array.isArray(data.licenses)?data.licenses:[];
+        if(!licenses.length) return Response.json({ok:false,error:"보유 자격증을 하나 이상 등록해 주세요."},{status:400});
+        const key="system/members.json"; let members=[];
+        try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
+        let i=members.findIndex(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&x.phone===member.phone));
+        if(i<0) return Response.json({ok:false,error:"회원 정보를 찾을 수 없습니다."},{status:404});
+        members[i]={...members[i],licenses,profileCompleted:true,profileUpdatedAt:new Date().toISOString()};
+        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,member:members[i]});
+      } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
     if (url.pathname === "/api/auth/logout" && request.method === "POST") {
