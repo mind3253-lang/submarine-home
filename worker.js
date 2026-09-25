@@ -175,7 +175,7 @@ export default {
         const data=await request.json();
         if(!["D-1","D-2"].includes(data.waiverCode)||!data.lessonDate||!data.lessonTime||!data.signatureData) return Response.json({ok:false,error:"약정서 제출정보가 부족합니다."},{status:400});
         const rows=await readWaivers(), now=new Date().toISOString();
-        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:data.lessonDate,lessonTime:data.lessonTime,memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
+        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:data.lessonDate,lessonTime:data.lessonTime,educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
         rows.push(row); await writeWaivers(rows);
         return Response.json({ok:true,id:row.id});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
