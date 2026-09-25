@@ -181,6 +181,14 @@ export default {
       return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}});
     }
 
+    if (url.pathname === "/api/brand-assets" && request.method === "GET") {
+      try{const o=await env.IMAGES.get("system/brand-assets.json");return Response.json({ok:true,assets:o?JSON.parse(await o.text()):{}})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/admin/brand-assets" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
+      try{const d=await request.json(),assets={hero:String(d.hero||""),headerLogo:String(d.headerLogo||""),wordmark:String(d.wordmark||"")};await env.IMAGES.put("system/brand-assets.json",JSON.stringify(assets),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,assets})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/admin/members" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
       try {
