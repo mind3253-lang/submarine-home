@@ -21,8 +21,10 @@ h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}button,select,input,textar
 <button class="cat" data-cat="C" onclick="setCat('C',this)">C · SCHEDULE</button>
 <button class="cat" data-cat="D" onclick="setCat('D',this)">D · AGREEMENT</button>
 <button class="cat" data-cat="E" onclick="setCat('E',this)">E · MY SUBMARINE</button>
+<div style="flex-basis:100%;height:0"></div>
 <button class="cat" data-cat="F" onclick="setCat('F',this)">F · 강사정산</button>
-<button class="cat" data-cat="G" onclick="setCat('G',this)">G · 회원 DB</button>\n<button class="cat" data-cat="H" onclick="setCat('H',this)">H · 약정서</button>
+<button class="cat" data-cat="G" onclick="setCat('G',this)">G · 회원 DB</button>
+<button class="cat" data-cat="H" onclick="setCat('H',this)">H · 약정서</button>
 </div>
 <p class="note">카테고리를 선택한 뒤 해당 게시판을 편집합니다.</p>
 <div id="scheduleAdmin" class="schedule-admin"><h3>스케줄 등록</h3><div style="display:flex;justify-content:space-between;align-items:center"><button class="btn" onclick="adminCalOffset=0;drawAdminCalendar()">← 이번 달</button><strong id="adminCalTitle"></strong><button class="btn" onclick="adminCalOffset=1;drawAdminCalendar()">다음 달 →</button></div><div id="adminCalendar" class="admincal"></div><div id="schedModal" class="sched-modal"><div class="sched-modal-box"><button class="btn" onclick="closeSchedModal()" style="float:right">×</button><h3 id="schedModalTitle">예약 등록</h3><label>회원 검색<input id="schedMemberSearch" placeholder="이름 · 전화번호 · 회원번호" oninput="searchSchedMember()"></label><div id="schedMemberResults" style="margin:-8px 0 16px"></div><input id="schedMemberNo" type="hidden"><div id="schedSelectedMember" class="note" style="margin-bottom:12px">회원을 선택하세요.</div><div class="sched-row"><label>날짜<input id="schedDate" type="date"></label><label>타임<select id="schedTime"><option>1타임</option><option>2타임</option><option>3타임</option><option>4타임</option><option>5타임</option></select></label><label>구분<select id="schedType"><option>강습</option><option>스킬업</option><option>펀다</option><option>독립군</option></select></label><label>확정 인원<input id="schedPeople" type="number" min="1" value="1"></label><button class="btn primary" onclick="addSchedule()">등록</button></div></div></div><div id="schedList" class="sched-list"></div>
