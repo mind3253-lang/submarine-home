@@ -217,7 +217,7 @@ async function refreshLoginState(){
 refreshLoginState();refreshReserveMemberBalance();
 
 
-let SITE_BRAND_ASSETS={};function applyWordmarks(root=document){if(!SITE_BRAND_ASSETS.wordmark)return;(root||document).querySelectorAll('.siteWordmark').forEach(el=>{el.src=SITE_BRAND_ASSETS.wordmark})}
+let SITE_BRAND_ASSETS={};function applyWordmarks(root=document){(root||document).querySelectorAll('.siteWordmark').forEach(el=>{if(SITE_BRAND_ASSETS.wordmark){el.src=SITE_BRAND_ASSETS.wordmark;el.style.display='block'}else{el.removeAttribute('src');el.style.display='none'}})}
 (async function applyBrandAssets(){
  try{
   const r=await fetch('/api/brand-assets',{cache:'no-store'}),j=await r.json(),a=j.assets||{};
