@@ -7,12 +7,20 @@ export default {
       let members = [];
       try { const o = await env.IMAGES.get(key); if (o) members = JSON.parse(await o.text()); } catch {}
       const now = new Date().toISOString();
-      const i = members.findIndex(x => x.provider === member.provider && x.id === member.id);
-      if (i >= 0) members[i] = {...members[i], ...member, lastLoginAt: now};
-      else members.push({...member, memberNo: "U" + String(members.length + 1).padStart(5,"0"), joinedAt: now, lastLoginAt: now, cash: 0, point: 5000});
-      await env.IMAGES.put(key, JSON.stringify(members), {httpMetadata:{contentType:"application/json"}});
+      let i = members.findIndex(x => x.provider === member.provider && x.id === member.id);
+      if (i < 0 && member.phone) i = members.findIndex(x => x.phone && x.phone === member.phone);
+      if (i < 0 && member.email) i = members.findIndex(x => x.email && x.email.toLowerCase() === member.email.toLowerCase());
+      if (i >= 0) {
+        const old = members[i], providers = Array.from(new Set([...(old.providers||[old.provider]).filter(Boolean),member.provider]));
+        members[i] = {...old,...member,provider:old.provider||member.provider,providers,lastLoginAt:now};
+        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        return members[i];
+      }
+      const saved={...member,providers:[member.provider],memberNo:"U"+String(members.length+1).padStart(5,"0"),joinedAt:now,lastLoginAt:now,cash:0,point:5000};
+      members.push(saved);
+      await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+      return saved;
     }
-
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
       const state = crypto.randomUUID().replaceAll("-", "");
@@ -37,7 +45,7 @@ export default {
         const pr = await fetch("https://openapi.naver.com/v1/nid/me", { headers:{ Authorization:"Bearer " + token.access_token }});
         const profile = await pr.json();
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
-        const member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "" };
+        const member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "" };
         await saveMember(member);
         const payload = btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.NAVER_CLIENT_SECRET), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
@@ -75,7 +83,7 @@ export default {
         const profile=await pr.json();
         if(!pr.ok||!profile.id) throw new Error(profile.msg||"프로필 조회 실패");
         const account=profile.kakao_account||{}, p=account.profile||{};
-        const member={provider:"kakao",id:String(profile.id),name:p.nickname||"카카오 회원",email:account.email||""};
+        const member={provider:"kakao",id:String(profile.id),name:p.nickname||"카카오 회원",email:account.email||"",phone:account.phone_number||""};
         await saveMember(member);
         const payload=btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY);
@@ -116,6 +124,21 @@ export default {
       } catch(e) {
         return Response.json({ok:false,error:e?.message||String(e)},{status:500});
       }
+    }
+
+    if (url.pathname === "/api/member/withdraw" && request.method === "POST") {
+      try {
+        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\s*)submarine_session=([^;]+)/)||[])[1];
+        if(!raw) return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+        const [payload]=raw.split(".");
+        const pp=payload.replaceAll("-","+").replaceAll("_","/")+"=".repeat((4-payload.length%4)%4);
+        const member=JSON.parse(decodeURIComponent(escape(atob(pp))));
+        const key="system/members.json"; let members=[];
+        try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
+        members=members.filter(x=>!(x.providers||[x.provider]).includes(member.provider)||x.id!==member.id);
+        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}});
+      } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
