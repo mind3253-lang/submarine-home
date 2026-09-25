@@ -113,7 +113,19 @@ function openWaiver(code,title){show('waiver');bindPageBrand(waiverBrand,'D');ac
 function waiverCtx(){return document.getElementById('waiverSign').getContext('2d')}
 function clearWaiverSign(){const c=document.getElementById('waiverSign');if(!c)return;waiverCtx().clearRect(0,0,c.width,c.height);waiverSigned=false}
 (function(){const c=document.getElementById('waiverSign');if(!c)return;let drawing=false;function pos(e){const r=c.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:(p.clientX-r.left)*c.width/r.width,y:(p.clientY-r.top)*c.height/r.height}}function start(e){drawing=true;const p=pos(e),x=waiverCtx();x.beginPath();x.moveTo(p.x,p.y);e.preventDefault()}function move(e){if(!drawing)return;const p=pos(e),x=waiverCtx();x.lineWidth=3;x.lineCap='round';x.lineJoin='round';x.lineTo(p.x,p.y);x.stroke();waiverSigned=true;e.preventDefault()}function end(){drawing=false}c.addEventListener('mousedown',start);c.addEventListener('mousemove',move);window.addEventListener('mouseup',end);c.addEventListener('touchstart',start,{passive:false});c.addEventListener('touchmove',move,{passive:false});c.addEventListener('touchend',end)})();
-function submitWaiver(){if(!waiverLessonDate.value){waiverResult.textContent='강습일을 선택하세요.';return}if(!waiverLessonTime.value){waiverResult.textContent='타임을 선택하세요.';return}if(!waiverAgree.checked){waiverResult.textContent='전체 동의에 체크하세요.';return}if(!waiverSigned){waiverResult.textContent='서명을 해주세요.';return}let a=[];try{a=JSON.parse(localStorage.getItem('submarine_waiver_submissions_v1')||'[]')}catch(e){}a.push({id:Date.now(),waiverCode:activeWaiverCode,lessonDate:waiverLessonDate.value,lessonTime:waiverLessonTime.value,memberName:'테스트 제출자',signed:true,submittedAt:new Date().toISOString()});localStorage.setItem('submarine_waiver_submissions_v1',JSON.stringify(a));clearWaiverSign();waiverForm.style.display='none';waiverResult.textContent='약정서가 제출되었습니다.';}
+async function submitWaiver(){
+ if(!waiverLessonDate.value){waiverResult.textContent='강습일을 선택하세요.';return}
+ if(!waiverLessonTime.value){waiverResult.textContent='타임을 선택하세요.';return}
+ if(!waiverAgree.checked){waiverResult.textContent='전체 동의에 체크하세요.';return}
+ if(!waiverSigned){waiverResult.textContent='서명을 해주세요.';return}
+ waiverResult.textContent='약정서를 저장하고 있습니다.';
+ try{
+   const payload={waiverCode:activeWaiverCode,lessonDate:waiverLessonDate.value,lessonTime:waiverLessonTime.value,agreementHtml:waiverBody.innerHTML,signatureData:document.getElementById('waiverSign').toDataURL('image/png')};
+   const r=await fetch('/api/waivers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),j=await r.json();
+   if(!r.ok||!j.ok){waiverResult.textContent=j.error||'약정서 저장에 실패했습니다.';return}
+   clearWaiverSign();waiverForm.style.display='none';waiverResult.textContent='약정서가 제출되었습니다.';
+ }catch(e){waiverResult.textContent='약정서 저장에 실패했습니다.'}
+}
 function openScheduleMenu(){show('schedule');scheduleBrand.innerHTML='';showSchedulePanel('menu');}
 function showSchedulePanel(which){show('schedule');if(which!=='menu')bindPageBrand(scheduleBrand,'C');scheduleMenu.style.display=which==='menu'?'grid':'none';scheduleStatus.style.display=which==='status'?'block':'none';scheduleReserve.style.display=which==='reserve'?'block':'none';}
 function renderCashRewards(){const rates=JSON.parse(localStorage.getItem('submarine_a3_reward_rates')||'[3,4,5,7]');document.querySelectorAll('.cashReward').forEach(e=>{const p=Number(e.dataset.price),r=Number(rates[Number(e.dataset.i)]||0);e.textContent=Math.round(p*r/100).toLocaleString()+'원 캐시'})}renderCashRewards();
