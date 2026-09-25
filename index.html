@@ -22,7 +22,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 </style>
 </head>
 <body>
-<header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer">SUBMARINE</div>
+<header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer;width:205px;height:64px;display:flex;align-items:center"><img id="headerBrandLogo" alt="SUBMARINE" style="display:none;max-width:200px;max-height:58px;width:auto;height:auto;object-fit:contain"></div>
 <nav>
 <button onclick="openSubmarineMenu()">SUBMARINE</button><button onclick="show('guide')">GUIDE</button>
 <button onclick="openScheduleMenu()">SCHEDULE</button><button onclick="openWaiverMenu()">AGREEMENT</button>
@@ -213,5 +213,7 @@ refreshLoginState();
 
 
 (function applyHomeHero(){try{const d=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');const item=d['A-1']||{};const u=(item.images||[])[0];const el=document.getElementById('homeHeroPhoto');if(el&&u)el.style.backgroundImage='url("'+u+'")'}catch(e){}})();
+
+(function applyHeaderBrandLogo(){try{const d=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');const imgs=((d['A-1']||{}).images||[]);const el=document.getElementById('headerBrandLogo');if(el&&imgs[1]){el.src=imgs[1];el.style.display='block'}}catch(e){}})();
 </script>
 </body></html>
