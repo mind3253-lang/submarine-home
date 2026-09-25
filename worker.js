@@ -83,7 +83,7 @@ export default {
         const profile=await pr.json();
         if(!pr.ok||!profile.id) throw new Error(profile.msg||"프로필 조회 실패");
         const account=profile.kakao_account||{}, p=account.profile||{};
-        const member={provider:"kakao",id:String(profile.id),name:p.nickname||"카카오 회원",email:account.email||"",phone:account.phone_number||""};
+        const member={provider:"kakao",id:String(profile.id),name:account.name||p.nickname||"카카오 회원",email:account.email||"",phone:account.phone_number||""};
         await saveMember(member);
         const payload=btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY);
