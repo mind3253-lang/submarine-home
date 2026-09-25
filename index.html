@@ -28,7 +28,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <button onclick="openScheduleMenu()">SCHEDULE</button><button onclick="openWaiverMenu()">AGREEMENT</button>
 <button onclick="openMemberMenu()">MY SUBMARINE</button>
 </nav>
-<div class="login"><button onclick="alert('네이버/카카오 실제 연동은 앱 등록 후 연결합니다.')">LOGIN</button>
+<div class="login"><button id="loginButton" onclick="location.href='/api/auth/naver'">LOGIN</button>
 <button onclick="location.href='admin.html'">ADMIN</button></div></div></header>
 
 <main>
@@ -176,5 +176,19 @@ reserveTime.addEventListener('change',updateIndependentChoice);
 document.querySelectorAll('.reserveType').forEach(b=>b.addEventListener('click',()=>{if(b.disabled)return;reserveKind=b.textContent;document.querySelectorAll('.reserveType').forEach(x=>x.classList.remove('active'));b.classList.add('active')}));
 reserveConfirm.addEventListener('click',()=>{if(!reserveKind||!reserveDate.value){reserveResult.textContent='예약 구분을 선택하세요.';return}if(reserveKind==='독립군'&&!independentTimes(reserveDate.value).includes(reserveTime.value)){reserveResult.textContent='독립군 지정 타임에서만 예약할 수 있습니다.';return}reserveResult.textContent=reserveDate.value+' · '+reserveTime.value+' · '+reserveKind+' '+reservePeople.value+'명 예약이 확정되었습니다.';});
 openEducationFromUrl();
+async function refreshLoginState(){
+  try{
+    const r=await fetch('/api/auth/me',{cache:'no-store'}),j=await r.json(),b=document.getElementById('loginButton');
+    if(r.ok&&j.ok&&j.member){
+      b.textContent=(j.member.name||'회원')+' · 로그아웃';
+      b.onclick=async()=>{await fetch('/api/auth/logout',{method:'POST'});location.reload()};
+    }else{
+      b.textContent='LOGIN';
+      b.onclick=()=>location.href='/api/auth/naver';
+    }
+  }catch(e){}
+}
+refreshLoginState();
+
 </script>
 </body></html>
