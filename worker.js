@@ -21,6 +21,45 @@ export default {
       await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
       return saved;
     }
+    async function makeSession(member) {
+      const payload=btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+      const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY);
+      const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(sessionKey),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+      const sigBytes=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(payload)));
+      const sig=btoa(String.fromCharCode(...sigBytes)).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
+      return "submarine_session="+payload+"."+sig+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000";
+    }
+    async function hashPassword(password,salt){
+      const data=new TextEncoder().encode(salt+"|"+password);
+      const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",data));
+      return Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
+    }
+    if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
+      try {
+        const d=await request.json(),name=String(d.name||"").trim(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||"");
+        if(!name||phone.length<10||password.length<6)return Response.json({ok:false,error:"이름, 휴대폰번호, 비밀번호 6자 이상을 입력해 주세요."},{status:400});
+        const key="system/members.json";let members=[];try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
+        let m=members.find(x=>String(x.phone||"").replace(/[^0-9]/g,"")===phone);
+        if(m&&(m.identities||[]).some(x=>x.provider==="local"))return Response.json({ok:false,error:"이미 일반회원으로 가입된 휴대폰번호입니다."},{status:409});
+        const salt=crypto.randomUUID(),passwordHash=await hashPassword(password,salt),now=new Date().toISOString();
+        if(m){m.identities=[...(m.identities||[]),{provider:"local",id:phone}];m.localSalt=salt;m.localPasswordHash=passwordHash;m.name=m.name||name;m.profileCompleted=!!m.profileCompleted;}
+        else{m={provider:"local",id:phone,identities:[{provider:"local",id:phone}],providers:["local"],memberNo:"U"+String(members.length+1).padStart(5,"0"),name,phone,email:"",joinedAt:now,lastLoginAt:now,cash:0,point:5000,profileCompleted:false,localSalt:salt,localPasswordHash:passwordHash};members.push(m)}
+        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        const safe={provider:"local",id:phone,memberNo:m.memberNo,name:m.name,phone:m.phone,profileCompleted:!!m.profileCompleted};
+        return Response.json({ok:true},{headers:{"Set-Cookie":await makeSession(safe)}});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/auth/local/login" && request.method === "POST") {
+      try {
+        const d=await request.json(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||"");
+        const o=await env.IMAGES.get("system/members.json"),members=o?JSON.parse(await o.text()):[],m=members.find(x=>String(x.phone||"").replace(/[^0-9]/g,"")===phone&&(x.identities||[]).some(v=>v.provider==="local"));
+        if(!m||!m.localSalt||await hashPassword(password,m.localSalt)!==m.localPasswordHash)return Response.json({ok:false,error:"휴대폰번호 또는 비밀번호를 확인해 주세요."},{status:401});
+        m.lastLoginAt=new Date().toISOString();await env.IMAGES.put("system/members.json",JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        const safe={provider:"local",id:phone,memberNo:m.memberNo,name:m.name,phone:m.phone,profileCompleted:!!m.profileCompleted};
+        return Response.json({ok:true},{headers:{"Set-Cookie":await makeSession(safe)}});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
       const state = crypto.randomUUID().replaceAll("-", "");
