@@ -192,6 +192,18 @@ export default {
       }
     }
 
+    async function readReservations(){try{const o=await env.IMAGES.get("system/reservations.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
+    async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
+    if (url.pathname === "/api/reservations" && request.method === "GET") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
+    }
+    if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,status:x.status||"confirmed"}))})}
+    if (url.pathname === "/api/reservations" && request.method === "POST") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",date:d.date,time:d.time,type:d.type,people,status:"confirmed",createdAt:new Date().toISOString()};rows.push(row);await writeReservations(rows);return Response.json({ok:true,reservation:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/admin/member-balance-adjust" && request.method === "POST") {
       const denied=await requireAdmin(); if(denied)return denied;
       try{const d=await request.json(),memberNo=String(d.memberNo||""),cashDelta=Number(d.cashDelta)||0,pointDelta=Number(d.pointDelta)||0,key="system/members.json";let members=[];const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text());const i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});const nc=Number(members[i].cash||0)+cashDelta,np=Number(members[i].point||0)+pointDelta;if(nc<0||np<0)return Response.json({ok:false,error:"잔액이 부족합니다."},{status:400});members[i].cash=nc;members[i].point=np;members[i].balanceUpdatedAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,member:members[i]})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
