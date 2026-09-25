@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
+    const url = new URL(request.url);\n\n    async function saveMember(member) {\n      const key = "system/members.json";\n      let members = [];\n      try { const o = await env.IMAGES.get(key); if (o) members = JSON.parse(await o.text()); } catch {}\n      const now = new Date().toISOString();\n      const i = members.findIndex(x => x.provider === member.provider && x.id === member.id);\n      if (i >= 0) members[i] = {...members[i], ...member, lastLoginAt: now};\n      else members.push({...member, memberNo: "U" + String(members.length + 1).padStart(5,"0"), joinedAt: now, lastLoginAt: now, cash: 0, point: 5000});\n      await env.IMAGES.put(key, JSON.stringify(members), {httpMetadata:{contentType:"application/json"}});\n    }
 
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
@@ -26,7 +26,7 @@ export default {
         const pr = await fetch("https://openapi.naver.com/v1/nid/me", { headers:{ Authorization:"Bearer " + token.access_token }});
         const profile = await pr.json();
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
-        const member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "" };
+        const member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "" };\n        await saveMember(member);
         const payload = btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.NAVER_CLIENT_SECRET), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
         const sigBytes = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
@@ -63,7 +63,7 @@ export default {
         const profile=await pr.json();
         if(!pr.ok||!profile.id) throw new Error(profile.msg||"프로필 조회 실패");
         const account=profile.kakao_account||{}, p=account.profile||{};
-        const member={provider:"kakao",id:String(profile.id),name:p.nickname||"카카오 회원",email:account.email||""};
+        const member={provider:"kakao",id:String(profile.id),name:p.nickname||"카카오 회원",email:account.email||""};\n        await saveMember(member);
         const payload=btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY);
         const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(sessionKey),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
@@ -93,6 +93,16 @@ export default {
 
     if (url.pathname === "/api/auth/logout" && request.method === "POST") {
       return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}});
+    }
+
+    if (url.pathname === "/api/admin/members" && request.method === "GET") {
+      try {
+        const o = await env.IMAGES.get("system/members.json");
+        const members = o ? JSON.parse(await o.text()) : [];
+        return Response.json({ok:true,members});
+      } catch(e) {
+        return Response.json({ok:false,error:e?.message||String(e)},{status:500});
+      }
     }
 
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
