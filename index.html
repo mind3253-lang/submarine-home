@@ -33,7 +33,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div id="loginChoice" style="display:none;position:fixed;inset:0;background:rgba(10,25,38,.55);z-index:2000;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'"><div style="background:#fff;border-radius:18px;padding:28px;width:min(360px,calc(100% - 30px));box-shadow:0 24px 70px rgba(16,35,50,.24)"><h3 style="margin:0 0 18px">간편 로그인</h3><button onclick="location.href='/api/auth/naver'" style="width:100%;padding:14px;border:0;border-radius:10px;background:#03c75a;color:#fff;font-weight:700;cursor:pointer">네이버로 로그인</button><button onclick="location.href='/api/auth/kakao'" style="width:100%;padding:14px;border:0;border-radius:10px;background:#fee500;color:#191919;font-weight:700;cursor:pointer;margin-top:10px">카카오로 로그인</button></div></div>
 
 <main>
-<section id="home" class="page active"><div class="hero"><div class="hero-copy"><h1>SUBMARINE</h1><p>DIVING POOL · 15M</p></div><div class="hero-marquee"><div class="hero-marquee-track">SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · </div></div></div></section>
+<section id="home" class="page active"><div class="hero"><div id="homeHeroPhoto" style="position:absolute;inset:0;background-size:cover;background-position:center 45%;background-repeat:no-repeat"></div><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.72) 0%,rgba(255,255,255,.28) 32%,rgba(255,255,255,.04) 65%);z-index:1"></div><div class="hero-copy"><h1>SUBMARINE</h1><p>DIVING POOL · 15M</p></div><div class="hero-marquee"><div class="hero-marquee-track">SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · </div></div></div></section>
 <section id="submarineMenu" class="page"><div class="wrap"><div class="visual-menu">
 <div class="visual-card" onclick="openContent('A-1','소개')"><img src="A-1.webp" alt="소개"><div class="visual-label"><strong>Introduction</strong><span>— 소개</span></div></div>
 <div class="visual-card" onclick="openContent('A-2','오시는 길')"><img src="A-2.webp" alt="오시는 길"><div class="visual-label"><strong>Location</strong><span>— 오시는 길</span></div></div>
@@ -211,5 +211,7 @@ async function refreshLoginState(){
 }
 refreshLoginState();
 
+
+(function applyHomeHero(){try{const d=JSON.parse(localStorage.getItem('submarine_contents_v2')||'{}');const item=d['A-1']||{};const u=(item.images||[])[0];const el=document.getElementById('homeHeroPhoto');if(el&&u)el.style.backgroundImage='url("'+u+'")'}catch(e){}})();
 </script>
 </body></html>
