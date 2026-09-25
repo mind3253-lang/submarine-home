@@ -55,7 +55,7 @@ export default {
       try {
         const code=url.searchParams.get("code"), state=url.searchParams.get("state");
         const cookie=request.headers.get("Cookie")||"";
-        const savedState=(cookie.match(/(?:^|;\\s*)kakao_oauth_state=([^;]+)/)||[])[1];
+        const savedState=(cookie.match(/(?:^|;\s*)kakao_oauth_state=([^;]+)/)||[])[1];
         if(!code||!state||!savedState||state!==savedState) return new Response("카카오 로그인 상태값이 일치하지 않습니다.",{status:400});
         const body=new URLSearchParams({grant_type:"authorization_code",client_id:env.KAKAO_REST_API_KEY,redirect_uri:"https://submarine.asia/api/auth/kakao/callback",code});
         const tr=await fetch("https://kauth.kakao.com/oauth/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=utf-8"},body});
