@@ -58,7 +58,7 @@ const testMembers=[
 ];
 function openSchedModal(date){schedDate.value=date;schedModalTitle.textContent=date+' 예약 등록';schedModal.classList.add('open')}
 function closeSchedModal(){schedModal.classList.remove('open')}
-function searchSchedMember(){const q=schedMemberSearch.value.trim().toLowerCase();schedMemberResults.innerHTML=q?adminMembers.filter(m=>(m.name||'').toLowerCase().includes(q)||String(m.phone||'').includes(q)||String(m.memberNo||'').toLowerCase().includes(q)).map(m=>'<button class="btn" onclick="selectSchedMember(\\''+m.memberNo+'\\')">'+(m.name||'회원')+' · '+m.memberNo+' · '+(m.phone||'')+'</button>').join(''):''}
+function searchSchedMember(){const q=schedMemberSearch.value.trim().toLowerCase();schedMemberResults.innerHTML=q?adminMembers.filter(m=>(m.name||'').toLowerCase().includes(q)||String(m.phone||'').includes(q)||String(m.memberNo||'').toLowerCase().includes(q)).map(m=>'<button class="btn" data-no="'+m.memberNo+'" onclick="selectSchedMember(this.dataset.no)">'+(m.name||'회원')+' · '+m.memberNo+' · '+(m.phone||'')+'</button>').join(''):''}
 function selectSchedMember(no){const m=memberByNo(no);if(!m)return;schedMemberNo.value=no;schedSelectedMember.textContent='선택: '+(m.name||'회원')+' · '+m.memberNo;schedMemberResults.innerHTML='';schedMemberSearch.value=m.name||''}
 function memberState(){let s=JSON.parse(localStorage.getItem('submarine_member_state_v1')||'null');if(!s){s=Object.fromEntries(testMembers.map(m=>[m.no,{cash:m.cash,point:m.point}]));localStorage.setItem('submarine_member_state_v1',JSON.stringify(s))}return s}
 function scheduleData(){return JSON.parse(localStorage.getItem('submarine_schedules_v1')||'[]')}
