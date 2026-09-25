@@ -76,7 +76,7 @@ function historyRows(no){let rows=ledger().filter(x=>x.memberNo===no&&x.kind!=='
 let activeHistoryMember='';function showAdminHistory(no){activeHistoryMember=no;const m=testMembers.find(x=>x.no===no),rows=historyRows(no).reverse();adminMemberHistory.innerHTML='<h3>'+m.name+' 결제·사용내역</h3>'+(rows.length?rows.map(x=>'<div class="sched-item"><span>'+x.at+' · '+x.kind+' · '+x.note+'</span><strong>'+(x.cash?x.cash.toLocaleString()+'원 ':'')+(x.point?x.point.toLocaleString()+'P':'')+'</strong></div>').join(''):'<p class="note">내역이 없습니다.</p>')}
 function drawTestMembers(){const el=document.getElementById('memberTestList');if(!el)return;const s=memberState();testMembers.forEach(m=>{if(s[m.no]){m.cash=s[m.no].cash;m.point=s[m.no].point}});el.innerHTML='<p class="note">회원 이름을 클릭하면 결제·사용내역이 열립니다.</p><div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr><th>회원번호</th><th>이름</th><th>성별</th><th>전화</th><th>프리</th><th>머메이드</th><th>스쿠버</th><th>캐시</th><th>포인트</th></tr></thead><tbody>'+testMembers.map(m=>'<tr style="cursor:pointer" onclick="showAdminHistory(\''+m.no+'\')">'+[m.no,m.name,m.gender,m.phone,m.free,m.mermaid,m.scuba,m.cash.toLocaleString(),m.point.toLocaleString()+'P'].map(v=>'<td style="padding:9px;border-bottom:1px solid #e5eaee;white-space:nowrap">'+v+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
 drawTestMembers();
-const CLOUDINARY_CLOUD='kxt8uioj',CLOUDINARY_PRESET='submarine_upload';
+const CLOUDINARY_CLOUD='kxt8uoj',CLOUDINARY_PRESET='submarine_upload';
 async function uploadImageFile(file){
  if(!file)return '';
  if(file.size>2621440)throw new Error('2.5MB 이하 이미지를 올려주세요.');
