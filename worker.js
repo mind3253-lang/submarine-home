@@ -141,6 +141,58 @@ export default {
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    async function readWaivers() {
+      const key = "system/waivers.json";
+      let rows = [];
+      try { const o = await env.IMAGES.get(key); if (o) rows = JSON.parse(await o.text()); } catch {}
+      const cutoff = Date.now() - 365 * 24 * 60 * 60 * 1000;
+      const kept = rows.filter(x => x.hold === true || new Date(x.submittedAt || 0).getTime() >= cutoff);
+      if (kept.length !== rows.length) await env.IMAGES.put(key, JSON.stringify(kept), {httpMetadata:{contentType:"application/json"}});
+      return kept;
+    }
+    async function writeWaivers(rows) {
+      await env.IMAGES.put("system/waivers.json", JSON.stringify(rows), {httpMetadata:{contentType:"application/json"}});
+    }
+    async function sessionMember() {
+      try {
+        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\\s*)submarine_session=([^;]+)/)||[])[1];
+        if(!raw) return null;
+        const [payload,sig]=raw.split(".");
+        if(!payload||!sig) return null;
+        const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY||"");
+        const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(sessionKey),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
+        const pad=sig.replaceAll("-","+").replaceAll("_","/")+"=".repeat((4-sig.length%4)%4);
+        const bytes=Uint8Array.from(atob(pad),c=>c.charCodeAt(0));
+        if(!await crypto.subtle.verify("HMAC",key,bytes,new TextEncoder().encode(payload))) return null;
+        const pp=payload.replaceAll("-","+").replaceAll("_","/")+"=".repeat((4-payload.length%4)%4);
+        return JSON.parse(decodeURIComponent(escape(atob(pp))));
+      } catch { return null; }
+    }
+    if (url.pathname === "/api/waivers" && request.method === "POST") {
+      try {
+        const member=await sessionMember();
+        if(!member) return Response.json({ok:false,error:"로그인 후 약정서를 제출할 수 있습니다."},{status:401});
+        const data=await request.json();
+        if(!["D-1","D-2"].includes(data.waiverCode)||!data.lessonDate||!data.lessonTime||!data.signatureData) return Response.json({ok:false,error:"약정서 제출정보가 부족합니다."},{status:400});
+        const rows=await readWaivers(), now=new Date().toISOString();
+        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:data.lessonDate,lessonTime:data.lessonTime,memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
+        rows.push(row); await writeWaivers(rows);
+        return Response.json({ok:true,id:row.id});
+      } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/admin/waivers" && request.method === "GET") {
+      try { return Response.json({ok:true,waivers:await readWaivers()}); }
+      catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/admin/waivers/hold" && request.method === "POST") {
+      try {
+        const data=await request.json(), rows=await readWaivers(), x=rows.find(v=>v.id===data.id);
+        if(!x) return Response.json({ok:false,error:"약정서를 찾을 수 없습니다."},{status:404});
+        x.hold=!!data.hold; x.holdUpdatedAt=new Date().toISOString(); await writeWaivers(rows);
+        return Response.json({ok:true,hold:x.hold});
+      } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
       try {
         const form = await request.formData();
