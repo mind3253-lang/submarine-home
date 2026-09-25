@@ -17,7 +17,7 @@ export default {
       try {
         const code = url.searchParams.get("code"), state = url.searchParams.get("state");
         const cookie = request.headers.get("Cookie") || "";
-        const savedState = (cookie.match(/(?:^|;\\s*)naver_oauth_state=([^;]+)/) || [])[1];
+        const savedState = (cookie.match(/(?:^|;\s*)naver_oauth_state=([^;]+)/) || [])[1];
         if (!code || !state || !savedState || state !== savedState) return new Response("네이버 로그인 상태값이 일치하지 않습니다.", { status: 400 });
         const tq = new URLSearchParams({ grant_type:"authorization_code", client_id:env.NAVER_CLIENT_ID, client_secret:env.NAVER_CLIENT_SECRET, code, state });
         const tr = await fetch("https://nid.naver.com/oauth2.0/token?" + tq.toString());
