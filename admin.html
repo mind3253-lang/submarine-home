@@ -81,7 +81,7 @@ async function uploadImageFile(file){
  if(!file)return '';
  if(file.size>2621440)throw new Error('2.5MB 이하 이미지를 올려주세요.');
  const form=new FormData();form.append('file',file);form.append('upload_preset',CLOUDINARY_PRESET);
- const endpoint='https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/image/upload';
+ const endpoint='https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/upload';
  alert('[진단] 업로드 함수 실행\\ncloud='+CLOUDINARY_CLOUD+'\\npreset='+CLOUDINARY_PRESET+'\\nendpoint='+endpoint);
  const res=await fetch(endpoint,{method:'POST',body:form});
  const raw=await res.text();
