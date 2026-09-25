@@ -146,17 +146,9 @@ export default {
 
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
-        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\\s*)submarine_session=([^;]+)/)||[])[1];
-        if(!raw) return Response.json({ok:false},{status:401});
-        const [payload,sig]=raw.split(".");
-        const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(env.NAVER_CLIENT_SECRET),{name:"HMAC",hash:"SHA-256"},false,["verify"]);
-        const pad=sig.replaceAll("-","+").replaceAll("_","/") + "=".repeat((4-sig.length%4)%4);
-        const bytes=Uint8Array.from(atob(pad),c=>c.charCodeAt(0));
-        const valid=await crypto.subtle.verify("HMAC",key,bytes,new TextEncoder().encode(payload));
-        if(!valid) return Response.json({ok:false},{status:401});
-        const pp=payload.replaceAll("-","+").replaceAll("_","/") + "=".repeat((4-payload.length%4)%4);
-        const member=JSON.parse(decodeURIComponent(escape(atob(pp))));
-        let stored=null;try{const o=await env.IMAGES.get("system/members.json");const ms=o?JSON.parse(await o.text()):[];stored=ms.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&x.phone===member.phone))||null}catch{}
+        const member=await sessionMember();
+        if(!member) return Response.json({ok:false},{status:401});
+        let stored=null;try{const o=await env.IMAGES.get("system/members.json");const ms=o?JSON.parse(await o.text()):[];stored=ms.find(x=>(member.memberNo&&x.memberNo===member.memberNo)||(x.provider===member.provider&&x.id===member.id)||(member.phone&&String(x.phone||"").replace(/[^0-9]/g,"")===String(member.phone||"").replace(/[^0-9]/g,"")))||null}catch{}
         return Response.json({ok:true,member:stored||member});
       } catch { return Response.json({ok:false},{status:401}); }
     }
