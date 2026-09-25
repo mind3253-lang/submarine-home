@@ -61,7 +61,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <section id="member" class="page"><div id="memberBrand"></div><div class="wrap"><div class="visual-menu visual-menu-two">
 <div class="visual-card" onclick="openMemberE1()"><img src="E-1.webp" alt="나의 기록"><div class="visual-label"><strong>My page</strong><span>— 나의 기록</span></div></div>
 <div class="visual-card" onclick="openEducationLibrary()"><img src="E-2.webp" alt="교육자료실"><div class="visual-label"><strong>Academy</strong><span>— 교육자료실</span></div></div>
-</div><div id="memberE1" class="content" style="display:none;margin-top:20px"><button type="button" onclick="memberE1.style.display='none'">← My Submarine</button><h2>나의 기록</h2><input id="memberSearch" placeholder="이름을 검색하세요" style="padding:12px;border:1px solid #ccd4da;border-radius:7px;width:100%;max-width:360px" oninput="findMember()"><div id="memberSearchResult" style="margin-top:18px"></div></div></div></section>
+</div><div id="memberE1" class="content" style="display:none;margin-top:20px"><button type="button" onclick="memberE1.style.display='none'">← My Submarine</button><h2>나의 기록</h2><div id="myAccountBox" style="margin:0 0 24px;padding:18px;border:1px solid #e1e6ea;border-radius:10px;display:none"><strong>회원 계정</strong><div id="myAccountInfo" style="margin:8px 0 14px;color:#66727a"></div><button type="button" onclick="withdrawMember()" style="padding:9px 14px;border:1px solid #c9d1d6;background:#fff;border-radius:7px;cursor:pointer">회원탈퇴</button></div><input id="memberSearch" placeholder="이름을 검색하세요" style="padding:12px;border:1px solid #ccd4da;border-radius:7px;width:100%;max-width:360px" oninput="findMember()"><div id="memberSearchResult" style="margin-top:18px"></div></div></div></section>
 <section id="education" class="page"><div id="educationBrand"></div><div class="wrap"><button type="button" onclick="show('member')">← My Submarine</button><h1>교육자료실</h1><div id="eduCategoryBar" style="display:flex;gap:8px;flex-wrap:wrap;margin:18px 0"></div><div id="eduList" class="content"></div><div id="eduDetail" class="content" style="display:none"></div></div></section>
 <section id="article" class="page"><div id="articleBrand"></div><div class="article-shell"><h1 id="articleTitle"></h1><div id="articleBody" class="content"></div></div></section>
 </main>
@@ -178,11 +178,18 @@ document.querySelectorAll('.reserveType').forEach(b=>b.addEventListener('click',
 reserveConfirm.addEventListener('click',()=>{if(!reserveKind||!reserveDate.value){reserveResult.textContent='예약 구분을 선택하세요.';return}if(reserveKind==='독립군'&&!independentTimes(reserveDate.value).includes(reserveTime.value)){reserveResult.textContent='독립군 지정 타임에서만 예약할 수 있습니다.';return}reserveResult.textContent=reserveDate.value+' · '+reserveTime.value+' · '+reserveKind+' '+reservePeople.value+'명 예약이 확정되었습니다.';});
 openEducationFromUrl();
 function openLoginChoice(){document.getElementById('loginChoice').style.display='flex'}
+async function withdrawMember(){
+  if(!confirm('회원탈퇴 시 회원정보가 삭제됩니다. 탈퇴하시겠습니까?'))return;
+  const r=await fetch('/api/member/withdraw',{method:'POST'}),j=await r.json();
+  if(!r.ok||!j.ok){alert(j.error||'회원탈퇴 처리에 실패했습니다.');return}
+  alert('회원탈퇴가 완료되었습니다.');location.href='/';
+}
 async function refreshLoginState(){
   try{
     const r=await fetch('/api/auth/me',{cache:'no-store'}),j=await r.json(),b=document.getElementById('loginButton');
     if(r.ok&&j.ok&&j.member){
       b.textContent=(j.member.name||'회원')+' · 로그아웃';
+      const box=document.getElementById('myAccountBox'),info=document.getElementById('myAccountInfo');if(box&&info){box.style.display='block';info.textContent=(j.member.name||'회원')+' · '+(j.member.provider==='kakao'?'카카오':j.member.provider==='naver'?'네이버':'간편')+' 로그인';}
       b.onclick=async()=>{await fetch('/api/auth/logout',{method:'POST'});location.reload()};
     }else{
       b.textContent='LOGIN';
