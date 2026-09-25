@@ -22,6 +22,9 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 
 
 .inner-brand-logo{font-size:0!important;letter-spacing:0!important}.inner-brand-logo img{display:block;width:min(300px,62vw);height:auto;margin:0 auto;object-fit:contain}.inner-brand{padding:34px 0 26px}.inner-subnav{gap:22px;padding-bottom:34px}.inner-subnav button{width:148px}.inner-subnav img{width:148px;height:96px;border-radius:10px}.inner-subnav span{margin-top:9px;font-size:16px;font-weight:500}@media(max-width:650px){.inner-brand-logo img{width:min(260px,70vw)}.inner-subnav{gap:14px;padding-left:16px;padding-right:16px}.inner-subnav button{flex:0 0 126px;width:126px}.inner-subnav img{width:126px;height:84px}}
+
+/* lower-category compact vertical rhythm */
+#article.page,#schedule.page,#waiver.page,#education.page{padding-top:10px}.inner-brand{padding-top:22px;padding-bottom:20px}.inner-subnav{padding-bottom:28px}
 </style>
 </head>
 <body>
@@ -91,6 +94,7 @@ function pageBrand(group){
 }
 function bindPageBrand(el,group){
  el.innerHTML=pageBrand(group);
+ applyWordmarks(el);
  el.querySelectorAll('button').forEach((b,i)=>b.onclick=menuGroups[group][i][2]);
 }
 function openContent(code,title){
