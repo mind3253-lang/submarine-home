@@ -34,6 +34,14 @@ export default {
       const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",data));
       return Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
     }
+    async function adminConfig(){
+      try{const o=await env.IMAGES.get("system/admin-auth.json");if(o)return JSON.parse(await o.text())}catch{}
+      return {salt:"admin-v1-7f3c91",passwordHash:"ac136f82691bae308ca324f77d77103bbcd0e5ae266088fd877a52de92a2b550"};
+    }
+    async function adminSessionValid(){
+      try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(!s.expiresAt||Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
+    }
+    async function requireAdmin(){return await adminSessionValid()?null:Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401})}
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
       try {
         const d=await request.json(),name=String(d.name||"").trim(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||""),licenses=Array.isArray(d.licenses)?d.licenses:[];
@@ -174,6 +182,7 @@ export default {
     }
 
     if (url.pathname === "/api/admin/members" && request.method === "GET") {
+      const denied=await requireAdmin(); if(denied)return denied;
       try {
         const o = await env.IMAGES.get("system/members.json");
         const members = o ? JSON.parse(await o.text()) : [];
@@ -238,10 +247,12 @@ export default {
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/waivers" && request.method === "GET") {
+      const denied=await requireAdmin(); if(denied)return denied;
       try { return Response.json({ok:true,waivers:await readWaivers()}); }
       catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/waivers/hold" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
       try {
         const data=await request.json(), rows=await readWaivers(), x=rows.find(v=>v.id===data.id);
         if(!x) return Response.json({ok:false,error:"약정서를 찾을 수 없습니다."},{status:404});
@@ -275,16 +286,20 @@ export default {
 
     if (url.pathname === "/api/admin-login" && request.method === "POST") {
       try {
-        const data = await request.json();
-        const configured = env.ADMIN_PASSWORD;
-        if (!configured) {
-          return Response.json({ ok: false, reason: "PASSWORD_NOT_CONFIGURED" }, { status: 503 });
-        }
-        const valid = data.id === "submarine" && String(data.password) === String(configured);
-        return Response.json({ ok: valid }, { status: valid ? 200 : 401 });
-      } catch {
-        return Response.json({ ok: false, reason: "BAD_REQUEST" }, { status: 400 });
-      }
+        const data=await request.json(),cfg=await adminConfig();
+        const valid=String(data.id||"")==="submarine" && await hashPassword(String(data.password||""),cfg.salt)===cfg.passwordHash;
+        if(!valid)return Response.json({ok:false},{status:401});
+        const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-",""),expiresAt=Date.now()+12*60*60*1000;
+        await env.IMAGES.put("system/admin-sessions/"+token+".json",JSON.stringify({expiresAt}),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200"}});
+      } catch { return Response.json({ok:false},{status:400}); }
+    }
+    if (url.pathname === "/api/admin-session" && request.method === "GET") {
+      return Response.json({ok:await adminSessionValid()},{status:await adminSessionValid()?200:401});
+    }
+    if (url.pathname === "/api/admin-logout" && request.method === "POST") {
+      const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\\s*)submarine_admin=([^;]+)/)||[])[1];if(token)try{await env.IMAGES.delete("system/admin-sessions/"+token+".json")}catch{}
+      return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
     }
 
     const response = await env.ASSETS.fetch(request);
