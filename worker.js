@@ -144,6 +144,8 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/instructor-accounting" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),settlements=Array.isArray(d.settlements)?d.settlements:[],closings=Array.isArray(d.closings)?d.closings:[];await Promise.all([env.IMAGES.put("system/instructor-settlements.json",JSON.stringify(settlements),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-closings.json",JSON.stringify(closings),{httpMetadata:{contentType:"application/json"}})]);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/instructor-accounting" && request.method === "GET") {const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});try{const [so,co]=await Promise.all([env.IMAGES.get("system/instructor-settlements.json"),env.IMAGES.get("system/instructor-closings.json")]),settlements=so?JSON.parse(await so.text()):[],closings=co?JSON.parse(await co.text()):[],no=String(member.memberNo||"");return Response.json({ok:true,settlements:settlements.filter(x=>String(x.memberNo||"")===no),closings:closings.filter(x=>String(x.memberNo||"")===no)})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
         const member=await sessionMember();
