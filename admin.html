@@ -141,7 +141,7 @@ function rewardRates(){return JSON.parse(localStorage.getItem('submarine_a3_rewa
 function instructorData(){try{return JSON.parse(localStorage.getItem('submarine_instructors_v1')||'[]')}catch(e){return []}}
 function saveInstructorData(a){localStorage.setItem('submarine_instructors_v1',JSON.stringify(a))}
 function instructorSettlements(){try{return JSON.parse(localStorage.getItem('submarine_instructor_settlements_v1')||'[]')}catch(e){return []}}
-function syncInstructorAccounting(){fetch('/api/admin/instructor-accounting',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({settlements:instructorSettlements(),closings:instructorClosings()})}).catch(()=>{})}function saveInstructorSettlements(a){localStorage.setItem('submarine_instructor_settlements_v1',JSON.stringify(a));syncInstructorAccounting()}
+function syncInstructorAccounting(){fetch('/api/admin/instructor-accounting',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:instructorData(),settlements:instructorSettlements(),closings:instructorClosings()})}).catch(()=>{})}function saveInstructorSettlements(a){localStorage.setItem('submarine_instructor_settlements_v1',JSON.stringify(a));syncInstructorAccounting()}
 function instructorClosings(){try{return JSON.parse(localStorage.getItem('submarine_instructor_closings_v1')||'[]')}catch(e){return []}}
 function saveInstructorClosings(a){localStorage.setItem('submarine_instructor_closings_v1',JSON.stringify(a));syncInstructorAccounting()}
 function monthKey(d){return (d||'').slice(0,7)}
