@@ -302,6 +302,13 @@ export default {
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    async function readEducationPosts(){try{const o=await env.IMAGES.get("system/education-posts.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
+    async function writeEducationPosts(rows){await env.IMAGES.put("system/education-posts.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
+    if (url.pathname === "/api/education-posts" && request.method === "GET") {const rows=(await readEducationPosts()).filter(x=>x.published!==false);return Response.json({ok:true,posts:rows})}
+    if (url.pathname === "/api/admin/education-posts" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,posts:await readEducationPosts()})}
+    if (url.pathname === "/api/admin/education-posts" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readEducationPosts(),id=String(d.id||crypto.randomUUID()),i=rows.findIndex(x=>String(x.id)===id),old=i>=0?rows[i]:{},post={...old,id,category:String(d.category||""),title:String(d.title||""),bodyHtml:String(d.bodyHtml||""),image:String(d.image||""),tags:Array.isArray(d.tags)?d.tags.map(String):[],published:d.published!==false,createdAt:old.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(i>=0)rows[i]=post;else rows.push(post);await writeEducationPosts(rows);return Response.json({ok:true,post})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/admin/education-posts/delete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=(await readEducationPosts()).filter(x=>String(x.id)!==String(d.id));await writeEducationPosts(rows);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
       try {
         const form = await request.formData();
