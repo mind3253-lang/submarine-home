@@ -349,6 +349,12 @@ export default {
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    async function readA3Products(){try{const o=await env.IMAGES.get("system/a3-products.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
+    async function writeA3Products(rows){await env.IMAGES.put("system/a3-products.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
+    if (url.pathname === "/api/a3-products" && request.method === "GET") {const rows=(await readA3Products()).filter(x=>x.published!==false&&x.title);return Response.json({ok:true,products:rows})}
+    if (url.pathname === "/api/admin/a3-products" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,products:await readA3Products()})}
+    if (url.pathname === "/api/admin/a3-products" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=Array.isArray(d.products)?d.products:[];const clean=rows.slice(0,20).map((x,i)=>({title:String(x.title||""),price:String(x.price||""),npay:Number(x.npay)||0,rate:Number(x.rate)||0,desc:String(x.desc||""),published:x.published!==false,image:String(x.image||"")}));await writeA3Products(clean);return Response.json({ok:true,products:clean})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+
     async function readEducationPosts(){try{const o=await env.IMAGES.get("system/education-posts.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writeEducationPosts(rows){await env.IMAGES.put("system/education-posts.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     if (url.pathname === "/api/education-posts" && request.method === "GET") {const rows=(await readEducationPosts()).filter(x=>x.published!==false);return Response.json({ok:true,posts:rows})}
