@@ -202,6 +202,7 @@ export default {
       const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
     }
     if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled").map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,status:x.status||"confirmed"}))})}
+    if (url.pathname === "/api/admin/reservations" && request.method === "GET") {if(!await adminSessionValid())return Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401});const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled")})}
     if (url.pathname === "/api/reservations" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",date:d.date,time:d.time,type:d.type,people,status:"confirmed",createdAt:new Date().toISOString()};rows.push(row);await writeReservations(rows);return Response.json({ok:true,reservation:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
