@@ -6,7 +6,7 @@ export default {
       const key = "system/members.json";
       let members = [];
       try { const o = await env.IMAGES.get(key); if (o) members = JSON.parse(await o.text()); } catch {}
-      const now = new Date().toISOString();
+      const now = new Date().toISOString();const banned=members.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&x.phone===member.phone)||(member.email&&x.email&&x.email.toLowerCase()===member.email.toLowerCase()));if(banned?.status==="expelled")throw new Error("강퇴된 회원입니다.");
       let i = members.findIndex(x => x.provider === member.provider && x.id === member.id);
       if (i < 0 && member.phone) i = members.findIndex(x => x.phone && x.phone === member.phone);
       if (i < 0 && member.email) i = members.findIndex(x => x.email && x.email.toLowerCase() === member.email.toLowerCase());
@@ -197,6 +197,7 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/member-expel" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),memberNo=String(d.memberNo||""),key="system/members.json";const o=await env.IMAGES.get(key),members=o?JSON.parse(await o.text()):[],i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});members[i].status="expelled";members[i].expelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     async function readReservations(){try{const o=await env.IMAGES.get("system/reservations.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     if (url.pathname === "/api/reservations" && request.method === "GET") {
