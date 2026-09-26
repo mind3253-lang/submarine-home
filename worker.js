@@ -186,6 +186,9 @@ export default {
       try{const d=await request.json(),assets={hero:String(d.hero||""),headerLogo:String(d.headerLogo||""),wordmark:String(d.wordmark||"")};await env.IMAGES.put("system/brand-assets.json",JSON.stringify(assets),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,assets})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    async function readSiteContent(){try{const o=await env.IMAGES.get("system/site-content.json");return o?JSON.parse(await o.text()):{}}catch{return {}}}
+    if (url.pathname === "/api/site-content" && request.method === "GET") {return Response.json({ok:true,content:await readSiteContent()})}
+    if (url.pathname === "/api/admin/site-content" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),content=d.content&&typeof d.content==="object"?d.content:{};await env.IMAGES.put("system/site-content.json",JSON.stringify(content),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/admin/members" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
       try {
