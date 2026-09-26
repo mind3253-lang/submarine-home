@@ -146,6 +146,27 @@ export default {
 
     if (url.pathname === "/api/admin/instructor-accounting" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),instructors=Array.isArray(d.instructors)?d.instructors:[],settlements=Array.isArray(d.settlements)?d.settlements:[],closings=Array.isArray(d.closings)?d.closings:[];await Promise.all([env.IMAGES.put("system/instructors.json",JSON.stringify(instructors),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-settlements.json",JSON.stringify(settlements),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-closings.json",JSON.stringify(closings),{httpMetadata:{contentType:"application/json"}})]);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/instructor-accounting" && request.method === "GET") {const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});try{const [io,so,co]=await Promise.all([env.IMAGES.get("system/instructors.json"),env.IMAGES.get("system/instructor-settlements.json"),env.IMAGES.get("system/instructor-closings.json")]),instructors=io?JSON.parse(await io.text()):[],settlements=so?JSON.parse(await so.text()):[],closings=co?JSON.parse(await co.text()):[],no=String(member.memberNo||""),inst=instructors.find(x=>String(x.memberNo||"")===no),iid=inst?String(inst.id):"";return Response.json({ok:true,isInstructor:!!inst,settlements:settlements.filter(x=>String(x.memberNo||"")===no||(iid&&String(x.instructorId)===iid)),closings:closings.filter(x=>String(x.memberNo||"")===no||(iid&&String(x.instructorId)===iid))})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/analytics/track" && request.method === "POST") {
+      try{
+        const d=await request.json(),now=new Date(),day=now.toISOString().slice(0,10),cf=request.cf||{},country=String(cf.country||""),region=String(cf.region||""),city=String(cf.city||""),ref=String(d.referrer||""),utm=String(d.utm_source||"").toLowerCase();
+        let source=utm||"직접접속";if(!utm&&ref){try{const h=new URL(ref).hostname.toLowerCase();source=h.includes("naver")?"네이버":h.includes("google")?"구글":h.includes("instagram")?"인스타그램":h.includes("youtube")||h.includes("youtu.be")?"유튜브":h.includes("kakao")?"카카오":h.includes("submarine.asia")?"내부이동":h}catch{}}
+        const raw=(request.headers.get("CF-Connecting-IP")||"")+"|"+(request.headers.get("User-Agent")||"")+"|"+day,hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(raw)))).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,24);
+        const key="analytics/"+day+".json";let rows=[];try{const o=await env.IMAGES.get(key);if(o)rows=JSON.parse(await o.text())}catch{}
+        rows.push({t:now.toISOString(),v:hash,sid:String(d.sid||""),page:String(d.page||"/"),source,region:region||country||"기타",city,country,event:String(d.event||"pageview")});
+        if(rows.length>20000)rows=rows.slice(-20000);await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false},{status:400})}
+    }
+    if (url.pathname === "/api/admin/analytics" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;const days=Math.min(90,Math.max(1,Number(url.searchParams.get("days"))||7)),all=[];
+      for(let n=0;n<days;n++){const d=new Date();d.setUTCDate(d.getUTCDate()-n);const day=d.toISOString().slice(0,10);try{const o=await env.IMAGES.get("analytics/"+day+".json");if(o)all.push(...JSON.parse(await o.text()))}catch{}}
+      const countBy=(key,filter)=>{const m={};for(const x of all){if(filter&&!filter(x))continue;const k=String(x[key]||"기타");m[k]=(m[k]||0)+1}return Object.entries(m).map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count)};
+      const visitors=new Set(all.map(x=>x.v).filter(Boolean)).size,sessions=new Set(all.map(x=>x.sid).filter(Boolean)).size,pageviews=all.filter(x=>x.event==="pageview").length;
+      let registrations=0,reservations=0;try{const o=await env.IMAGES.get("system/members.json"),ms=o?JSON.parse(await o.text()):[];const cutoff=Date.now()-days*86400000;registrations=ms.filter(x=>x.createdAt&&new Date(x.createdAt).getTime()>=cutoff).length}catch{}try{const o=await env.IMAGES.get("system/reservations.json"),rs=o?JSON.parse(await o.text()):[];const cutoff=Date.now()-days*86400000;reservations=rs.filter(x=>x.createdAt&&new Date(x.createdAt).getTime()>=cutoff&&x.status!=="cancelled").length}catch{}
+      const dm={};for(const x of all){const d=x.t.slice(0,10);if(!dm[d])dm[d]={date:d,views:0,vs:new Set()};dm[d].views++;dm[d].vs.add(x.v)}const daily=Object.values(dm).sort((a,b)=>a.date.localeCompare(b.date)).map(x=>({date:x.date,count:x.vs.size,pageviews:x.views}));
+      return Response.json({ok:true,summary:{visitors,sessions,pageviews,registrations,reservations},daily,sources:countBy("source",x=>x.source!=="내부이동"),regions:countBy("region"),pages:countBy("page")});
+    }
+
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
         const member=await sessionMember();
