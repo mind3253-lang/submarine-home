@@ -63,7 +63,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <section id="home" class="page active"><div class="hero"><div id="homeHeroPhoto" style="position:absolute;left:0;right:0;top:0;height:100%;background-size:cover;background-position:center 45%;background-repeat:no-repeat"></div><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.04) 28%,rgba(255,255,255,0) 55%);z-index:1"></div><div class="hero-copy"><h1>SUBMARINE</h1><p>DIVING POOL · 15M</p></div><div class="hero-marquee"><div class="hero-marquee-track">SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · </div></div></div></section>
 <section id="submarineMenu" class="page"><div class="wrap"><div class="visual-menu">
 <div class="visual-card" onclick="openContent('A-1','소개')"><img src="A-1.webp" alt="소개"><div class="visual-label"><strong>Introduction</strong><span>— 소개</span></div></div>
-<div class="visual-card" onclick="openContent('A-2','오시는 길')"><img src="A-2.webp" alt="오시는 길"><div class="visual-label"><strong>Location</strong><span>— 오시는 길</span></div></div>
+<div class="visual-card" onclick="openContent('A-2','다이빙 교육')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-09-27/393fd9ba-7f54-45f5-a90d-f6f6d2c871b5.png" alt="다이빙 교육"><div class="visual-label"><strong>Diving Education</strong><span>— 다이빙 교육</span></div></div>
 <div class="visual-card" onclick="openProducts()"><img src="A-3.webp" alt="이용권 · 교육상품"><div class="visual-label"><strong>Products</strong><span>— 이용권 · 교육상품</span></div></div>
 </div></div></section>
 <section id="products" class="page"><div class="wrap"><div id="productRows" class="content"></div></div></section>
@@ -101,7 +101,7 @@ function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 
 const menuGroups={
- A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['A-2.webp','오시는 길',()=>openContent('A-2','오시는 길')],['A-3.webp','이용권 · 교육상품',()=>openProducts()]],
+ A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-09-27/393fd9ba-7f54-45f5-a90d-f6f6d2c871b5.png','다이빙 교육',()=>openContent('A-2','다이빙 교육')],['A-3.webp','이용권 · 교육상품',()=>openProducts()]],
  B:[['B-1.webp','사용료',()=>openContent('B-1','사용료')],['B-3.webp','환불 규정',()=>openContent('B-2','환불 규정')]],
  C:[['C-1.webp','예약현황',()=>showSchedulePanel('status')],['C-2.webp','예약',()=>showSchedulePanel('reserve')]],
  D:[['D-1.webp','시설 약정서',()=>openWaiver('D-1','시설 약정서')],['D-2.webp','교육 약정서',()=>openWaiver('D-2','교육 약정서')]],
