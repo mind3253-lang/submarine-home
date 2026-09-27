@@ -171,7 +171,8 @@ async function openContent(code,title){
  navPush({view:'article',code,title},'content='+encodeURIComponent(code));
  let data={};try{const r=await fetch('/api/site-content',{cache:'no-store'}),j=await r.json();data=j.content||{}}catch(e){}
  show('article'); innerBrand(code.charAt(0));
- if(code==='A-2'){articleBody.innerHTML=renderA2Education();return;}\n if(code==='B-2'){articleBody.innerHTML=renderB2Facilities();return;}
+ if(code==='A-2'){articleBody.innerHTML=renderA2Education();return;}
+ if(code==='B-2'){articleBody.innerHTML=renderB2Facilities();return;}
  const item=data[code];
  if(!item){articleBody.innerHTML='<p>아직 작성된 내용이 없습니다. 관리자 페이지에서 '+code+' 콘텐츠를 작성하세요.</p>';return;}
  let html='';
