@@ -50,7 +50,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <body>
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer;width:205px;height:64px;display:flex;align-items:center"><img id="headerBrandLogo" alt="SUBMARINE" style="display:none;max-width:200px;max-height:58px;width:auto;height:auto;object-fit:contain"></div>
 <nav>
-<button onclick="openSubmarineMenu()">SUBMARINE</button><button onclick="show('guide')">GUIDE</button>
+<button onclick="openSubmarineMenu()">SUBMARINE</button><button onclick="openGuideMenu()">GUIDE</button>
 <button onclick="openScheduleMenu()">SCHEDULE</button><button onclick="openWaiverMenu()">AGREEMENT</button>
 <button onclick="openMemberMenu()">MY SUBMARINE</button>
 </nav>
@@ -64,7 +64,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <section id="submarineMenu" class="page"><div class="wrap"><div class="visual-menu">
 <div class="visual-card" onclick="openContent('A-1','소개')"><img src="A-1.webp" alt="소개"><div class="visual-label"><strong>Introduction</strong><span>— 소개</span></div></div>
 <div class="visual-card" onclick="openContent('A-2','오시는 길')"><img src="A-2.webp" alt="오시는 길"><div class="visual-label"><strong>Location</strong><span>— 오시는 길</span></div></div>
-<div class="visual-card" onclick="show('products')"><img src="A-3.webp" alt="이용권 · 교육상품"><div class="visual-label"><strong>Products</strong><span>— 이용권 · 교육상품</span></div></div>
+<div class="visual-card" onclick="openProducts()"><img src="A-3.webp" alt="이용권 · 교육상품"><div class="visual-label"><strong>Products</strong><span>— 이용권 · 교육상품</span></div></div>
 </div></div></section>
 <section id="products" class="page"><div class="wrap"><div id="productRows" class="content"></div></div></section>
 <section id="guide" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
@@ -90,13 +90,17 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div id="localAuthModal" style="display:none;position:fixed;inset:0;background:rgba(10,25,38,.58);z-index:3100;align-items:center;justify-content:center;padding:20px"><div style="position:relative;background:#fff;width:min(460px,100%);border-radius:18px;padding:28px"><button type="button" onclick="document.getElementById('localAuthModal').style.display='none'" style="position:absolute;right:16px;top:12px;border:0;background:transparent;font-size:28px;cursor:pointer">×</button><h2 id="localAuthTitle" style="margin:0 0 20px"></h2><div id="localNameWrap"><label>이름<input id="localName" style="display:block;width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ccd4da;border-radius:8px"></label></div><label>휴대폰번호<input id="localPhone" inputmode="tel" placeholder="01012345678" style="display:block;width:100%;padding:12px;margin:6px 0 14px;border:1px solid #ccd4da;border-radius:8px"></label><label>비밀번호<input id="localPassword" type="password" minlength="6" style="display:block;width:100%;padding:12px;margin:6px 0 18px;border:1px solid #ccd4da;border-radius:8px"></label><button id="localAuthSubmit" type="button" style="width:100%;padding:13px;border:0;border-radius:9px;background:#17212b;color:#fff;font-weight:700;cursor:pointer"></button></div></div><div id="licenseProfileModal" style="display:none;position:fixed;inset:0;background:rgba(10,25,38,.58);z-index:3200;align-items:center;justify-content:center;padding:20px"><div style="position:relative;background:#fff;width:min(900px,100%);max-height:90vh;overflow:auto;border-radius:18px;padding:30px"><button type="button" onclick="closeLicenseProfile()" aria-label="닫기" style="position:absolute;right:18px;top:16px;border:0;background:transparent;font-size:28px;cursor:pointer">×</button><h2 style="margin:0 0 8px">자격증 정보 등록</h2><p style="color:#66727a;margin-bottom:8px">종목별 보유 레벨을 하나씩 선택해 주세요. <strong>종목은 중복선택 가능합니다.</strong></p><p style="color:#66727a;margin-top:0">보유 자격을 선택하면 같은 박스에서 라이선스 이미지를 첨부할 수 있습니다.</p><div id="licenseChecklist"></div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:22px"><button type="button" onclick="closeLicenseProfile()" style="padding:12px 18px;border:1px solid #ccd4da;border-radius:9px;background:#fff;cursor:pointer">취소</button><button type="button" onclick="saveLicenseProfile()" style="padding:12px 22px;border:0;border-radius:9px;background:#17212b;color:#fff;font-weight:700;cursor:pointer">완료</button></div></div></div>
 </main>
 <script>
-function goHome(){show('home');history.replaceState(null,'',location.pathname);}
-function openSubmarineMenu(){show('submarineMenu');}
-function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style.display='none';const vm=document.querySelector('#member .visual-menu');if(vm)vm.style.display='grid';}
+let restoringNav=false;
+function navPush(state,query){if(restoringNav)return;history.pushState(state,'',location.pathname+(query?'?'+query:''))}
+function goHome(){show('home');if(!restoringNav)history.pushState({view:'home'},'',location.pathname);}
+function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'},'view=submarine');}
+function openGuideMenu(){show('guide');navPush({view:'guide'},'view=guide');}
+function openProducts(){show('products');navPush({view:'products'},'view=products');}
+function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style.display='none';const vm=document.querySelector('#member .visual-menu');if(vm)vm.style.display='grid';navPush({view:'member'},'view=member');}
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');if(id!=='education'&&new URLSearchParams(location.search).has('edu'))history.replaceState(null,'',location.pathname);scrollTo(0,0)}
 
 const menuGroups={
- A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['A-2.webp','오시는 길',()=>openContent('A-2','오시는 길')],['A-3.webp','이용권 · 교육상품',()=>show('products')]],
+ A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['A-2.webp','오시는 길',()=>openContent('A-2','오시는 길')],['A-3.webp','이용권 · 교육상품',()=>openProducts()]],
  B:[['B-1.webp','사용료',()=>openContent('B-1','사용료')],['B-3.webp','환불 규정',()=>openContent('B-2','환불 규정')]],
  C:[['C-1.webp','예약현황',()=>showSchedulePanel('status')],['C-2.webp','예약',()=>showSchedulePanel('reserve')]],
  D:[['D-1.webp','시설 약정서',()=>openWaiver('D-1','시설 약정서')],['D-2.webp','교육 약정서',()=>openWaiver('D-2','교육 약정서')]],
