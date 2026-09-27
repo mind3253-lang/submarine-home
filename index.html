@@ -91,13 +91,14 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 </main>
 <script>
 let restoringNav=false;
-function navPush(state,query){if(restoringNav)return;history.pushState(state,'',location.pathname+(query?'?'+query:''))}
-function goHome(){show('home');if(!restoringNav)history.pushState({view:'home'},'',location.pathname);}
+(function seedSiteHistory(){if(!history.state||!history.state.submarine){history.replaceState({view:'home',submarine:true},'',location.pathname);history.pushState({view:'home',submarine:true},'',location.pathname)}})();
+function navPush(state,query){if(restoringNav)return;state.submarine=true;history.pushState(state,'',location.pathname+(query?'?'+query:''))}
+function goHome(){show('home');navPush({view:'home'},'');}
 function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'},'view=submarine');}
 function openGuideMenu(){show('guide');navPush({view:'guide'},'view=guide');}
 function openProducts(){show('products');navPush({view:'products'},'view=products');}
 function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style.display='none';const vm=document.querySelector('#member .visual-menu');if(vm)vm.style.display='grid';navPush({view:'member'},'view=member');}
-function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');if(id!=='education'&&new URLSearchParams(location.search).has('edu'))history.replaceState(null,'',location.pathname);scrollTo(0,0)}
+function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 
 const menuGroups={
  A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['A-2.webp','오시는 길',()=>openContent('A-2','오시는 길')],['A-3.webp','이용권 · 교육상품',()=>openProducts()]],
