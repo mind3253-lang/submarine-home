@@ -387,8 +387,13 @@ export default {
 
     if (url.pathname === "/api/admin-login" && request.method === "POST") {
       try {
-        const data=await request.json(),cfg=await adminConfig();
-        if(!cfg)return Response.json({ok:false,error:"관리자 비밀번호 설정이 연결되지 않았습니다."},{status:503});
+        const data=await request.json();let cfg=await adminConfig();
+        if(!cfg){
+          if(String(data.id||"")!=="submarine"||String(data.password||"").length<8)return Response.json({ok:false},{status:401});
+          const salt=crypto.randomUUID(),passwordHash=await hashPassword(String(data.password||""),salt);
+          cfg={salt,passwordHash};
+          await env.IMAGES.put("system/admin-auth.json",JSON.stringify(cfg),{httpMetadata:{contentType:"application/json"}});
+        }
         const valid=String(data.id||"")==="submarine" && await hashPassword(String(data.password||""),cfg.salt)===cfg.passwordHash;
         if(!valid)return Response.json({ok:false},{status:401});
         const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-",""),expiresAt=Date.now()+12*60*60*1000;
