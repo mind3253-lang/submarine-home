@@ -35,8 +35,8 @@ export default {
       return Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
     }
     async function adminConfig(){
-      try{const o=await env.IMAGES.get("system/admin-auth.json");if(o)return JSON.parse(await o.text())}catch{}
-      return {salt:"admin-v1-7f3c91",passwordHash:"ac136f82691bae308ca324f77d77103bbcd0e5ae266088fd877a52de92a2b550"};
+      try{const o=await env.IMAGES.get("system/admin-auth.json");if(o){const cfg=JSON.parse(await o.text());if(cfg?.salt&&cfg?.passwordHash)return cfg}}catch{}
+      return null;
     }
     async function adminSessionValid(){
       try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(!s.expiresAt||Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
@@ -282,11 +282,8 @@ export default {
 
     if (url.pathname === "/api/member/withdraw" && request.method === "POST") {
       try {
-        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\s*)submarine_session=([^;]+)/)||[])[1];
-        if(!raw) return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
-        const [payload]=raw.split(".");
-        const pp=payload.replaceAll("-","+").replaceAll("_","/")+"=".repeat((4-payload.length%4)%4);
-        const member=JSON.parse(decodeURIComponent(escape(atob(pp))));
+        const member=await sessionMember();
+        if(!member) return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
         const key="system/members.json"; let members=[];
         try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
         members=members.filter(x=>!(x.providers||[x.provider]).includes(member.provider)||x.id!==member.id);
@@ -365,6 +362,7 @@ export default {
     if (url.pathname === "/api/admin/education-posts/delete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=(await readEducationPosts()).filter(x=>String(x.id)!==String(d.id));await writeEducationPosts(rows);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
       try {
         const form = await request.formData();
         const file = form.get("file");
@@ -390,6 +388,7 @@ export default {
     if (url.pathname === "/api/admin-login" && request.method === "POST") {
       try {
         const data=await request.json(),cfg=await adminConfig();
+        if(!cfg)return Response.json({ok:false,error:"관리자 비밀번호 설정이 연결되지 않았습니다."},{status:503});
         const valid=String(data.id||"")==="submarine" && await hashPassword(String(data.password||""),cfg.salt)===cfg.passwordHash;
         if(!valid)return Response.json({ok:false},{status:401});
         const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-",""),expiresAt=Date.now()+12*60*60*1000;
