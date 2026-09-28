@@ -207,7 +207,22 @@ function renderD1Agreement(){return `<article style="max-width:860px;margin:0 au
 <li>위험에 처한 다이버를 발견하면 즉각 구조에 동참해야 한다.</li>
 <li>반드시 강사 또는 버디와 다이빙한다.</li>
 <li>수중에서 당신의 안전에 영향을 줄 수 있는 병력이 있는 사람은 출입을 금하고, 이를 알리지 않고 입장 시 모든 책임은 본인에게 있다.</li></ol>
-<div style="margin-top:28px;padding:20px 22px;background:#f4f7f9;border-left:4px solid #173c59;font-weight:700;line-height:1.8">위 사항에 모두 동의하며, 안전사고 발생 시 서브마린다이빙풀에 민·형사상의 책임을 묻지 않을 것을 확약한다.</div></section></article>`}
+</section>
+<section style="padding:30px 0;border-top:1px solid #dfe6ea"><h2 style="font-size:20px;margin:0 0 10px;color:#173c59">의료 관련 확인사항</h2>
+<p style="line-height:1.85;margin:0 0 22px;color:#425563">아래 항목에 해당하는 현재 또는 과거의 병력이 있는 경우 다이빙 전 반드시 이를 알려야 하며, 안전한 다이빙을 위해 의사의 확인 또는 진단을 요구할 수 있습니다. 관련 사실을 알리지 않고 다이빙에 참여하여 발생하는 위험에 대해서는 본인이 책임을 부담합니다.</p>
+<ol style="margin:0;padding-left:24px;line-height:1.85">
+<li><strong>약물</strong> — 정기적으로 복용하는 일반의약품 또는 의사 처방 의약품이 있는 경우</li>
+<li><strong>정신·감정 상태</strong> — 현재의 정신 장애나 기분 장애 또는 이에 해당하는 병력이 있는 경우</li>
+<li><strong>신경 상태</strong> — 발작장애, 뇌졸중, 뇌수술, 반복적인 의식 상실 또는 졸도, 심한 편두통, 뇌혈관 동맥류 등의 병력이 있는 경우</li>
+<li><strong>심장·혈관 상태</strong> — 심장마비, 심장수술, 불규칙한 심장박동, 심박조율기, 조절되지 않는 고혈압 등의 병력이 있는 경우</li>
+<li><strong>폐 상태</strong> — 천식, 자연기흉 또는 외상성 기흉, 폐의 낭종이나 기포, 폐 조직 손상, 폐기종 또는 호흡을 방해하는 폐 질환의 병력이 있는 경우</li>
+<li><strong>귀·코·목 상태</strong> — 부비강·비강 질환, 만성 부비강염, 고막 천공·파열, 청력 손실 또는 귀와 관련된 수술 등의 병력이 있는 경우</li>
+<li><strong>눈 상태</strong> — 심한 근시, 망막박리, 눈 수술 등의 병력이 있는 경우</li>
+<li><strong>당뇨병</strong> — 인슐린 또는 약물 치료가 필요한 당뇨병, 저혈당·고혈당 증상 또는 관련 합병증이 있는 경우</li>
+<li><strong>프리다이빙·스쿠버다이빙 이력</strong> — 이전 다이빙 사고, 심각한 의식 상실, 감압병, 내이 감압, 역폐색, 폐압착 또는 폐출혈 등의 병력이 있는 경우</li>
+<li><strong>일반 의료적 문제</strong> — 수중 환경에서 안전 또는 판단에 영향을 줄 수 있는 기타 신체적·정신적 상태가 있는 경우</li>
+<li><strong>임신</strong> — 현재 임신 중인 경우</li>
+</ol></section></article>`}
 
 async function openWaiver(code,title){navPush({view:'waiver',code,title},'waiver='+encodeURIComponent(code));show('waiver');bindPageBrand(waiverBrand,'D');activeWaiverCode=code;const wm=document.getElementById('waiverMenu'),wd=document.getElementById('waiverDetail');wm.style.display='none';wd.style.display='block';waiverForm.style.display='block';waiverAgree.checked=false;waiverLessonDate.value='';waiverDateButton.textContent='날짜를 선택하세요';waiverDateButton.classList.remove('has-date');waiverDatePicker.classList.remove('open');waiverPickerMonth=new Date();waiverLessonTime.value='';const lf=document.getElementById('waiverLevelField'),ls=document.getElementById('waiverEducationLevel');if(lf)lf.style.display=code==='D-2'?'block':'none';if(ls)ls.value='';waiverResult.textContent='';clearWaiverSign();let d={};try{const r=await fetch('/api/site-content',{cache:'no-store'}),j=await r.json();d=j.content||{}}catch(e){}if(code==='D-1'){waiverBody.innerHTML=renderD1Agreement();return}const item=d[code];if(!item){waiverBody.innerHTML='<p>아직 등록된 약정서가 없습니다.</p>';return}let h='';if(item.images&&item.images.length){h+='<div style="display:grid;gap:18px">';item.images.forEach(src=>h+='<img src="'+src+'" style="width:100%;max-height:none;object-fit:contain">');h+='</div>'}if(item.body)h+='<div style="white-space:pre-wrap;line-height:1.9;margin-top:20px">'+item.body+'</div>';waiverBody.innerHTML=h||'<p>등록된 내용이 없습니다.</p>';}
 function waiverCtx(){return document.getElementById('waiverSign').getContext('2d')}
