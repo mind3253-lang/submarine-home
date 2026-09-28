@@ -47,7 +47,7 @@ h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}button,select,input,textar
 
 </main></div>
 <script>
-async function adminLogin(){const e=document.getElementById('adminLoginError');e.textContent='';try{const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('adminId').value.trim(),password:document.getElementById('adminPassword').value})});if(!r.ok){e.textContent='관리자 ID 또는 비밀번호를 확인하세요.';return}document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';drawTestMembers()}catch(x){e.textContent='관리자 로그인에 실패했습니다.'}}
+async function adminLogin(){const e=document.getElementById('adminLoginError');e.textContent='';try{const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('adminId').value.trim(),password:document.getElementById('adminPassword').value})});if(!r.ok){let j={};try{j=await r.json()}catch{}e.textContent=j.error||('관리자 ID 또는 비밀번호를 확인하세요. ('+r.status+')');return}document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';drawTestMembers()}catch(x){e.textContent='관리자 로그인에 실패했습니다: '+(x?.message||x)}}
 (async()=>{try{const r=await fetch('/api/admin-session',{cache:'no-store'});if(r.ok){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block'}else{document.getElementById('loginGate').style.display='flex';document.getElementById('adminApp').style.display='none'}}catch{}})();
 document.getElementById('adminPassword').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
 
