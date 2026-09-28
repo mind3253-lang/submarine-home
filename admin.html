@@ -113,7 +113,7 @@ const slot=document.getElementById('slot'), body=document.getElementById('body')
 let currentImages=[];
 inp.onchange=async function(){const files=[...inp.files];inp.disabled=true;try{for(const f of files){try{currentImages.push(await uploadImageFile(f));draw()}catch(e){alert(f.name+' · '+e.message)}}}finally{inp.value='';inp.disabled=false}};
 const menus={
- A:[['A-1','A-1 소개'],['A-3','A-3 교육상품']],
+ A:[['A-3','A-3 교육상품']],
  B:[['B-1','B-1 사용료']],
  C:[['C-1','C-1 예약현황'],['C-2','C-2 예약']],
  E:[['E-2','교육자료실']],
