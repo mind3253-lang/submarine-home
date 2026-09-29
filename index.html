@@ -109,7 +109,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
  .mobile-menu{display:none;background:#fff;border-top:1px solid #edf0f2;border-bottom:1px solid #dfe5e9;padding:8px 16px 12px;box-shadow:0 8px 18px rgba(20,40,55,.08)}
  .mobile-menu.open{display:grid;grid-template-columns:1fr 1fr}
  .mobile-menu button{border:0;background:#fff;text-align:left;padding:13px 10px;color:#1769aa;font-size:14px;font-weight:700}
- .mobile-menu button:last-child{grid-column:1/-1}
+ .mobile-menu .shortcut-add{color:#6d20e8!important;font-weight:700}
 }
 
 
@@ -165,7 +165,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <button onclick="openScheduleMenu();closeMobileMenu()">SCHEDULE</button>
 <button onclick="openWaiverMenu();closeMobileMenu()">AGREEMENT</button>
 <button onclick="openMemberMenu();closeMobileMenu()">MY SUBMARINE</button>
-<button type="button" onclick="installSubmarine();closeMobileMenu()">📱 휴대폰에 서브마린 추가</button>
+<button type="button" class="shortcut-add" onclick="installSubmarine();closeMobileMenu()">바로가기 추가</button>
 </div></header>
 <div id="homeNoticePopup" class="home-notice-popup"><div id="homeNoticeTitle" class="home-notice-title"></div><div id="homeNoticeBody" class="home-notice-body"><img id="homeNoticeImage" alt=""></div><div class="home-notice-footer"><button type="button" onclick="hideHomePopupToday()">오늘 하루 안보기</button><button type="button" onclick="closeHomePopup()">닫기 <span class="close-x">×</span></button></div></div>
 <div id="loginChoice" style="display:none;position:fixed;inset:0;background:rgba(10,25,38,.55);z-index:2000;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'"><div style="background:#fff;border-radius:18px;padding:28px;width:min(360px,calc(100% - 30px));box-shadow:0 24px 70px rgba(16,35,50,.24)"><h3 style="margin:0 0 18px">간편 로그인</h3><button onclick="location.href='/api/auth/naver'" style="display:none;width:100%;padding:14px;border:0;border-radius:10px;background:#03c75a;color:#fff;font-weight:700;cursor:pointer">네이버로 로그인</button><button onclick="location.href='/api/auth/kakao'" style="display:none;width:100%;padding:14px;border:0;border-radius:10px;background:#fee500;color:#191919;font-weight:700;cursor:pointer;margin-top:10px">카카오로 로그인</button><div style="margin:18px 0;border-top:1px solid #e3e7ea"></div><button onclick="openLocalAuth('login')" style="width:100%;padding:13px;border:1px solid #bfc8ce;border-radius:10px;background:#fff;color:#17212b;font-weight:700;cursor:pointer">일반 로그인</button><button onclick="openLocalAuth('register')" style="width:100%;padding:13px;border:0;border-radius:10px;background:#17212b;color:#fff;font-weight:700;cursor:pointer;margin-top:9px">회원가입</button></div></div>
