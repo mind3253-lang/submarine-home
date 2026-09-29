@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760"><rect width="1200" height="760" fill="white"/><g stroke="white" stroke-width="7" stroke-linejoin="round">
+<path fill="#61c3ef" d="M35 120L155 35 310 55 355 145 300 245 120 250 45 195Z"/>
+<path fill="#708fe8" d="M285 45L505 18 650 70 635 180 545 245 350 210 310 125Z"/>
+<path fill="#61b4e8" d="M35 285L120 245 300 255 345 355 275 440 90 420 35 350Z"/>
+<path fill="#2687e4" d="M300 245L470 230 555 285 520 405 380 430 300 365Z"/>
+<path fill="#ffe28a" d="M545 180L680 150 760 215 730 315 610 330 530 270Z"/>
+<path fill="#91dd98" d="M735 125L930 95 1060 160 1050 320 925 355 750 305 720 220Z"/>
+<path fill="#f5a8b8" d="M700 305L800 290 865 360 830 445 735 465 675 390Z"/>
+<path fill="#bc8ee6" d="M500 330L680 315 740 410 690 535 545 545 455 455Z"/>
+<path fill="#69b9eb" d="M825 350L1040 325 1140 410 1100 555 930 590 815 505Z"/>
+<path fill="#61b7e8" d="M120 430L330 420 480 465 455 610 300 675 135 620 80 520Z"/>
+<path fill="#ffd966" d="M470 525L575 520 620 600 560 660 465 625Z"/>
+<path fill="#ffb36f" d="M610 530L720 520 780 600 710 675 605 645Z"/></g>
+<g font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800" fill="#08204f" text-anchor="middle" font-size="30">
+<text x="190" y="150">김포시</text><text x="470" y="125">고양시</text><text x="180" y="340">인천시</text><text x="420" y="330">부천시</text>
+<text x="640" y="245">서북권</text><text x="895" y="225">동북권</text><text x="770" y="385">도심권</text><text x="595" y="430">서남권</text><text x="970" y="455">동남권</text><text x="280" y="535">시흥시</text></g>
+<g stroke="#08204f" stroke-width="3"><line x1="535" y1="595" x2="500" y2="705"/><line x1="680" y1="600" x2="735" y2="705"/></g>
+<g font-family="Arial,'Noto Sans KR',sans-serif" font-weight="800" fill="#08204f" text-anchor="middle" font-size="27">
+<rect x="405" y="680" width="190" height="65" rx="16" fill="white" stroke="#f0c743" stroke-width="3"/><text x="500" y="722">광명시</text>
+<rect x="650" y="680" width="190" height="65" rx="16" fill="white" stroke="#f4a55d" stroke-width="3"/><text x="745" y="722">안양시</text>
+<rect x="965" y="25" width="205" height="80" rx="16" fill="#f7f9fc" stroke="#d4dce7" stroke-width="3"/><text x="1068" y="73">그 외 지역</text></g></svg>
