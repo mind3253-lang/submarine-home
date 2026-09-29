@@ -170,6 +170,27 @@ export default {
     if(url.pathname==="/api/analytics/track"&&request.method==="POST"){try{const d=await request.json(),now=new Date(),day=now.toISOString().slice(0,10),cf=request.cf||{},ref=String(d.referrer||""),utm=String(d.utm_source||"").toLowerCase();let source=utm||"직접접속";if(!utm&&ref){try{const h=new URL(ref).hostname.toLowerCase();source=h.includes("naver")?"네이버":h.includes("google")?"구글":h.includes("instagram")?"인스타그램":h.includes("youtube")?"유튜브":h.includes("kakao")?"카카오":h.includes("submarine.asia")?"내부이동":h}catch{}}const key="analytics/"+day+".json";let rows=[];try{const o=await env.IMAGES.get(key);if(o)rows=JSON.parse(await o.text())}catch{}rows.push({t:now.toISOString(),visitor:String(d.visitor||""),sid:String(d.sid||""),page:String(d.page||"/"),source,region:String(cf.region||cf.country||"기타"),city:String(cf.city||""),country:String(cf.country||""),event:"pageview"});await env.IMAGES.put(key,JSON.stringify(rows.slice(-20000)),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch{return Response.json({ok:false},{status:400})}}
     if(url.pathname==="/api/admin/analytics"&&request.method==="GET"){const denied=await requireAdmin();if(denied)return denied;const days=Math.min(90,Math.max(1,Number(url.searchParams.get("days"))||7)),all=[];for(let n=0;n<days;n++){const d=new Date();d.setUTCDate(d.getUTCDate()-n);const day=d.toISOString().slice(0,10);try{const o=await env.IMAGES.get("analytics/"+day+".json");if(o)all.push(...JSON.parse(await o.text()))}catch{}}const cb=(key,filter)=>{const z={};for(const x of all){if(filter&&!filter(x))continue;const k=String(x[key]||"기타");z[k]=(z[k]||0)+1}return Object.entries(z).map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count)};const visitors=new Set(all.map(x=>x.visitor).filter(Boolean)).size,sessions=new Set(all.map(x=>x.sid).filter(Boolean)).size,pageviews=all.length,dm={};for(const x of all){const d=x.t.slice(0,10);if(!dm[d])dm[d]=new Set();dm[d].add(x.visitor)}const daily=Object.entries(dm).sort().map(([date,v])=>({date,count:v.size}));let registrations=0,reservations=0,cut=Date.now()-days*86400000;try{const o=await env.IMAGES.get("system/members.json"),x=o?JSON.parse(await o.text()):[];registrations=x.filter(v=>v.createdAt&&new Date(v.createdAt).getTime()>=cut).length}catch{}try{const o=await env.IMAGES.get("system/reservations.json"),x=o?JSON.parse(await o.text()):[];reservations=x.filter(v=>v.createdAt&&new Date(v.createdAt).getTime()>=cut&&v.status!=="cancelled").length}catch{}return Response.json({ok:true,summary:{visitors,sessions,pageviews,registrations,reservations},daily,sources:cb("source",x=>x.source!=="내부이동"),regions:cb("region"),cities:cb("city",x=>!!x.city),pages:cb("page")})}
 
+    if (url.pathname === "/api/admin/naver-keywords" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const secret=String(env.NAVER_AD_SECRET_KEY||"").trim();
+        if(!secret) return Response.json({ok:false,error:"NAVER_AD_SECRET_KEY 환경변수가 없습니다."},{status:503});
+        const hint=String(url.searchParams.get("q")||"프리다이빙").trim().slice(0,100);
+        if(!hint) return Response.json({ok:false,error:"검색어를 입력해 주세요."},{status:400});
+        const uri="/keywordstool",method="GET",timestamp=Date.now().toString();
+        const msg=timestamp+"."+method+"."+uri;
+        const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+        const sigBytes=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(msg)));
+        const signature=btoa(String.fromCharCode(...sigBytes));
+        const apiUrl="https://api.searchad.naver.com"+uri+"?hintKeywords="+encodeURIComponent(hint)+"&showDetail=1";
+        const nr=await fetch(apiUrl,{headers:{"Content-Type":"application/json; charset=UTF-8","X-Timestamp":timestamp,"X-API-KEY":"0100000000d845c1eb8416c6305eaec3188fb8d0b2105ee185fb05862b9af7f683d7dcb853","X-Customer":"4435245","X-Signature":signature}});
+        const raw=await nr.text();let data;try{data=JSON.parse(raw)}catch{data={message:raw}}
+        if(!nr.ok) return Response.json({ok:false,error:data.detail||data.message||("네이버 API 오류 "+nr.status),status:nr.status},{status:502});
+        const rows=Array.isArray(data.keywordList)?data.keywordList:[];
+        return Response.json({ok:true,query:hint,keywords:rows.map(x=>({keyword:x.relKeyword||"",pc:x.monthlyPcQcCnt??0,mobile:x.monthlyMobileQcCnt??0,pcClick:x.monthlyAvePcClkCnt??0,mobileClick:x.monthlyAveMobileClkCnt??0,pcCtr:x.monthlyAvePcCtr??0,mobileCtr:x.monthlyAveMobileCtr??0,competition:x.compIdx||"",adDepth:x.plAvgDepth??0}))});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
         const member=await sessionMember();
