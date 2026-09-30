@@ -401,6 +401,17 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin-password" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
+      try{
+        const data=await request.json(),password=String(data.password||"");
+        if(password.length<8)return Response.json({ok:false,error:"비밀번호는 8자 이상 입력해 주세요."},{status:400});
+        const salt=crypto.randomUUID(),passwordHash=await hashPassword(password,salt);
+        await env.IMAGES.put("system/admin-auth.json",JSON.stringify({salt,passwordHash}),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:"비밀번호 변경에 실패했습니다."},{status:500})}
+    }
+
     if (url.pathname === "/api/admin-login" && request.method === "POST") {
       try {
         const data=await request.json();let cfg=await adminConfig();
