@@ -393,8 +393,8 @@ let changed=false;for(const s of seeds){if(!rows.some(x=>x.title===s.title)){row
         if (!file || typeof file === "string") {
           return Response.json({ ok: false, error: "이미지 파일이 없습니다." }, { status: 400 });
         }
-        if (file.size > 2621440) {
-          return Response.json({ ok: false, error: "파일당 최대 2.5MB까지 업로드할 수 있습니다." }, { status: 413 });
+        if (file.size > 3145728) {
+          return Response.json({ ok: false, error: "파일당 최대 3MB까지 업로드할 수 있습니다." }, { status: 413 });
         }
         if (!file.type || !file.type.startsWith("image/")) {
           return Response.json({ ok: false, error: "이미지 파일만 업로드할 수 있습니다." }, { status: 415 });
