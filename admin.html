@@ -22,6 +22,7 @@ h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}button,select,input,textar
 </style></head><body>
 <div id="loginGate" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px"><div id="loginBox"><h2>ADMIN</h2><p class="note">관리자 계정으로 로그인하세요.</p><label>관리자 ID<input id="adminId" autocomplete="username"></label><label>비밀번호<input id="adminPassword" type="password" autocomplete="current-password"></label><button class="btn primary" style="width:100%" onclick="adminLogin()">관리자 로그인</button><div id="adminLoginError" class="error"></div></div></div><div id="adminApp" style="display:none">
 <header><a href="index.html" style="color:#fff;text-decoration:none;cursor:pointer">SUBMARINE</a><span style="margin-left:10px">· 관리자 페이지</span></header><main>
+<div class="box" style="display:flex;justify-content:flex-end"><button class="btn" type="button" onclick="changeAdminPassword()">관리자 비밀번호 변경</button></div>
 <div class="box"><h2>콘텐츠 관리</h2>
 <div class="cats">
 <button class="cat active" data-cat="A" onclick="setCat('A',this)">A · SUBMARINE</button>
@@ -61,6 +62,7 @@ h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}button,select,input,textar
 
 </main></div>
 <script>
+async function changeAdminPassword(){const password=prompt('새 관리자 비밀번호를 입력하세요. (8자 이상)');if(password===null)return;if(password.length<8){alert('비밀번호는 8자 이상 입력해 주세요.');return}const confirmPassword=prompt('새 비밀번호를 한 번 더 입력하세요.');if(confirmPassword===null)return;if(password!==confirmPassword){alert('비밀번호가 일치하지 않습니다.');return}try{const r=await fetch('/api/admin-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password})}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'변경 실패');alert('관리자 비밀번호를 변경했습니다. 크롬에서도 새 비밀번호로 로그인하세요.')}catch(e){alert(e.message||'비밀번호 변경에 실패했습니다.')}}
 async function adminLogin(){const e=document.getElementById('adminLoginError');e.textContent='';try{const r=await fetch('/api/admin-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:document.getElementById('adminId').value.trim(),password:document.getElementById('adminPassword').value})});if(!r.ok){let j={};try{j=await r.json()}catch{}e.textContent=j.error||('관리자 ID 또는 비밀번호를 확인하세요. ('+r.status+')');return}document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block';drawTestMembers()}catch(x){e.textContent='관리자 로그인에 실패했습니다: '+(x?.message||x)}}
 (async()=>{try{const r=await fetch('/api/admin-session',{cache:'no-store'});if(r.ok){document.getElementById('loginGate').style.display='none';document.getElementById('adminApp').style.display='block'}else{document.getElementById('loginGate').style.display='flex';document.getElementById('adminApp').style.display='none'}}catch{}})();
 document.getElementById('adminPassword').addEventListener('keydown',e=>{if(e.key==='Enter')adminLogin()});
