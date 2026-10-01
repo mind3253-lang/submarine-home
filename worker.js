@@ -348,6 +348,16 @@ export default {
         return Response.json({ok:true,id:row.id});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
+    if (url.pathname === "/api/instructor-waivers" && request.method === "GET") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{
+        const io=await env.IMAGES.get("system/instructors.json"),instructors=io?JSON.parse(await io.text()):[],no=String(member.memberNo||""),inst=instructors.find(x=>String(x.memberNo||"")===no);
+        if(!inst)return Response.json({ok:true,isInstructor:false,waivers:[]});
+        const name=String(inst.name||"").trim(),rows=await readWaivers();
+        const waivers=rows.filter(x=>x.waiverCode==="D-2"&&((x.instructorMemberNo&&String(x.instructorMemberNo)===no)||(!x.instructorMemberNo&&name&&String(x.instructorName||"").trim()===name))).sort((a,b)=>String(b.lessonDate||"").localeCompare(String(a.lessonDate||"")));
+        return Response.json({ok:true,isInstructor:true,waivers});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/admin/waivers" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
       try { return Response.json({ok:true,waivers:await readWaivers()}); }
