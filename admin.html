@@ -31,8 +31,8 @@ h1{font-size:30px}h2{font-size:24px}h3{font-size:19px}button,select,input,textar
 <button class="cat" data-cat="D" onclick="setCat('D',this)">D · AGREEMENT</button>
 <button class="cat" data-cat="E" onclick="setCat('E',this)">E · MY SUBMARINE</button>
 <div style="flex-basis:100%;height:0"></div>
-<button class="cat" data-cat="F" onclick="openAdminFG('F',this);return false">F · 강사정산</button>
-<button class="cat" data-cat="G" onclick="openAdminFG('G',this);return false">G · 회원 DB</button>
+<a class="cat" data-cat="F" href="#instructorBox" style="text-decoration:none;color:inherit" onclick="document.getElementById('instructorBox').style.setProperty('display','block','important');document.getElementById('memberDbBox').style.setProperty('display','none','important');document.getElementById('contentEditor').style.setProperty('display','none','important');return true">F · 강사정산</a>
+<a class="cat" data-cat="G" href="#memberDbBox" style="text-decoration:none;color:inherit" onclick="document.getElementById('memberDbBox').style.setProperty('display','block','important');document.getElementById('instructorBox').style.setProperty('display','none','important');document.getElementById('contentEditor').style.setProperty('display','none','important');return true">G · 회원 DB</a>
 <button class="cat" data-cat="H" onclick="setCat('H',this)">H · 약정서</button>
 <button class="cat" data-cat="I" onclick="setCat('I',this)">I · 메인화면</button>
 <button class="cat" data-cat="J" onclick="setCat('J',this)">J · 팝업창</button>
