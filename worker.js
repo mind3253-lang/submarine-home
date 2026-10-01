@@ -260,6 +260,16 @@ export default {
       }
     }
 
+    if(url.pathname==="/api/admin/member-delete"&&request.method==="POST"){
+      const denied=await requireAdmin();if(denied)return denied;
+      try{const d=await request.json(),memberNo=String(d.memberNo||"");if(!memberNo)return Response.json({ok:false,error:"회원번호가 필요합니다."},{status:400});
+        const key="system/members.json",o=await env.IMAGES.get(key),members=o?JSON.parse(await o.text()):[],target=members.find(x=>x.memberNo===memberNo);
+        if(!target)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});
+        await env.IMAGES.put("system/deleted-members/"+crypto.randomUUID()+".json",JSON.stringify({member:target,deletedAt:new Date().toISOString()}),{httpMetadata:{contentType:"application/json"}});
+        await env.IMAGES.put(key,JSON.stringify(members.filter(x=>x.memberNo!==memberNo)),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:e?.message||"회원 삭제에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/admin/member-expel" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),memberNo=String(d.memberNo||""),key="system/members.json";const o=await env.IMAGES.get(key),members=o?JSON.parse(await o.text()):[],i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});members[i].status="expelled";members[i].expelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     async function readReservations(){try{const o=await env.IMAGES.get("system/reservations.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
