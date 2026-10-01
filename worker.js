@@ -6,17 +6,18 @@ export default {
       const key = "system/members.json";
       let members = [];
       try { const o = await env.IMAGES.get(key); if (o) members = JSON.parse(await o.text()); } catch {}
-      const now = new Date().toISOString();const banned=members.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&x.phone===member.phone)||(member.email&&x.email&&x.email.toLowerCase()===member.email.toLowerCase()));if(banned?.status==="expelled")throw new Error("강퇴된 회원입니다.");
-      let i = members.findIndex(x => x.provider === member.provider && x.id === member.id);
-      if (i < 0 && member.phone) i = members.findIndex(x => x.phone && x.phone === member.phone);
-      if (i < 0 && member.email) i = members.findIndex(x => x.email && x.email.toLowerCase() === member.email.toLowerCase());
+      const now = new Date().toISOString(),phone=String(member.phone||"").replace(/[^0-9]/g,"");
+      const sameIdentity=x=>(x.provider===member.provider&&x.id===member.id)||(x.identities||[]).some(v=>v.provider===member.provider&&v.id===member.id);
+      const i=members.findIndex(sameIdentity),duplicate=members.find((x,index)=>index!==i&&phone&&String(x.phone||"").replace(/[^0-9]/g,"")===phone);
+      if((i>=0&&members[i].status==="expelled")||duplicate?.status==="expelled")throw new Error("강퇴된 회원입니다.");
+      if(i<0&&duplicate){const error=new Error("이미 가입되어 있는 회원입니다. 기존 가입 방식으로 로그인해 주세요.");error.status=409;throw error;}
       if (i >= 0) {
         const old = members[i], providers = Array.from(new Set([...(old.providers||[old.provider]).filter(Boolean),member.provider]));
         members[i] = {...old,...member,provider:old.provider||member.provider,providers,lastLoginAt:now};
         await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
         return members[i];
       }
-      const saved={...member,providers:[member.provider],memberNo:"U"+String(members.length+1).padStart(5,"0"),joinedAt:now,lastLoginAt:now,cash:0,point:5000};
+      const saved={...member,providers:[member.provider],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),joinedAt:now,lastLoginAt:now,cash:0,point:5000};
       members.push(saved);
       await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
       return saved;
@@ -49,10 +50,9 @@ export default {
         if(!d.licenseConfirmed)return Response.json({ok:false,error:"자격증 정보를 확인해 주세요."},{status:400});
         const key="system/members.json";let members=[];try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
         let m=members.find(x=>String(x.phone||"").replace(/[^0-9]/g,"")===phone);
-        if(m&&(m.identities||[]).some(x=>x.provider==="local"))return Response.json({ok:false,error:"이미 일반회원으로 가입된 휴대폰번호입니다."},{status:409});
+        if(m)return Response.json({ok:false,error:"이미 가입되어 있는 회원입니다. 기존 가입 방식으로 로그인해 주세요."},{status:409});
         const salt=crypto.randomUUID(),passwordHash=await hashPassword(password,salt),now=new Date().toISOString();
-        if(m){m.identities=[...(m.identities||[]),{provider:"local",id:phone}];m.localSalt=salt;m.localPasswordHash=passwordHash;m.name=m.name||name;m.licenses=licenses;m.profileCompleted=true;}
-        else{m={provider:"local",id:phone,identities:[{provider:"local",id:phone}],providers:["local"],memberNo:"U"+String(members.length+1).padStart(5,"0"),name,phone,email:"",joinedAt:now,lastLoginAt:now,cash:0,point:5000,licenses,profileCompleted:true,localSalt:salt,localPasswordHash:passwordHash};members.push(m)}
+        m={provider:"local",id:phone,identities:[{provider:"local",id:phone}],providers:["local"],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),name,phone,email:"",joinedAt:now,lastLoginAt:now,cash:0,point:5000,licenses,profileCompleted:true,localSalt:salt,localPasswordHash:passwordHash};members.push(m);
         await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
         const safe={provider:"local",id:phone,memberNo:m.memberNo,name:m.name,phone:m.phone,profileCompleted:!!m.profileCompleted};
         return Response.json({ok:true},{headers:{"Set-Cookie":await makeSession(safe)}});
@@ -82,7 +82,7 @@ export default {
         const member=await saveMember(pending.member);await env.IMAGES.delete(key);
         const headers=new Headers({"Content-Type":"application/json","Cache-Control":"no-store"});headers.append("Set-Cookie",await makeSession(member));headers.append("Set-Cookie",clear);
         return new Response(JSON.stringify({ok:true}),{headers});
-      }catch(e){return Response.json({ok:false,error:e?.message||"회원가입에 실패했습니다."},{status:500})}
+      }catch(e){return Response.json({ok:false,error:e?.message||"회원가입에 실패했습니다."},{status:e?.status||500})}
     }
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
