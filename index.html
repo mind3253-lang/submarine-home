@@ -530,8 +530,8 @@ async function saveLicenseProfile(){try{const licenses=await collectLicenses();i
 function renderMemberProfile(member){
   const el=document.getElementById('myProfileInfo');if(!el)return;
   const gender={M:'남성',F:'여성',U:'미지정'}[member.gender]||member.gender||'미등록';
-  const birthday=/^\d{2}-\d{2}$/.test(member.birthday||'')?Number(member.birthday.slice(0,2))+'월 '+Number(member.birthday.slice(3))+'일':member.birthday||'미등록';
-  el.textContent='이름: '+(member.name||'미등록')+'\n성별: '+gender+' · 생일: '+birthday+'\n휴대전화번호: '+(member.phone||'미등록');
+  const birthday=(member.birthyear?member.birthyear+'년 ':'')+(/^\d{2}-\d{2}$/.test(member.birthday||'')?Number(member.birthday.slice(0,2))+'월 '+Number(member.birthday.slice(3))+'일':member.birthday||'')||'미등록';
+  el.textContent='이름: '+(member.name||'미등록')+'\n성별: '+gender+' · 생년월일: '+birthday+'\n휴대전화번호: '+(member.phone||'미등록');
 }
 async function refreshLoginState(){
   try{
