@@ -69,6 +69,21 @@ export default {
       }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    if(url.pathname==="/api/auth/naver/signup"&&["GET","POST","DELETE"].includes(request.method)){
+      const token=(request.headers.get("Cookie")||"").match(/(?:^|;\s*)submarine_naver_signup=([a-f0-9-]+)/)?.[1];
+      const key=token?"system/naver-signups/"+token+".json":"";
+      const clear="submarine_naver_signup=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+      if(request.method!=="GET"&&request.headers.get("Origin")!==url.origin)return Response.json({ok:false,error:"잘못된 요청입니다."},{status:403});
+      if(request.method==="DELETE"){if(key)await env.IMAGES.delete(key);return Response.json({ok:true},{headers:{"Set-Cookie":clear}})}
+      const o=key?await env.IMAGES.get(key):null,pending=o?JSON.parse(await o.text()):null;
+      if(!pending||pending.expiresAt<Date.now()){if(key&&o)await env.IMAGES.delete(key);return Response.json({ok:false,error:"가입 확인 시간이 만료되었습니다. 네이버로 다시 로그인해 주세요."},{status:401,headers:{"Cache-Control":"no-store"}})}
+      if(request.method==="GET"){const m=pending.member;return Response.json({ok:true,member:{name:m.name,gender:m.gender,birthday:m.birthday,birthyear:m.birthyear,phone:m.phone}},{headers:{"Cache-Control":"no-store"}})}
+      try{const d=await request.json();if(d.confirmed!==true)return Response.json({ok:false,error:"회원가입에 동의해 주세요."},{status:400});
+        const member=await saveMember(pending.member);await env.IMAGES.delete(key);
+        const headers=new Headers({"Content-Type":"application/json","Cache-Control":"no-store"});headers.append("Set-Cookie",await makeSession(member));headers.append("Set-Cookie",clear);
+        return new Response(JSON.stringify({ok:true}),{headers});
+      }catch(e){return Response.json({ok:false,error:e?.message||"회원가입에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
       const state = crypto.randomUUID().replaceAll("-", "");
@@ -94,6 +109,12 @@ export default {
         const profile = await pr.json();
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
         let member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "", gender:profile.response.gender || "", birthday:profile.response.birthday || "", birthyear:profile.response.birthyear || "" };
+        let members=[];const existingObject=await env.IMAGES.get("system/members.json");if(existingObject)members=JSON.parse(await existingObject.text());
+        const existing=members.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&String(x.phone||"").replace(/[^0-9]/g,"")===String(member.phone).replace(/[^0-9]/g,""))||(member.email&&x.email&&x.email.toLowerCase()===member.email.toLowerCase()));
+        if(!existing){
+          const token=crypto.randomUUID();await env.IMAGES.put("system/naver-signups/"+token+".json",JSON.stringify({member,expiresAt:Date.now()+600000}),{httpMetadata:{contentType:"application/json"}});
+          return new Response(null,{status:302,headers:{Location:"https://submarine.asia/?naverSignup=1","Set-Cookie":"submarine_naver_signup="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"}});
+        }
         member=await saveMember(member);
         const payload = btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.NAVER_CLIENT_SECRET), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
