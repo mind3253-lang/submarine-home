@@ -93,8 +93,8 @@ export default {
         const pr = await fetch("https://openapi.naver.com/v1/nid/me", { headers:{ Authorization:"Bearer " + token.access_token }});
         const profile = await pr.json();
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
-        const member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "", gender:profile.response.gender || "", birthday:profile.response.birthday || "", birthyear:profile.response.birthyear || "" };
-        await saveMember(member);
+        let member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "", gender:profile.response.gender || "", birthday:profile.response.birthday || "", birthyear:profile.response.birthyear || "" };
+        member=await saveMember(member);
         const payload = btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(env.NAVER_CLIENT_SECRET), {name:"HMAC",hash:"SHA-256"}, false, ["sign"]);
         const sigBytes = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
@@ -301,7 +301,10 @@ export default {
         if(!member) return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
         const key="system/members.json"; let members=[];
         try{const o=await env.IMAGES.get(key);if(o)members=JSON.parse(await o.text())}catch{}
-        members=members.filter(x=>!(x.providers||[x.provider]).includes(member.provider)||x.id!==member.id);
+        const normalizePhone=v=>String(v||"").replace(/[^0-9]/g,"");
+        const target=members.find(x=>(member.memberNo&&x.memberNo===member.memberNo)||((x.provider===member.provider||(x.providers||[]).includes(member.provider))&&x.id===member.id)||(member.phone&&normalizePhone(x.phone)===normalizePhone(member.phone)));
+        if(!target)return Response.json({ok:false,error:"탈퇴할 회원 정보를 찾을 수 없습니다. 다시 로그인해 주세요."},{status:404});
+        members=members.filter(x=>x!==target);
         await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
         return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"}});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
