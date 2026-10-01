@@ -322,7 +322,7 @@ export default {
     }
     async function sessionMember() {
       try {
-        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\\s*)submarine_session=([^;]+)/)||[])[1];
+        const cookie=request.headers.get("Cookie")||"", raw=(cookie.match(/(?:^|;\s*)submarine_session=([^;]+)/)||[])[1];
         if(!raw) return null;
         const [payload,sig]=raw.split(".");
         if(!payload||!sig) return null;
