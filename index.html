@@ -216,7 +216,7 @@ function toggleMobileMenu(){document.getElementById('mobileMenu')?.classList.tog
 function closeMobileMenu(){document.getElementById('mobileMenu')?.classList.remove('open')}
 
 let restoringNav=false;
-(function seedSiteHistory(){if(!history.state||!history.state.submarine){history.replaceState({view:'home',submarine:true},'',location.pathname);history.pushState({view:'home',submarine:true},'',location.pathname)}})();
+(function seedSiteHistory(){if(!history.state||!history.state.submarine){const entryUrl=location.pathname+location.search+location.hash;history.replaceState({view:'home',submarine:true},'',entryUrl);history.pushState({view:'home',submarine:true},'',entryUrl)}})();
 function navPush(state,query){if(restoringNav)return;state.submarine=true;history.pushState(state,'',location.pathname+(query?'?'+query:''))}
 function goHome(){show('home');navPush({view:'home'},'');}
 function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'},'view=submarine');}
