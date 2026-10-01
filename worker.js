@@ -110,7 +110,7 @@ export default {
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
         let member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "", gender:profile.response.gender || "", birthday:profile.response.birthday || "", birthyear:profile.response.birthyear || "" };
         let members=[];const existingObject=await env.IMAGES.get("system/members.json");if(existingObject)members=JSON.parse(await existingObject.text());
-        const existing=members.find(x=>(x.provider===member.provider&&x.id===member.id)||(member.phone&&String(x.phone||"").replace(/[^0-9]/g,"")===String(member.phone).replace(/[^0-9]/g,""))||(member.email&&x.email&&x.email.toLowerCase()===member.email.toLowerCase()));
+        const existing=members.find(x=>(x.provider===member.provider||(x.providers||[]).includes(member.provider))&&x.id===member.id);
         if(!existing){
           const token=crypto.randomUUID();await env.IMAGES.put("system/naver-signups/"+token+".json",JSON.stringify({member,expiresAt:Date.now()+600000}),{httpMetadata:{contentType:"application/json"}});
           return new Response(null,{status:302,headers:{Location:"https://submarine.asia/?naverSignup=1","Set-Cookie":"submarine_naver_signup="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"}});
