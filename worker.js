@@ -84,6 +84,22 @@ export default {
         return new Response(JSON.stringify({ok:true}),{headers});
       }catch(e){return Response.json({ok:false,error:e?.message||"회원가입에 실패했습니다."},{status:e?.status||500})}
     }
+    if(url.pathname==="/api/auth/kakao/signup"&&["GET","POST","DELETE"].includes(request.method)){
+      const token=(request.headers.get("Cookie")||"").match(/(?:^|;\s*)submarine_kakao_signup=([a-f0-9-]+)/)?.[1];
+      const key=token?"system/kakao-signups/"+token+".json":"";
+      const clear="submarine_kakao_signup=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0";
+      if(request.method!=="GET"&&request.headers.get("Origin")!==url.origin)return Response.json({ok:false,error:"잘못된 요청입니다."},{status:403});
+      if(request.method==="DELETE"){if(key)await env.IMAGES.delete(key);return Response.json({ok:true},{headers:{"Set-Cookie":clear}})}
+      const o=key?await env.IMAGES.get(key):null,pending=o?JSON.parse(await o.text()):null;
+      if(!pending||pending.expiresAt<Date.now()){if(key&&o)await env.IMAGES.delete(key);return Response.json({ok:false,error:"가입 확인 시간이 만료되었습니다. 카카오로 다시 로그인해 주세요."},{status:401,headers:{"Cache-Control":"no-store"}})}
+      if(request.method==="GET"){const m=pending.member;return Response.json({ok:true,member:{name:m.name,gender:m.gender,birthday:m.birthday,birthyear:m.birthyear,phone:m.phone}},{headers:{"Cache-Control":"no-store"}})}
+      try{const d=await request.json();if(d.confirmed!==true)return Response.json({ok:false,error:"회원가입에 동의해 주세요."},{status:400});
+        if(!pending.member.name||!pending.member.phone||!pending.member.birthyear||!pending.member.gender)return Response.json({ok:false,error:"카카오 회원정보 제공 권한이 아직 준비되지 않았습니다. 일반 회원가입을 이용해 주세요."},{status:400});
+        const member=await saveMember(pending.member);await env.IMAGES.delete(key);
+        const headers=new Headers({"Content-Type":"application/json","Cache-Control":"no-store"});headers.append("Set-Cookie",await makeSession(member));headers.append("Set-Cookie",clear);
+        return new Response(JSON.stringify({ok:true}),{headers});
+      }catch(e){return Response.json({ok:false,error:e?.message||"회원가입에 실패했습니다."},{status:e?.status||500})}
+    }
     if (url.pathname === "/api/auth/naver" && request.method === "GET") {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
       const state = crypto.randomUUID().replaceAll("-", "");
@@ -143,8 +159,10 @@ export default {
     if (url.pathname === "/api/auth/kakao/callback" && request.method === "GET") {
       try {
         const code=url.searchParams.get("code"), state=url.searchParams.get("state");
-        if(!code||!state) return new Response("카카오 로그인 인증값이 없습니다.",{status:400});
+        const savedState=(request.headers.get("Cookie")||"").match(/(?:^|;\s*)kakao_oauth_state=([^;]+)/)?.[1];
+        if(!code||!state||state!==savedState) return new Response("카카오 로그인 상태값이 일치하지 않습니다.",{status:400});
         const body=new URLSearchParams({grant_type:"authorization_code",client_id:env.KAKAO_REST_API_KEY,redirect_uri:"https://submarine.asia/api/auth/kakao/callback",code});
+        if(env.KAKAO_CLIENT_SECRET)body.set("client_secret",env.KAKAO_CLIENT_SECRET);
         const tr=await fetch("https://kauth.kakao.com/oauth/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=utf-8"},body});
         const token=await tr.json();
         if(!tr.ok||!token.access_token) throw new Error(token.error_description||token.error||"토큰 발급 실패");
@@ -152,8 +170,14 @@ export default {
         const profile=await pr.json();
         if(!pr.ok||!profile.id) throw new Error(profile.msg||"프로필 조회 실패");
         const account=profile.kakao_account||{}, p=account.profile||{};
-        const member={provider:"kakao",id:String(profile.id),name:account.name||p.nickname||"카카오 회원",email:account.email||"",phone:account.phone_number||""};
-        await saveMember(member);
+        let member={provider:"kakao",id:String(profile.id),name:account.name||"",phone:String(account.phone_number||"").replace(/^\+82\s*/,"0").replace(/[^0-9]/g,""),gender:account.gender==="male"?"M":account.gender==="female"?"F":"",birthyear:account.birthyear||""};
+        const existingObject=await env.IMAGES.get("system/members.json"),members=existingObject?JSON.parse(await existingObject.text()):[];
+        const existing=members.find(x=>(x.provider==="kakao"&&x.id===member.id)||(x.identities||[]).some(v=>v.provider==="kakao"&&v.id===member.id));
+        if(!existing){
+          const token=crypto.randomUUID();await env.IMAGES.put("system/kakao-signups/"+token+".json",JSON.stringify({member,expiresAt:Date.now()+600000}),{httpMetadata:{contentType:"application/json"}});
+          return new Response(null,{status:302,headers:{Location:"https://submarine.asia/?kakaoSignup=1","Set-Cookie":"submarine_kakao_signup="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"}});
+        }
+        member=await saveMember(member);
         const payload=btoa(unescape(encodeURIComponent(JSON.stringify(member)))).replaceAll("+","-").replaceAll("/","_").replaceAll("=","");
         const sessionKey=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY);
         const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(sessionKey),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
