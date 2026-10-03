@@ -105,8 +105,7 @@ export default {
       const state = crypto.randomUUID().replaceAll("-", "");
       const redirectUri = "https://submarine.asia/api/auth/naver/callback";
       const signupMode=url.searchParams.get("mode")==="signup";
-      const q = new URLSearchParams({ response_type: "code", client_id: env.NAVER_CLIENT_ID, redirect_uri: redirectUri, state });
-      if(signupMode)q.set("auth_type","reprompt");
+      const q = new URLSearchParams({ response_type: "code", client_id: env.NAVER_CLIENT_ID, redirect_uri: redirectUri, state, auth_type:"reauthenticate" });
       return new Response(null, { status: 302, headers: {
         Location: "https://nid.naver.com/oauth2.0/authorize?" + q.toString(),
         "Set-Cookie": "naver_oauth_state=" + state + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"
