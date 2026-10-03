@@ -126,7 +126,20 @@ export default {
         if (!pr.ok || profile.resultcode !== "00" || !profile.response?.id) throw new Error(profile.message || "프로필 조회 실패");
         let member = { provider:"naver", id:profile.response.id, name:profile.response.name || profile.response.nickname || "네이버 회원", email:profile.response.email || "", phone:profile.response.mobile || "", gender:profile.response.gender || "", birthday:profile.response.birthday || "", birthyear:profile.response.birthyear || "" };
         let members=[];const existingObject=await env.IMAGES.get("system/members.json");if(existingObject)members=JSON.parse(await existingObject.text());
-        const existing=members.find(x=>(x.provider===member.provider||(x.providers||[]).includes(member.provider))&&x.id===member.id);
+        const normalizedPhone=String(member.phone||"").replace(/[^0-9]/g,"");
+        let existing=members.find(x=>(x.provider==="naver"&&x.id===member.id)||(x.identities||[]).some(v=>v.provider==="naver"&&v.id===member.id));
+        if(!existing&&normalizedPhone)existing=members.find(x=>String(x.phone||"").replace(/[^0-9]/g,"")===normalizedPhone);
+        if(existing){
+          const identities=Array.isArray(existing.identities)?existing.identities:[];
+          if(!identities.some(v=>v.provider==="naver"&&v.id===member.id))identities.push({provider:"naver",id:member.id});
+          existing.identities=identities;
+          existing.providers=Array.from(new Set([...(existing.providers||[existing.provider]).filter(Boolean),"naver"]));
+          existing.email=existing.email||member.email;existing.gender=existing.gender||member.gender;existing.birthday=existing.birthday||member.birthday;existing.birthyear=existing.birthyear||member.birthyear;existing.lastLoginAt=new Date().toISOString();
+          await env.IMAGES.put("system/members.json",JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+          const sessionMember={...existing,provider:existing.provider||"naver"};
+          const headers=new Headers({Location:"https://submarine.asia/"});headers.append("Set-Cookie",await makeSession(sessionMember));headers.append("Set-Cookie","submarine_naver_signup=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0");
+          return new Response(null,{status:302,headers});
+        }
         if(!existing){
           const token=crypto.randomUUID();await env.IMAGES.put("system/naver-signups/"+token+".json",JSON.stringify({member,expiresAt:Date.now()+600000}),{httpMetadata:{contentType:"application/json"}});
           return new Response(null,{status:302,headers:{Location:"https://submarine.asia/?naverSignup=1","Set-Cookie":"submarine_naver_signup="+token+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"}});
