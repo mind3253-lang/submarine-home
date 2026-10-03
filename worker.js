@@ -104,7 +104,9 @@ export default {
       if (!env.NAVER_CLIENT_ID || !env.NAVER_CLIENT_SECRET) return new Response("NAVER OAuth 환경변수가 없습니다.", { status: 503 });
       const state = crypto.randomUUID().replaceAll("-", "");
       const redirectUri = "https://submarine.asia/api/auth/naver/callback";
+      const signupMode=url.searchParams.get("mode")==="signup";
       const q = new URLSearchParams({ response_type: "code", client_id: env.NAVER_CLIENT_ID, redirect_uri: redirectUri, state });
+      if(signupMode)q.set("auth_type","reprompt");
       return new Response(null, { status: 302, headers: {
         Location: "https://nid.naver.com/oauth2.0/authorize?" + q.toString(),
         "Set-Cookie": "naver_oauth_state=" + state + "; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600"
