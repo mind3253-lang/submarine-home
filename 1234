@@ -177,8 +177,8 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 
 <main>
 <section id="home" class="page active"><div class="hero"><div id="homeHeroPhoto" style="position:absolute;left:0;right:0;top:0;height:100%;background-size:cover;background-position:center 45%;background-repeat:no-repeat"></div><div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.04) 28%,rgba(255,255,255,0) 55%);z-index:1"></div><div class="hero-copy"><h1>SUBMARINE</h1><p>DIVING POOL · 15M</p></div><div class="hero-marquee"><div class="hero-marquee-track">SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · SUBMARINE · FREEDIVE · SCUBA · UNDERWATER · 15M · </div></div></div></section>
-<section id="independentMenu" class="page"><div class="wrap"><div class="visual-menu visual-menu-two" style="display:flex;justify-content:center">
-<div class="visual-card" onclick="openIndependentBoard()"><img id="independentThumb" src="M-1.webp" alt="독립군"><div class="visual-label"><strong>Independent</strong><span>— 독립군</span></div></div>
+<section id="independentMenu" class="page"><div class="wrap"><div class="visual-menu" style="display:grid;grid-template-columns:minmax(0,292px);justify-content:center">
+<div class="visual-card" style="width:292px" onclick="openIndependentBoard()"><img id="independentThumb" src="M-1.webp" alt="독립군"><div class="visual-label"><strong>Independent</strong><span>— 독립군</span></div></div>
 </div></div></section>
 <section id="independentBoard" class="page"><div class="wrap"><div class="article-shell"><h1>독립군</h1><p style="color:#64727d">전국 다이빙풀에서 함께 연습할 버디를 찾는 공간입니다.</p><div style="margin-top:28px;padding:24px;border:1px solid #e3e8ec;border-radius:14px;background:#f8fbfd"><strong>독립군 모집 게시판</strong><p style="margin-bottom:0">모집글 · 참가신청 · 모집인원 · 댓글 기능을 이 화면에 구성합니다.</p></div></div></div></section>
 <section id="tourMenu" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
