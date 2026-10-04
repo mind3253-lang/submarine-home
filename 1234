@@ -188,7 +188,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div class="ind-shell">
 <div class="ind-head"><div><div class="ind-kicker">INDEPENDENT DIVERS</div><h1>독립군</h1><p>전국 딥풀에서 함께 연습할 버디를 찾는 공간입니다.</p></div><button class="ind-write-btn" type="button" onclick="openIndependentWrite()">+ 모집글 작성</button></div>
 <div class="ind-summary ind-summary-two"><div><strong id="indDeepOpenCount">0</strong><span>12m 이상 딥풀</span></div><div><strong id="indGeneralOpenCount">0</strong><span>12m 미만 일반풀</span></div></div>
-<div class="ind-pool-guide"><button type="button" onclick="toggleIndependentPools()"><span>전국 12m 이상 딥풀</span><b id="indPoolToggle">펼쳐보기 +</b></button><div class="ind-pool-note">AIDA2 자격취득 기준인 12m 이상의 풀을 딥풀이라고 합니다.</div><div id="indPoolList" class="ind-pool-list"></div></div>
+<div class="ind-pool-guide"><button type="button" onclick="toggleIndependentPools()"><span>전국 12m 이상 딥풀</span><b id="indPoolToggle">펼쳐보기 +</b></button><div class="ind-pool-note">12m 이상을 딥풀이라고 합니다.</div><div id="indPoolList" class="ind-pool-list"></div></div>
 <div class="ind-private-guide"><strong>참가신청 후 모집자와 신청자에게 1:1 비밀댓글이 열립니다.</strong><span>연락처 및 기타사항은 비밀댓글로 주고받으세요.</span></div>
 <div class="ind-toolbar"><select id="indPoolFilter" onchange="renderIndependentBoard()"><option value="">다이빙풀</option></select><select id="indStatusFilter" onchange="renderIndependentBoard()"><option value="open">모집중</option><option value="">전체 상태</option><option value="full">모집완료</option><option value="closed">마감·종료</option></select></div>
 <div class="ind-table-head"><span>모임일시</span><span>풀장</span><span>제목 · 작성자 · 댓글</span><span>참가</span></div>
@@ -643,6 +643,11 @@ document.querySelectorAll('.reserveType').forEach(e=>e.addEventListener('click',
 reserveTime.addEventListener('change',()=>clearFieldError(reserveTime));reservePeople.addEventListener('change',()=>clearFieldError(reservePeople));
 
 openEducationFromUrl();
+if(COMMUNITY_PREVIEW){
+ history.scrollRestoration='manual';
+ window.addEventListener('load',()=>{show('home');requestAnimationFrame(()=>window.scrollTo(0,0));});
+ window.addEventListener('pageshow',()=>requestAnimationFrame(()=>window.scrollTo(0,0)));
+}
 function openLoginChoice(){document.getElementById('loginChoice').style.display='flex'}
 let localAuthMode='login';
 function openLocalAuth(mode){localAuthMode=mode;document.getElementById('loginChoice').style.display='none';document.getElementById('localAuthModal').style.display='flex';document.getElementById('localNameWrap').style.display=mode==='register'?'block':'none';document.getElementById('localAuthTitle').textContent=mode==='register'?'회원가입':'일반 로그인';document.getElementById('localAuthSubmit').textContent=mode==='register'?'가입하기':'로그인';document.getElementById('localAuthSubmit').onclick=submitLocalAuth}
