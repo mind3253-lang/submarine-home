@@ -737,5 +737,11 @@ async function submitNpayPurchase(){clearAllFieldErrors();updatePurchaseTotal();
 .kakao-bubble:after{content:'';position:absolute;bottom:1px;left:2px;border-width:5px 5px 0 0;border-style:solid;border-color:#191919 transparent transparent transparent;transform:rotate(18deg)}
 @media(max-width:800px){.kakao-floating-chat{right:14px;bottom:16px;padding:10px 13px 10px 10px;font-size:13px}}
 </style>
+<style>
+.site-footer{border-top-color:#102c40!important;background:#102c40!important;color:#c5d0d8!important}
+.site-footer .footer-brand{color:#fff!important}
+.site-footer .footer-copy{color:#879aa8!important}
+.site-footer a{color:#e8f1f6!important}
+</style>
 <footer class="site-footer"><div class="wrap"><div class="footer-brand">SUBMARINE DIVING POOL</div><div class="footer-info"><span>서브마린 다이빙풀</span><span>대표 황현수</span><span>사업자등록번호 850-22-01497</span><span>통신판매업 신고 2024-부천소사-0096</span></div><div class="footer-info"><span>경기도 부천시 소사구 경인로 459</span><span>032-710-5746</span><span>hbanana74@naver.com</span><span>개인정보보호책임자 이서현</span><span><a href="/privacy.html" style="color:#17364b;font-weight:700">개인정보 처리방침</a></span><span><a href="https://pf.kakao.com/_dxbTxiX/chat" target="_blank" rel="noopener" style="color:inherit;font-weight:700">카톡상담</a></span></div><div class="footer-copy">© 2026 SUBMARINE DIVING POOL. All rights reserved.</div></div></footer>
 </body></html>
