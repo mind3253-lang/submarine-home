@@ -262,16 +262,16 @@ const INDEPENDENT_POOLS=[
  {region:'경남 밀양',name:'밀양 아리랑 잠수풀',depth:'12m'},
  {region:'부산',name:'북항마리나 다이빙풀',depth:'24m'}
 ];
-const INDEPENDENT_PREVIEW_KEY='submarine_independent_preview_v3';
+const INDEPENDENT_PREVIEW_KEY='submarine_independent_preview_v4';
 const INDEPENDENT_PREVIEW_USER='미리보기 회원';
 let independentCurrentPost=null;
 function indEsc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function independentSeedPosts(){
  return [
-  {id:'demo1',pool:'서브마린다이빙풀',region:'경기 부천',depth:'15m',date:'2026-10-07',time:'19:00',title:'평일 저녁 같이 연습하실 분',body:'가볍게 워밍업하고 덕다이빙, 이퀄라이징 위주로 연습하려고 합니다. 서로 버디 봐주면서 편하게 연습해요.',current:2,max:4,status:'open',author:INDEPENDENT_PREVIEW_USER,joinedByMe:false,comments:[{name:'버디A',text:'저녁 7시 맞죠? 참가하고 싶어요.'},{name:INDEPENDENT_PREVIEW_USER,text:'네, 7시 맞습니다.'}],secretComments:[]},
-  {id:'demo2',pool:'파라다이브35',region:'경기 시흥',depth:'35m',date:'2026-10-10',time:'13:00',title:'토요일 오후 딥 연습 같이 하실 분',body:'딥 연습 위주입니다. 편하게 같이 연습하실 분 구합니다.',current:3,max:5,status:'open',author:'BlueDive',joinedByMe:false,comments:[{name:'Wave22',text:'아직 자리 있나요?'},{name:'BlueDive',text:'네, 두 자리 남았습니다.'}],secretComments:[]},
-  {id:'demo3',pool:'딥스테이션',region:'경기 용인',depth:'36m',date:'2026-10-11',time:'10:00',title:'주말 오전 버디 구합니다',body:'오전 타임 같이 들어가실 분 구합니다. 연습 종목은 현장에서 맞춰도 됩니다.',current:1,max:4,status:'open',author:'DeepDay',joinedByMe:false,comments:[],secretComments:[]},
-  {id:'demo4',pool:'K26',region:'경기 가평',depth:'26m',date:'2026-10-17',time:'09:30',title:'K26 원정 버디 모집',body:'현재 인원 모집 완료입니다.',current:4,max:4,status:'full',author:'K26GO',joinedByMe:false,comments:[],secretComments:[]}
+  {id:'demo1',pool:'서브마린다이빙풀',region:'경기 부천',depth:'15m',poolType:'deep',date:'2026-10-07',time:'19:00',title:'평일 저녁 같이 연습하실 분',body:'가볍게 워밍업하고 덕다이빙, 이퀄라이징 위주로 연습하려고 합니다. 서로 버디 봐주면서 편하게 연습해요.',current:2,max:4,status:'open',author:INDEPENDENT_PREVIEW_USER,joinedByMe:false,comments:[{name:'버디A',text:'저녁 7시 맞죠? 참가하고 싶어요.'},{name:INDEPENDENT_PREVIEW_USER,text:'네, 7시 맞습니다.'}],secretComments:[]},
+  {id:'demo2',pool:'파라다이브35',region:'경기 시흥',depth:'35m',poolType:'deep',date:'2026-10-10',time:'13:00',title:'토요일 오후 딥 연습 같이 하실 분',body:'딥 연습 위주입니다. 편하게 같이 연습하실 분 구합니다.',current:3,max:5,status:'open',author:'BlueDive',joinedByMe:false,comments:[{name:'Wave22',text:'아직 자리 있나요?'},{name:'BlueDive',text:'네, 두 자리 남았습니다.'}],secretComments:[]},
+  {id:'demo3',pool:'딥스테이션',region:'경기 용인',depth:'36m',poolType:'deep',date:'2026-10-11',time:'10:00',title:'주말 오전 버디 구합니다',body:'오전 타임 같이 들어가실 분 구합니다. 연습 종목은 현장에서 맞춰도 됩니다.',current:1,max:4,status:'open',author:'DeepDay',joinedByMe:false,comments:[],secretComments:[]},
+  {id:'demo4',pool:'K26',region:'경기 가평',depth:'26m',poolType:'deep',date:'2026-10-17',time:'09:30',title:'K26 원정 버디 모집',body:'현재 인원 모집 완료입니다.',current:4,max:4,status:'full',author:'K26GO',joinedByMe:false,comments:[],secretComments:[]}
  ];
 }
 function independentLoadPosts(){try{const x=JSON.parse(localStorage.getItem(INDEPENDENT_PREVIEW_KEY)||'null');if(Array.isArray(x)&&x.length)return x}catch(e){}return independentSeedPosts()}
@@ -281,7 +281,7 @@ function initIndependentPreview(){
  const pf=document.getElementById('indPoolFilter'),wf=document.getElementById('indWritePool'),pl=document.getElementById('indPoolList');if(!pf||pf.dataset.ready)return;
  pf.dataset.ready='1';
  INDEPENDENT_POOLS.forEach(p=>{pf.insertAdjacentHTML('beforeend','<option value="'+indEsc(p.name)+'">'+indEsc(p.region)+' · '+indEsc(p.name)+'</option>')});
- wf.innerHTML=INDEPENDENT_POOLS.map(p=>'<option value="'+indEsc(p.name)+'">'+indEsc(p.region)+' · '+indEsc(p.name)+' · '+indEsc(p.depth)+'</option>').join('')+'<option value="__other">그 외 풀장 직접입력</option>';
+ wf.innerHTML=INDEPENDENT_POOLS.map(p=>'<option value="'+indEsc(p.name)+'">'+indEsc(p.name)+'</option>').join('');
  pl.innerHTML=INDEPENDENT_POOLS.map(p=>'<div class="ind-pool-item"><span>'+indEsc(p.region)+' · '+indEsc(p.name)+'</span><b>'+indEsc(p.depth)+'</b></div>').join('');
 }
 function toggleIndependentPools(){const el=document.getElementById('indPoolList'),b=document.getElementById('indPoolToggle');el.classList.toggle('open');b.textContent=el.classList.contains('open')?'접기 −':'펼쳐보기 +'}
@@ -289,11 +289,11 @@ function independentStatus(p){if(p.status==='closed')return ['closed','종료'];
 function renderIndependentBoard(){
  initIndependentPreview();
  const rows=independentLoadPosts(),pool=document.getElementById('indPoolFilter')?.value||'',status=document.getElementById('indStatusFilter')?.value||'open';
- const open=rows.filter(x=>independentStatus(x)[0]==='open').length;const oc=document.getElementById('indOpenCount');if(oc)oc.textContent=String(open);
+ const deepOpen=rows.filter(x=>independentStatus(x)[0]==='open'&&(x.poolType||'deep')==='deep').length,generalOpen=rows.filter(x=>independentStatus(x)[0]==='open'&&x.poolType==='general').length;const dc=document.getElementById('indDeepOpenCount'),gc=document.getElementById('indGeneralOpenCount');if(dc)dc.textContent=String(deepOpen);if(gc)gc.textContent=String(generalOpen);
  const filtered=rows.filter(x=>(!pool||x.pool===pool)&&(!status||independentStatus(x)[0]===status)).sort((a,b)=>String(a.date+a.time).localeCompare(String(b.date+b.time)));
  const el=document.getElementById('independentPostList');if(!el)return;
  if(!filtered.length){el.innerHTML='<div class="ind-empty">조건에 맞는 모집글이 없습니다.</div>';return}
- el.innerHTML=filtered.map(p=>{const st=independentStatus(p),d=new Date(p.date+'T00:00:00'),md=(d.getMonth()+1)+'.'+d.getDate();return '<div class="ind-post" onclick="openIndependentDetail(\''+indEsc(p.id)+'\')"><div class="ind-date"><strong>'+md+'</strong><span>'+indEsc(p.time)+'</span></div><div class="ind-post-main"><div class="ind-post-top"><span class="ind-status '+st[0]+'">'+st[1]+'</span><span class="ind-pool-name"><b>'+indEsc(p.pool)+'</b> · '+indEsc(p.region)+(p.depth?' · '+indEsc(p.depth):'')+'</span></div><div class="ind-post-title">'+indEsc(p.title)+'</div><div class="ind-post-meta">작성자 '+indEsc(p.author||'회원')+' · 댓글 '+independentCommentCount(p)+'</div></div><div class="ind-count"><strong>'+Number(p.current||0)+' / '+Number(p.max||0)+'</strong><span>현재 / 정원</span></div></div>'}).join('');
+ el.innerHTML=filtered.map(p=>{const st=independentStatus(p),d=new Date(p.date+'T00:00:00'),md=(d.getMonth()+1)+'.'+d.getDate();return '<div class="ind-post" onclick="openIndependentDetail(\''+indEsc(p.id)+'\')"><div class="ind-date"><strong>'+md+'</strong><span>'+indEsc(p.time)+'</span></div><div class="ind-post-main"><div class="ind-post-top"><span class="ind-status '+st[0]+'">'+st[1]+'</span><span class="ind-pool-name"><b>'+indEsc(p.pool)+'</b></span></div><div class="ind-post-title">'+indEsc(p.title)+'</div><div class="ind-post-meta">'+indEsc(p.author||'회원')+' · 댓글 '+independentCommentCount(p)+'</div></div><div class="ind-count"><strong>'+Number(p.current||0)+' / '+Number(p.max||0)+'</strong><span>현재 / 정원</span></div></div>'}).join('');
 }
 function openIndependentWrite(){
  initIndependentPreview();const m=document.getElementById('indWriteModal');if(!m)return;
