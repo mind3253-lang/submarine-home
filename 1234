@@ -190,7 +190,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div class="ind-summary ind-summary-two"><div><strong id="indDeepOpenCount">0</strong><span>12m 이상 딥풀</span></div><div><strong id="indGeneralOpenCount">0</strong><span>12m 미만 일반풀</span></div></div>
 <div class="ind-pool-guide"><button type="button" onclick="toggleIndependentPools()"><span>전국 12m 이상 딥풀</span><b id="indPoolToggle">펼쳐보기 +</b></button><div class="ind-pool-note">AIDA2 자격취득 기준인 12m 이상의 풀을 딥풀이라고 합니다.</div><div id="indPoolList" class="ind-pool-list"></div></div>
 <div class="ind-private-guide"><strong>참가신청 후 모집자와 신청자에게 1:1 비밀댓글이 열립니다.</strong><span>연락처 및 기타사항은 비밀댓글로 주고받으세요.</span></div>
-<div class="ind-toolbar"><select id="indPoolFilter" onchange="renderIndependentBoard()"><option value="">전체 풀장</option></select><select id="indStatusFilter" onchange="renderIndependentBoard()"><option value="open">모집중</option><option value="">전체 상태</option><option value="full">모집완료</option><option value="closed">마감·종료</option></select></div>
+<div class="ind-toolbar"><select id="indPoolFilter" onchange="renderIndependentBoard()"><option value="">다이빙풀</option></select><select id="indStatusFilter" onchange="renderIndependentBoard()"><option value="open">모집중</option><option value="">전체 상태</option><option value="full">모집완료</option><option value="closed">마감·종료</option></select></div>
 <div class="ind-table-head"><span>모임일시</span><span>풀장</span><span>제목 · 작성자 · 댓글</span><span>참가</span></div>
 <div id="independentPostList" class="ind-post-list"></div>
 </div></div></section>
@@ -281,9 +281,9 @@ function independentCommentCount(p){return (p.comments||[]).length+(p.secretComm
 function initIndependentPreview(){
  const pf=document.getElementById('indPoolFilter'),wf=document.getElementById('indWritePool'),pl=document.getElementById('indPoolList');if(!pf||pf.dataset.ready)return;
  pf.dataset.ready='1';
- INDEPENDENT_POOLS.forEach(p=>{pf.insertAdjacentHTML('beforeend','<option value="'+indEsc(p.name)+'">'+indEsc(p.region)+' · '+indEsc(p.name)+'</option>')});
+ INDEPENDENT_POOLS.forEach(p=>{pf.insertAdjacentHTML('beforeend','<option value="'+indEsc(p.name)+'">'+indEsc(p.name)+'</option>')});pf.insertAdjacentHTML('beforeend','<option value="__general__">일반풀</option>');
  wf.innerHTML=INDEPENDENT_POOLS.map(p=>'<option value="'+indEsc(p.name)+'">'+indEsc(p.name)+'</option>').join('');
- pl.innerHTML=INDEPENDENT_POOLS.map(p=>'<div class="ind-pool-item"><span>'+indEsc(p.region)+' · '+indEsc(p.name)+'</span><b>'+indEsc(p.depth)+'</b></div>').join('');
+ pl.innerHTML=INDEPENDENT_POOLS.map(p=>'<div class="ind-pool-item"><span>'+indEsc(p.name)+'</span></div>').join('');
 }
 function toggleIndependentPools(){const el=document.getElementById('indPoolList'),b=document.getElementById('indPoolToggle');el.classList.toggle('open');b.textContent=el.classList.contains('open')?'접기 −':'펼쳐보기 +'}
 function independentStatus(p){if(p.status==='closed')return ['closed','종료'];if(Number(p.current)>=Number(p.max)||p.status==='full')return ['full','모집완료'];return ['open','모집중']}
@@ -291,7 +291,7 @@ function renderIndependentBoard(){
  initIndependentPreview();
  const rows=independentLoadPosts(),pool=document.getElementById('indPoolFilter')?.value||'',status=document.getElementById('indStatusFilter')?.value||'open';
  const deepOpen=rows.filter(x=>independentStatus(x)[0]==='open'&&(x.poolType||'deep')==='deep').length,generalOpen=rows.filter(x=>independentStatus(x)[0]==='open'&&x.poolType==='general').length;const dc=document.getElementById('indDeepOpenCount'),gc=document.getElementById('indGeneralOpenCount');if(dc)dc.textContent=String(deepOpen);if(gc)gc.textContent=String(generalOpen);
- const filtered=rows.filter(x=>(!pool||x.pool===pool)&&(!status||independentStatus(x)[0]===status)).sort((a,b)=>String(b.createdAt||b.id||'').localeCompare(String(a.createdAt||a.id||'')));
+ const filtered=rows.filter(x=>(!pool||(pool==='__general__'?x.poolType==='general':x.pool===pool))&&(!status||independentStatus(x)[0]===status)).sort((a,b)=>String(b.createdAt||b.id||'').localeCompare(String(a.createdAt||a.id||'')));
  const el=document.getElementById('independentPostList');if(!el)return;
  if(!filtered.length){el.innerHTML='<div class="ind-empty">조건에 맞는 모집글이 없습니다.</div>';return}
  el.innerHTML=filtered.map(p=>{const st=independentStatus(p),d=new Date(p.date+'T00:00:00'),md=(d.getMonth()+1)+'.'+d.getDate();return '<div class="ind-post" onclick="openIndependentDetail(\''+indEsc(p.id)+'\')"><div class="ind-date"><strong>'+md+'</strong><span>'+indEsc(p.time)+'</span></div><div class="ind-post-main"><div class="ind-post-top"><span class="ind-status '+st[0]+'">'+st[1]+'</span><span class="ind-pool-name">'+indEsc(p.pool)+'</span></div><div class="ind-post-meta"><span class="ind-post-title">'+indEsc(p.title)+'</span><span class="ind-post-author">'+indEsc(p.author||'회원')+' · 댓글 '+independentCommentCount(p)+'</span></div></div><div class="ind-count"><strong>'+Number(p.current||0)+' / '+Number(p.max||0)+'</strong><span>현재 / 정원</span></div></div>'}).join('');
