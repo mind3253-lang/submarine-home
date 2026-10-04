@@ -222,7 +222,7 @@ function closeMobileMenu(){document.getElementById('mobileMenu')?.classList.remo
 let restoringNav=false;
 (function seedSiteHistory(){if(!history.state||!history.state.submarine){const entryUrl=location.pathname+location.search+location.hash;history.replaceState({view:'home',submarine:true},'',entryUrl);history.pushState({view:'home',submarine:true},'',entryUrl)}})();
 function navPush(state,query){if(restoringNav)return;state.submarine=true;history.pushState(state,'',location.pathname+(query?'?'+query:''))}
-const COMMUNITY_PREVIEW=/\/1234\/?$/.test(location.pathname)||new URLSearchParams(location.search).get('preview')==='1234';
+const COMMUNITY_PREVIEW=/\/1234(?:\.html)?\/?$/.test(location.pathname)||new URLSearchParams(location.search).get('preview')==='1234';
 if(COMMUNITY_PREVIEW){document.querySelectorAll('.community-preview-nav').forEach(x=>x.style.display=x.closest('#mobileMenu')?'contents':'inline-flex')}
 function goHome(){show('home');navPush({view:'home'},'');}
 function openIndependentMenu(){if(!COMMUNITY_PREVIEW)return goHome();show('independentMenu');navPush({view:'independentMenu'},'view=independent');}
