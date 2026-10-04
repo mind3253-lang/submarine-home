@@ -2,6 +2,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    async function bonusPhoneKey(phone){const normalized=String(phone||"").replace(/[^0-9]/g,"");if(!normalized)return "";const secret=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY||"submarine");const data=new TextEncoder().encode(secret+"|signup-bonus|"+normalized);const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",data));return Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("")}
+    async function signupBonusEligible(phone){const h=await bonusPhoneKey(phone);if(!h)return false;const o=await env.IMAGES.get("system/signup-bonus-history.json");const rows=o?JSON.parse(await o.text()):[];return !rows.some(x=>x.phoneHash===h)}
+    async function markSignupBonus(phone){const h=await bonusPhoneKey(phone);if(!h)return;const key="system/signup-bonus-history.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];if(!rows.some(x=>x.phoneHash===h)){rows.push({phoneHash:h,grantedAt:new Date().toISOString()});await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}}
     async function saveMember(member) {
       const key = "system/members.json";
       let members = [];
@@ -17,9 +20,10 @@ export default {
         await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
         return members[i];
       }
-      const saved={...member,providers:[member.provider],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),joinedAt:now,lastLoginAt:now,cash:0,point:5000};
+      const bonus=await signupBonusEligible(phone)?5000:0,saved={...member,providers:[member.provider],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),joinedAt:now,lastLoginAt:now,cash:0,point:bonus};
       members.push(saved);
       await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+      if(bonus)await markSignupBonus(phone);
       return saved;
     }
     async function makeSession(member) {
@@ -52,8 +56,8 @@ export default {
         let m=members.find(x=>String(x.phone||"").replace(/[^0-9]/g,"")===phone);
         if(m)return Response.json({ok:false,error:"이미 가입되어 있는 회원입니다. 기존 가입 방식으로 로그인해 주세요."},{status:409});
         const salt=crypto.randomUUID(),passwordHash=await hashPassword(password,salt),now=new Date().toISOString();
-        m={provider:"local",id:phone,identities:[{provider:"local",id:phone}],providers:["local"],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),name,phone,email:"",joinedAt:now,lastLoginAt:now,cash:0,point:5000,licenses,profileCompleted:true,localSalt:salt,localPasswordHash:passwordHash};members.push(m);
-        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+        const bonus=await signupBonusEligible(phone)?5000:0;m={provider:"local",id:phone,identities:[{provider:"local",id:phone}],providers:["local"],memberNo:"U"+String(Math.max(0,...members.map(x=>Number(String(x.memberNo||"").replace(/^U/,""))||0))+1).padStart(5,"0"),name,phone,email:"",joinedAt:now,lastLoginAt:now,cash:0,point:bonus,licenses,profileCompleted:true,localSalt:salt,localPasswordHash:passwordHash};members.push(m);
+        await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});if(bonus)await markSignupBonus(phone);
         const safe={provider:"local",id:phone,memberNo:m.memberNo,name:m.name,phone:m.phone,profileCompleted:!!m.profileCompleted};
         return Response.json({ok:true},{headers:{"Set-Cookie":await makeSession(safe)}});
       }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
