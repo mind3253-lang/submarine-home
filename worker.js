@@ -244,6 +244,21 @@ export default {
       }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    if (url.pathname === "/api/logbook" && request.method === "GET") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const key="system/logbooks/"+encodeURIComponent(String(member.memberNo||member.provider+"-"+member.id))+".json",o=await env.IMAGES.get(key);return Response.json({ok:true,logs:o?JSON.parse(await o.text()):[]},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/logbook" && request.method === "POST") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      if(request.headers.get("Origin")!==url.origin)return Response.json({ok:false,error:"잘못된 요청입니다."},{status:403});
+      try{const d=await request.json(),key="system/logbooks/"+encodeURIComponent(String(member.memberNo||member.provider+"-"+member.id))+".json",o=await env.IMAGES.get(key),logs=o?JSON.parse(await o.text()):[],allowed=["logDate","logPlace","logBottomTime","logScubaSurface","logGas","logO2","logStartPressure","logEndPressure","logTank","logTankSize","logNDL","logSafetyStop","logEntryType","logDiveStyle","logWaterType","logTemp","logAirTemp","logVisibility","logWaves","logCurrent","logWeather","logCondition","logWeight","logSuit","logFins","logMask","logComputer","logGear","logFD_STA","logFD_DYN","logFD_DNF","logFD_CWT","logFD_CNF"],row={id:crypto.randomUUID(),createdAt:new Date().toISOString()};allowed.forEach(k=>row[k]=String(d[k]??"").slice(0,300));logs.unshift(row);await env.IMAGES.put(key,JSON.stringify(logs),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,log:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/logbook" && request.method === "DELETE") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      if(request.headers.get("Origin")!==url.origin)return Response.json({ok:false,error:"잘못된 요청입니다."},{status:403});
+      try{const id=String(url.searchParams.get("id")||""),key="system/logbooks/"+encodeURIComponent(String(member.memberNo||member.provider+"-"+member.id))+".json",o=await env.IMAGES.get(key),logs=o?JSON.parse(await o.text()):[];await env.IMAGES.put(key,JSON.stringify(logs.filter(x=>String(x.id)!==id)),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
         const member=await sessionMember();
