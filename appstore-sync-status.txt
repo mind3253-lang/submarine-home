@@ -1,2 +1,9 @@
-sync=failure
-error=review account create failed: 403 {'raw': 'error code: 1010\n'}
+review_account=created
+app_id=6819146913 primary_locale=ko
+version_id=8db672e6-8e05-42fc-894b-d94bd72239d4 state=PREPARE_FOR_SUBMISSION
+copyright=updated
+appinfo_localization=updated:ko
+version_localization=updated:ko
+build_attached=82366990-c1b0-4fbb-bf01-db2a265c7670 version=1 minOS=14.0
+review_detail=created
+sync=success
