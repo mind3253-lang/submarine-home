@@ -1,0 +1,31 @@
+name: iOS Build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios-app/**'
+      - '.github/workflows/ios-build.yml'
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ios-app/package-lock.json
+      - run: npm ci
+      - run: npx cap add ios
+      - run: npx cap sync ios
+      - name: Build unsigned simulator app
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+      - name: Package simulator build
+        run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Release-iphonesimulator/App.app SUBMARINE-simulator.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SUBMARINE-iOS-simulator
+          path: ios-app/SUBMARINE-simulator.zip
