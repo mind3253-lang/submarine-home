@@ -4,12 +4,9 @@
   "private": true,
   "scripts": {
     "sync": "npx cap sync ios",
-    "open": "npx cap open ios",
-    "sync:android": "npx cap sync android",
-    "open:android": "npx cap open android"
+    "open": "npx cap open ios"
   },
   "dependencies": {
-    "@capacitor/android": "^7.4.3",
     "@capacitor/core": "^7.4.3",
     "@capacitor/ios": "^7.4.3"
   },
