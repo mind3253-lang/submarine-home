@@ -135,6 +135,23 @@ def configure_app_info(app_id, app_info_id):
     a=updated.get("data",{}).get("attributes",{})
     log("age_rating="+str(a.get("appStoreAgeRating"))+" korea="+str(a.get("koreaAgeRating")))
 
+def configure_free_price(app_id):
+    q=urllib.parse.urlencode({"filter[territory]":"KOR","limit":"200"})
+    points=asc("GET",f"/v1/apps/{app_id}/appPricePoints?{q}").get("data",[])
+    free=next((p for p in points if str(p.get("attributes",{}).get("customerPrice")) in ("0","0.0","0.00")),None)
+    if not free:
+        raise RuntimeError("Free KOR app price point not found")
+    temp="${freeprice-0}"
+    body={"data":{"type":"appPriceSchedules","relationships":{
+        "app":{"data":{"type":"apps","id":app_id}},
+        "baseTerritory":{"data":{"type":"territories","id":"KOR"}},
+        "manualPrices":{"data":[{"type":"appPrices","id":temp}]}
+    }},"included":[{"type":"appPrices","id":temp,"relationships":{
+        "appPricePoint":{"data":{"type":"appPricePoints","id":free["id"]}}
+    }}]}
+    asc("POST","/v1/appPriceSchedules",body)
+    log("price=free baseTerritory=KOR")
+
 def attach_latest_build(app_id, version_id):
     for attempt in range(18):
         q=urllib.parse.urlencode({"filter[app]":app_id,"sort":"-uploadedDate","limit":"20","fields[builds]":"version,uploadedDate,processingState,minOsVersion"})
@@ -183,6 +200,7 @@ def main():
     if not infos: raise RuntimeError("No appInfos resource")
     info_id=infos[0]["id"]
     configure_app_info(app_id,info_id)
+    configure_free_price(app_id)
     asc("PATCH",f"/v1/appStoreVersions/{version_id}",{"data":{"type":"appStoreVersions","id":version_id,"attributes":{"copyright":CFG["copyright"]}}})
     log("copyright=updated")
     upsert_appinfo_localization(app_id,locale)
