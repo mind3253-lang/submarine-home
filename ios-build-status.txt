@@ -1,0 +1,10 @@
+commit=fdb31b573b050a2c0a9a90052db68f09feafcf39
+archive_outcome=failure
+timestamp=2026-10-05T05:49:30Z
+
+---- relevant archive log ----
+    /Applications/Xcode_16.4.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination generic/platform=iOS -archivePath build/SUBMARINE.xcarchive -allowProvisioningUpdates -authenticationKeyPath /Users/runner/.appstoreconnect/private_keys/AuthKey_494T77485D.p8 -authenticationKeyID 494T77485D -authenticationKeyIssuerID 6957b7a5-9906-4f07-9d4d-78ae6d7370d3 DEVELOPMENT_TEAM=M8AVCFQ98M CODE_SIGN_STYLE=Automatic archive
+GatherProvisioningInputs
+/Users/runner/work/submarine-home/submarine-home/ios-app/ios/App/App.xcodeproj: error: Communication with Apple failed: Your team has no devices from which to generate a provisioning profile. Connect a device to use or manually add device IDs in Certificates, Identifiers & Profiles. https://developer.apple.com/account/ (in target 'App' from project 'App')
+/Users/runner/work/submarine-home/submarine-home/ios-app/ios/App/App.xcodeproj: error: No profiles for 'asia.submarine.app' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'asia.submarine.app'. (in target 'App' from project 'App')
+The following build commands failed:
