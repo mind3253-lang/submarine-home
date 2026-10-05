@@ -4,10 +4,10 @@ version_id=8db672e6-8e05-42fc-894b-d94bd72239d4 state=PREPARE_FOR_SUBMISSION
 content_rights=uses_third_party_content
 categories=SPORTS,HEALTH_AND_FITNESS
 age_rating=FOUR_PLUS korea=None
-price=free baseTerritory=KOR
+price_schedule=existing
 copyright=updated
 appinfo_localization=updated:ko
 version_localization=updated:ko
-build_attached=c3fd2eed-881f-492d-a2d2-7daab3d312e1 version=14 minOS=15.0
+build_attached=171a530a-c9e8-4f41-9970-0a1820098639 version=15 minOS=15.0
 review_detail=updated
 sync=success
