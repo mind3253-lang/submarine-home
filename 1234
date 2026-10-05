@@ -409,9 +409,9 @@ async function deleteTourPost(){if(!confirm('이 모집글을 삭제할까요?')
 async function submitTourComment(inline=false){
  const inp=document.getElementById(inline?'tourInlineReplyText':'tourCommentText'),secret=document.getElementById(inline?'tourInlineReplySecret':'tourCommentSecret');if(!inp||!inp.value.trim())return;
  const x=findTourPost(activeTourPost);if(String(x?.id||'').startsWith('sample-')){alert('샘플글에는 댓글을 저장하지 않습니다. 실제 모집글에서 이용해 주세요.');return}
- const anchor=inline?document.querySelector('[data-comment-id="'+tourReplyParent+'"]'):document.getElementById('tourCommentsSection'),top=anchor?.getBoundingClientRect().top||0;
+ const savedScrollY=window.scrollY;
  try{const r=await fetch('/api/tours/comment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({postId:activeTourPost,parentId:inline?tourReplyParent:'',text:inp.value,secret:!!secret?.checked})}),j=await r.json();if(!r.ok||!j.ok){if(r.status===401)openLoginChoice();throw new Error(j.error||'댓글 등록 실패')}
- await loadTourPosts();const p=findTourPost(activeTourPost),list=document.getElementById('tourCommentsList');if(list&&p)list.innerHTML=tourCommentHtml(p.comments||[]);const h=document.querySelector('#tourCommentsSection h3');if(h&&p)h.textContent='댓글 '+(p.comments||[]).length;tourReplyParent='';requestAnimationFrame(()=>{const now=(inline?document.querySelector('[data-comment-id="'+(j.commentId||'')+'"]'):document.getElementById('tourCommentsSection'));if(anchor){const delta=anchor.getBoundingClientRect().top-top;window.scrollBy(0,delta)}})
+ await loadTourPosts();const p=findTourPost(activeTourPost),list=document.getElementById('tourCommentsList');if(list&&p)list.innerHTML=tourCommentHtml(p.comments||[]);const h=document.querySelector('#tourCommentsSection h3');if(h&&p)h.textContent='댓글 '+(p.comments||[]).length;tourReplyParent='';requestAnimationFrame(()=>window.scrollTo({top:savedScrollY,left:0,behavior:'auto'}))
  }catch(e){alert(e.message)}
 }
 function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'},'view=submarine');}
