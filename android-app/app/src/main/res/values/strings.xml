@@ -2,5 +2,7 @@
 <resources>
     <string name="app_name">SUBMARINE</string>
     <string name="launch_url" translatable="false">https://submarine.asia/</string>
-    <string name="asset_statements" translatable="false">[{"relation":["delegate_permission/common.handle_all_urls"],"target":{"namespace":"web","site":"https://submarine.asia"}}]</string>
+    <string name="asset_statements" translatable="false">
+        [{\"relation\":[\"delegate_permission/common.handle_all_urls\"],\"target\":{\"namespace\":\"web\",\"site\":\"https://submarine.asia/\"}}]
+    </string>
 </resources>
