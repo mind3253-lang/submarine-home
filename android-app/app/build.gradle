@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+def releaseKeystore = System.getenv("ANDROID_KEYSTORE_PATH")
+
+android {
+    namespace 'asia.submarine.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'asia.submarine.app'
+        minSdk 23
+        targetSdk 36
+        versionCode Integer.parseInt(System.getenv("ANDROID_VERSION_CODE") ?: "1")
+        versionName System.getenv("ANDROID_VERSION_NAME") ?: "1.0"
+    }
+
+    signingConfigs {
+        if (releaseKeystore) {
+            release {
+                storeFile file(releaseKeystore)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+            if (releaseKeystore) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
+}
