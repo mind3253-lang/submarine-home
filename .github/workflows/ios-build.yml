@@ -16,10 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: ios-app/package-lock.json
-      - run: npm ci
-      - run: npx cap add ios
+      - run: npm install
+      - run: rm -rf ios && npx cap add ios
       - run: npx cap sync ios
       - name: Build unsigned simulator app
         run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO
