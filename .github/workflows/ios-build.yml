@@ -35,14 +35,35 @@ jobs:
           mkdir -p "$HOME/.appstoreconnect/private_keys"
           printf '%s\n' "$ASC_PRIVATE_KEY" > "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8"
           chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8"
-      - name: Create App Store archive
+      - name: Create unsigned App Store archive
         id: archive
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive CODE_SIGNING_ALLOWED=NO archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
+      - name: Export signed App Store IPA
+        id: export
+        if: steps.archive.outcome == 'success'
+        continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
         run: |
           set -o pipefail
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive -allowProvisioningUpdates -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" DEVELOPMENT_TEAM=M8AVCFQ98M CODE_SIGN_STYLE=Automatic archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
+          rm -rf build/export
+          xcodebuild -exportArchive -archivePath build/SUBMARINE.xcarchive -exportPath build/export -exportOptionsPlist ExportOptions.plist -allowProvisioningUpdates -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" 2>&1 | tee "$GITHUB_WORKSPACE/ios-export.log"
+      - name: Upload build to App Store Connect
+        id: upload
+        if: steps.export.outcome == 'success'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APP_STORE_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          IPA="$(find build/export -maxdepth 2 -name '*.ipa' -print -quit)"
+          test -n "$IPA"
+          xcrun altool --upload-app --type ios --file "$IPA" --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$GITHUB_WORKSPACE/ios-upload.log"
       - name: Record build status
         if: always()
         working-directory: ${{ github.workspace }}
@@ -50,22 +71,26 @@ jobs:
           {
             echo "commit=$GITHUB_SHA"
             echo "archive_outcome=${{ steps.archive.outcome }}"
+            echo "export_outcome=${{ steps.export.outcome }}"
+            echo "upload_outcome=${{ steps.upload.outcome }}"
             echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo
-            echo "---- relevant archive log ----"
-            if [ -f ios-archive.log ]; then
-              grep -E "error:|Signing|Provisioning|certificate|profile|team|Authentication|failed|requires" ios-archive.log | tail -n 80 || tail -n 80 ios-archive.log
-            else
-              echo "ios-archive.log not created"
-            fi
+            for f in ios-archive.log ios-export.log ios-upload.log; do
+              echo
+              echo "---- $f ----"
+              if [ -f "$f" ]; then
+                grep -E "error:|Error|Signing|Provisioning|certificate|profile|team|Authentication|failed|requires|upload|Uploaded|success" "$f" | tail -n 120 || tail -n 120 "$f"
+              else
+                echo "not created"
+              fi
+            done
           } > ios-build-status.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add ios-build-status.txt
           git commit -m "Record iOS build status [skip ci]" || true
           git push
-      - name: Stop on archive failure
-        if: steps.archive.outcome == 'failure'
+      - name: Stop on distribution failure
+        if: always() && (steps.archive.outcome != 'success' || steps.export.outcome != 'success' || steps.upload.outcome != 'success')
         run: exit 1
       - name: Package simulator build
         run: ditto -c -k --sequesterRsrc --keepParent build/Build/Products/Release-iphonesimulator/App.app SUBMARINE-simulator.zip
