@@ -1,0 +1,46 @@
+name: Android Build
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios-app/**'
+      - '.github/workflows/android-build.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Install dependencies
+        run: npm install
+      - name: Generate Android project
+        run: |
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+      - name: Set Android app name
+        run: |
+          STRINGS="android/app/src/main/res/values/strings.xml"
+          sed -i 's#<string name="app_name">.*</string>#<string name="app_name">SUBMARINE</string>#' "$STRINGS"
+          sed -i 's#<string name="title_activity_main">.*</string>#<string name="title_activity_main">SUBMARINE</string>#' "$STRINGS"
+      - name: Build release bundle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+      - name: Preserve unsigned Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: SUBMARINE-Android-release-unsigned
+          path: ios-app/android/app/build/outputs/bundle/release/*.aab
