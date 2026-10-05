@@ -80,7 +80,7 @@ def upsert_appinfo_localization(app_id, locale):
     info_id=infos[0]["id"]
     q=urllib.parse.urlencode({"filter[locale]":locale})
     r=asc("GET",f"/v1/appInfos/{info_id}/appInfoLocalizations?{q}")
-    attrs={"subtitle":CFG["subtitle"],"privacyPolicyUrl":CFG["privacyPolicyUrl"]}
+    attrs={"subtitle":CFG["subtitle"],"privacyPolicyUrl":CFG["privacyPolicyUrl"],"privacyChoicesUrl":CFG.get("privacyChoicesUrl",CFG["privacyPolicyUrl"])}
     x=first_data(r)
     if x:
         asc("PATCH",f"/v1/appInfoLocalizations/{x['id']}",{"data":{"type":"appInfoLocalizations","id":x["id"],"attributes":attrs}})
@@ -89,6 +89,51 @@ def upsert_appinfo_localization(app_id, locale):
         body={"data":{"type":"appInfoLocalizations","attributes":{"locale":locale,**attrs},"relationships":{"appInfo":{"data":{"type":"appInfos","id":info_id}}}}}
         asc("POST","/v1/appInfoLocalizations",body)
         log(f"appinfo_localization=created:{locale}")
+
+def configure_app_info(app_id, app_info_id):
+    asc("PATCH",f"/v1/apps/{app_id}",{"data":{"type":"apps","id":app_id,"attributes":{"contentRightsDeclaration":"USES_THIRD_PARTY_CONTENT"}}})
+    log("content_rights=uses_third_party_content")
+    relationships={
+        "primaryCategory":{"data":{"type":"appCategories","id":CFG.get("primaryCategory","SPORTS")}},
+        "secondaryCategory":{"data":{"type":"appCategories","id":CFG.get("secondaryCategory","HEALTH_AND_FITNESS")}}
+    }
+    asc("PATCH",f"/v1/appInfos/{app_info_id}",{"data":{"type":"appInfos","id":app_info_id,"relationships":relationships}})
+    log("categories="+CFG.get("primaryCategory","SPORTS")+","+CFG.get("secondaryCategory","HEALTH_AND_FITNESS"))
+    age=asc("GET",f"/v1/appInfos/{app_info_id}/ageRatingDeclaration").get("data")
+    if not age:
+        raise RuntimeError("Age rating declaration not found")
+    attrs={
+        "advertising":False,
+        "alcoholTobaccoOrDrugUseOrReferences":"NONE",
+        "contests":"NONE",
+        "gambling":False,
+        "gamblingSimulated":"NONE",
+        "gunsOrOtherWeapons":"NONE",
+        "healthOrWellnessTopics":False,
+        "lootBox":False,
+        "medicalOrTreatmentInformation":"NONE",
+        "messagingAndChat":True,
+        "parentalControls":False,
+        "profanityOrCrudeHumor":"NONE",
+        "ageAssurance":False,
+        "sexualContentGraphicAndNudity":"NONE",
+        "sexualContentOrNudity":"NONE",
+        "socialMedia":False,
+        "socialMediaAgeRestricted":False,
+        "horrorOrFearThemes":"NONE",
+        "matureOrSuggestiveThemes":"NONE",
+        "unrestrictedWebAccess":False,
+        "userGeneratedContent":True,
+        "violenceCartoonOrFantasy":"NONE",
+        "violenceRealisticProlongedGraphicOrSadistic":"NONE",
+        "violenceRealistic":"NONE",
+        "ageRatingOverrideV2":"NONE",
+        "koreaAgeRatingOverride":"NONE"
+    }
+    asc("PATCH",f"/v1/ageRatingDeclarations/{age['id']}",{"data":{"type":"ageRatingDeclarations","id":age["id"],"attributes":attrs}})
+    updated=asc("GET",f"/v1/appInfos/{app_info_id}?fields[appInfos]=appStoreAgeRating,koreaAgeRating")
+    a=updated.get("data",{}).get("attributes",{})
+    log("age_rating="+str(a.get("appStoreAgeRating"))+" korea="+str(a.get("koreaAgeRating")))
 
 def attach_latest_build(app_id, version_id):
     for attempt in range(18):
@@ -134,6 +179,10 @@ def main():
     if not candidates: raise RuntimeError("No iOS App Store version")
     version=candidates[0]; version_id=version["id"]
     log(f"version_id={version_id} state={version.get('attributes',{}).get('appStoreState')}")
+    infos=asc("GET",f"/v1/apps/{app_id}/appInfos?limit=50").get("data",[])
+    if not infos: raise RuntimeError("No appInfos resource")
+    info_id=infos[0]["id"]
+    configure_app_info(app_id,info_id)
     asc("PATCH",f"/v1/appStoreVersions/{version_id}",{"data":{"type":"appStoreVersions","id":version_id,"attributes":{"copyright":CFG["copyright"]}}})
     log("copyright=updated")
     upsert_appinfo_localization(app_id,locale)
