@@ -136,6 +136,13 @@ def configure_app_info(app_id, app_info_id):
     log("age_rating="+str(a.get("appStoreAgeRating"))+" korea="+str(a.get("koreaAgeRating")))
 
 def configure_free_price(app_id):
+    try:
+        existing=asc("GET",f"/v1/apps/{app_id}/appPriceSchedule").get("data")
+    except RuntimeError as e:
+        existing=None if "HTTP 404" in str(e) else (_ for _ in ()).throw(e)
+    if existing:
+        log("price_schedule=existing")
+        return
     q=urllib.parse.urlencode({"filter[territory]":"KOR","limit":"200"})
     points=asc("GET",f"/v1/apps/{app_id}/appPricePoints?{q}").get("data",[])
     free=next((p for p in points if str(p.get("attributes",{}).get("customerPrice")) in ("0","0.0","0.00")),None)
@@ -156,12 +163,14 @@ def attach_latest_build(app_id, version_id):
     for attempt in range(18):
         q=urllib.parse.urlencode({"filter[app]":app_id,"sort":"-uploadedDate","limit":"20","fields[builds]":"version,uploadedDate,processingState,minOsVersion"})
         builds=asc("GET","/v1/builds?"+q).get("data",[])
-        valid=[b for b in builds if b.get("attributes",{}).get("processingState")=="VALID"]
-        if valid:
-            b=valid[0]
-            asc("PATCH",f"/v1/appStoreVersions/{version_id}/relationships/build",{"data":{"type":"builds","id":b["id"]}},ok=(200,204))
-            log(f"build_attached={b['id']} version={b.get('attributes',{}).get('version')} minOS={b.get('attributes',{}).get('minOsVersion')}")
-            return b["id"]
+        if builds:
+            b=builds[0]
+            state=b.get("attributes",{}).get("processingState")
+            if state=="VALID":
+                asc("PATCH",f"/v1/appStoreVersions/{version_id}/relationships/build",{"data":{"type":"builds","id":b["id"]}},ok=(200,204))
+                log(f"build_attached={b['id']} version={b.get('attributes',{}).get('version')} minOS={b.get('attributes',{}).get('minOsVersion')}")
+                return b["id"]
+            log(f"latest_build_state={state} version={b.get('attributes',{}).get('version')}")
         if attempt<17:
             log(f"build_wait={attempt+1}/18")
             time.sleep(20)
