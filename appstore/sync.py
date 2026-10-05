@@ -33,7 +33,7 @@ def asc(method,path,body=None,ok=(200,201,204)):
 def webpost(path,body):
     data=json.dumps(body,ensure_ascii=False).encode()
     req=urllib.request.Request("https://submarine.asia"+path,data=data,method="POST",
-        headers={"Content-Type":"application/json","Origin":"https://submarine.asia"})
+        headers={"Content-Type":"application/json","Origin":"https://submarine.asia","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/154.0 Safari/537.36","Accept":"application/json,text/plain,*/*","Referer":"https://submarine.asia/"})
     try:
         with urllib.request.urlopen(req,timeout=30) as r: return r.status,json.loads(r.read().decode() or "{}")
     except urllib.error.HTTPError as e:
