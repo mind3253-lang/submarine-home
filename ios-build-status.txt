@@ -1,8 +1,8 @@
-commit=ed4f10cffc8ea9736045c2b155fec11650f5c1e4
+commit=dce2c585b62860be83a9c3803ec289d7ff30c421
 archive_outcome=success
 export_outcome=success
-upload_outcome=failure
-timestamp=2026-10-05T06:15:06Z
+upload_outcome=success
+timestamp=2026-10-05T06:19:58Z
 
 ---- ios-archive.log ----
 GatherProvisioningInputs
@@ -10,9 +10,6 @@ GatherProvisioningInputs
 ---- ios-export.log ----
 
 ---- ios-upload.log ----
-2026-10-05 06:14:54.109 ERROR: [altool.600001B5C1C0] [ContentDelivery.Uploader.600001B5C1C0] Validation failed (409) SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337)
-2026-10-05 06:15:06.500 ERROR: [altool.600001B5C1C0] Error uploading 'build/export/App.ipa'.
-2026-10-05 06:15:06.500 ERROR: [altool.600001B5C1C0] Validation failed SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337) (409)
-    NSLocalizedDescription = "Validation failed";
-    NSLocalizedFailureReason = "SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337)";
-    NSUnderlyingError = "Error Domain=IrisAPI Code=-19241 \"Validation failed\" UserInfo={status=409, detail=SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution., id=fccc35ac-5973-4fb5-b787-ee08db189337, code=STATE_ERROR.VALIDATION_ERROR, title=Validation failed, NSLocalizedFailureReason=SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution., NSLocalizedDescription=Validation failed}";
+2026-10-05 06:19:58.733  WARN: [altool.B7D0384C0] Deployment target too low. Your app targets iOS 14.0. Starting in April 2027, iOS apps must target 15.0 or later to be uploaded to App Store Connect or submitted for distribution. (90068)
+      description : Deployment target too low. Your app targets iOS 14.0. Starting in April 2027, iOS apps must target 15.0 or later to be uploaded to App Store Connect or submitted for distribution.
+No errors, 1 warnings, uploading archive at 'build/export/App.ipa'.
