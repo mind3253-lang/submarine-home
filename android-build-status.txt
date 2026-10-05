@@ -1,0 +1,12 @@
+architecture=TWA
+package=asia.submarine.app
+commit=11bf935db418c1bb8640be73b681a0d2529b53d5
+run_number=10
+gradle_outcome=skipped
+release_signed=false
+target_sdk=36
+timestamp=2026-10-05T21:39:28Z
+
+---- artifacts ----
+
+---- build log tail ----
