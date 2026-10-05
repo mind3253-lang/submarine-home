@@ -1,19 +1,18 @@
-commit=280877ce03cd78ad3896f63ebaf8bf62aabc8679
+commit=ed4f10cffc8ea9736045c2b155fec11650f5c1e4
 archive_outcome=success
-export_outcome=failure
-upload_outcome=skipped
-timestamp=2026-10-05T05:55:10Z
+export_outcome=success
+upload_outcome=failure
+timestamp=2026-10-05T06:15:06Z
 
 ---- ios-archive.log ----
 GatherProvisioningInputs
 
 ---- ios-export.log ----
-error: exportArchive Cloud signing permission error
-error: exportArchive No profiles for 'asia.submarine.app' were found
-error: exportArchive Cloud signing permission error
-error: exportArchive No signing certificate "iOS Distribution" found
-error: exportArchive Cloud signing permission error
-error: exportArchive No signing certificate "iOS Distribution" found
 
 ---- ios-upload.log ----
-not created
+2026-10-05 06:14:54.109 ERROR: [altool.600001B5C1C0] [ContentDelivery.Uploader.600001B5C1C0] Validation failed (409) SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337)
+2026-10-05 06:15:06.500 ERROR: [altool.600001B5C1C0] Error uploading 'build/export/App.ipa'.
+2026-10-05 06:15:06.500 ERROR: [altool.600001B5C1C0] Validation failed SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337) (409)
+    NSLocalizedDescription = "Validation failed";
+    NSLocalizedFailureReason = "SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution. (ID: fccc35ac-5973-4fb5-b787-ee08db189337)";
+    NSUnderlyingError = "Error Domain=IrisAPI Code=-19241 \"Validation failed\" UserInfo={status=409, detail=SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution., id=fccc35ac-5973-4fb5-b787-ee08db189337, code=STATE_ERROR.VALIDATION_ERROR, title=Validation failed, NSLocalizedFailureReason=SDK version issue. This app was built with the iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK or later, included in Xcode 26 or later, in order to be uploaded to App Store Connect or submitted for distribution., NSLocalizedDescription=Validation failed}";
