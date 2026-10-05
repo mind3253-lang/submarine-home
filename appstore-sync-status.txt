@@ -1,0 +1,2 @@
+sync=failure
+error=review account create failed: 403 {'raw': 'error code: 1010\n'}
