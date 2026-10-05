@@ -201,8 +201,8 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <button class="ind-submit-btn" type="button" onclick="saveIndependentPreviewPost()">모집글 올리기</button></div></div>
 <div id="indDetailModal" class="ind-modal" onclick="if(event.target===this)closeIndependentDetail()"><div class="ind-modal-box ind-detail-box"><button class="ind-modal-x" type="button" onclick="closeIndependentDetail()">×</button><div id="indDetailContent"></div></div></div>
 <section id="tourMenu" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
-<div class="visual-card" onclick="openTourBoard('domestic')"><div style="width:100%;height:100%;background:linear-gradient(160deg,#0c5d8f,#62c6dc)"></div><div class="visual-label"><strong>Domestic Tour</strong><span>— 국내</span></div></div>
-<div class="visual-card" onclick="openTourBoard('overseas')"><div style="width:100%;height:100%;background:linear-gradient(160deg,#16457b,#71b8ee)"></div><div class="visual-label"><strong>Overseas Tour</strong><span>— 해외</span></div></div>
+<div class="visual-card" onclick="openTourBoard('domestic')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-05/895e80a3-df75-4126-b46b-d514d846775f.png" alt="국내 다이빙 투어"><div class="visual-label"><strong>Domestic Tour</strong><span>— 국내</span></div></div>
+<div class="visual-card" onclick="openTourBoard('overseas')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-05/d24bf02e-b6fb-40fe-8046-2d3f765c455a.png" alt="해외 다이빙 투어"><div class="visual-label"><strong>Overseas Tour</strong><span>— 해외</span></div></div>
 </div></div></section>
 <section id="tourBoard" class="page"><div class="wrap"><div class="article-shell"><h1 id="tourBoardTitle">다이빙 투어</h1><p style="color:#64727d">다이빙 일정을 함께할 사람을 모집하는 공간입니다.</p><div style="margin-top:28px;padding:24px;border:1px solid #e3e8ec;border-radius:14px;background:#f8fbfd"><strong id="tourBoardType">국내 투어 모집</strong><p style="margin-bottom:0">모집글 목록과 글쓰기 기능을 이 화면에 구성합니다.</p></div></div></div></section>
 <section id="submarineMenu" class="page"><div class="wrap"><div class="visual-menu">
