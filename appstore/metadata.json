@@ -16,6 +16,9 @@
     "contactLastName": "황",
     "contactPhone": "+82-32-710-5746",
     "contactEmail": "hbanana74@naver.com",
-    "notes": "SUBMARINE은 대한민국 부천의 실내 다이빙풀 공식 앱입니다. 풀 입장권, 교육, 예약 등 결제 대상은 앱 외부의 실제 시설에서 제공되는 물리적 서비스입니다. 정보 페이지는 로그인 없이 볼 수 있으며, 제공된 데모 계정으로 마이페이지, 로그북, 예약, 커뮤니티, 회원탈퇴 흐름을 확인할 수 있습니다. 회원탈퇴는 회원 메뉴의 나의 기록/계정 영역에서 직접 실행할 수 있습니다. 개인정보 처리방침은 https://submarine.asia/privacy.html 에 공개되어 있습니다."
-  }
+    "notes": "SUBMARINE은 대한민국 부천의 실내 다이빙풀 공식 앱입니다. 풀 입장권, 교육, 예약 등 결제 대상은 앱 외부의 실제 시설에서 제공되는 물리적 서비스입니다. 정보 페이지는 로그인 없이 볼 수 있으며, 제공된 데모 계정으로 마이페이지, 로그북, 예약, 커뮤니티, 회원탈퇴 흐름을 확인할 수 있습니다. 회원탈퇴는 회원 메뉴의 나의 기록/계정 영역에서 직접 실행할 수 있습니다. 독립군/다이빙 투어 커뮤니티의 게시글과 댓글에는 사용자 신고 및 작성자 차단 기능이 있으며, 운영자 관리 화면에서 신고 처리와 콘텐츠 삭제가 가능합니다. 개인정보 처리방침 및 개인정보 권리 안내는 https://submarine.asia/privacy.html 에 공개되어 있습니다."
+  },
+  "privacyChoicesUrl": "https://submarine.asia/privacy.html",
+  "primaryCategory": "SPORTS",
+  "secondaryCategory": "HEALTH_AND_FITNESS"
 }
