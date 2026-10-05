@@ -1,5 +1,4 @@
 name: iOS Build
-# Admin signing retry
 on:
   workflow_dispatch:
   push:
@@ -27,7 +26,7 @@ jobs:
       - run: rm -rf ios && npx cap add ios
       - run: npx cap sync ios
       - name: Build unsigned simulator app
-        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0
       - name: Validate App Store Connect credentials
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
@@ -45,7 +44,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive CODE_SIGNING_ALLOWED=NO archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0 archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
       - name: Export signed App Store IPA
         id: export
         if: steps.archive.outcome == 'success'
@@ -69,6 +68,12 @@ jobs:
           IPA="$(find build/export -maxdepth 2 -name '*.ipa' -print -quit)"
           test -n "$IPA"
           xcrun altool --upload-app --type ios --file "$IPA" --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$GITHUB_WORKSPACE/ios-upload.log"
+      - name: Preserve App Store IPA
+        if: steps.export.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SUBMARINE-iOS-AppStore-${{ github.run_number }}
+          path: ios-app/build/export/*.ipa
       - name: Record build status
         if: always()
         working-directory: ${{ github.workspace }}
