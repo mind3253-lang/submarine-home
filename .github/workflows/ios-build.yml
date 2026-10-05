@@ -27,22 +27,10 @@ jobs:
       - run: npx cap sync ios
       - name: Prepare branded iOS app assets
         run: |
-          python3 -m pip install --quiet pillow
-          python3 - <<'PY'
-          from PIL import Image
-          from pathlib import Path
-          src=Path("../SM-logo-social.png")
-          icon_dir=Path("ios/App/App/Assets.xcassets/AppIcon.appiconset")
-          targets=list(icon_dir.glob("*.png"))
-          if not targets:
-              raise SystemExit("AppIcon PNG target not found")
-          img=Image.open(src).convert("RGBA").resize((1024,1024),Image.Resampling.LANCZOS)
-          bg=Image.new("RGB",(1024,1024),"white")
-          bg.paste(img,mask=img.getchannel("A"))
-          for target in targets:
-              bg.save(target,format="PNG",optimize=True)
-          print("App icon:", ", ".join(str(x) for x in targets))
-          PY
+          ICON_DIR="ios/App/App/Assets.xcassets/AppIcon.appiconset"
+          mkdir -p "$ICON_DIR"
+          sips -z 1024 1024 "../SM-logo-social.png" --out "$ICON_DIR/AppIcon-512@2x.png"
+          test -s "$ICON_DIR/AppIcon-512@2x.png"
           PLIST="ios/App/App/Info.plist"
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName SUBMARINE" "$PLIST" 2>/dev/null || true
