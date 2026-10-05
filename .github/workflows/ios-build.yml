@@ -35,7 +35,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST" 2>/dev/null || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" "$PLIST"
           /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName SUBMARINE" "$PLIST" 2>/dev/null || true
       - name: Build unsigned simulator app
-        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0
+        run: xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0 TARGETED_DEVICE_FAMILY=1
       - name: Validate App Store Connect credentials
         env:
           ASC_KEY_ID: ${{ secrets.APP_STORE_KEY_ID }}
@@ -53,7 +53,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0 archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -destination 'generic/platform=iOS' -archivePath build/SUBMARINE.xcarchive CODE_SIGNING_ALLOWED=NO IPHONEOS_DEPLOYMENT_TARGET=15.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} MARKETING_VERSION=1.0 TARGETED_DEVICE_FAMILY=1 archive 2>&1 | tee "$GITHUB_WORKSPACE/ios-archive.log"
       - name: Export signed App Store IPA
         id: export
         if: steps.archive.outcome == 'success'
