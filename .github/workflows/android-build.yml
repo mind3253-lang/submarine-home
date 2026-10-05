@@ -10,6 +10,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     defaults:
       run:
         working-directory: ios-app
@@ -29,21 +34,56 @@ jobs:
           rm -rf android
           npx cap add android
           npx cap sync android
-      - name: Brand Android app
+      - name: Brand and version Android app
         run: |
           STRINGS="android/app/src/main/res/values/strings.xml"
           sed -i 's#<string name="app_name">.*</string>#<string name="app_name">SUBMARINE</string>#' "$STRINGS"
           sed -i 's#<string name="title_activity_main">.*</string>#<string name="title_activity_main">SUBMARINE</string>#' "$STRINGS"
+
+          BUILD_GRADLE="android/app/build.gradle"
+          sed -i -E "s/versionCode [0-9]+/versionCode ${{ github.run_number }}/" "$BUILD_GRADLE"
+          sed -i -E 's/versionName "[^"]+"/versionName "1.0"/' "$BUILD_GRADLE"
+
           sudo apt-get update -qq
           sudo apt-get install -y -qq imagemagick
           ICON="../SM-logo-social.png"
           test -s "$ICON"
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          rm -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
           for spec in "mipmap-mdpi:48" "mipmap-hdpi:72" "mipmap-xhdpi:96" "mipmap-xxhdpi:144" "mipmap-xxxhdpi:192"; do
             dir="${spec%%:*}"; px="${spec##*:}"
             mkdir -p "android/app/src/main/res/$dir"
             convert "$ICON" -resize "${px}x${px}" "android/app/src/main/res/$dir/ic_launcher.png"
             cp "android/app/src/main/res/$dir/ic_launcher.png" "android/app/src/main/res/$dir/ic_launcher_round.png"
           done
+      - name: Configure release signing when secrets are present
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ] && [ -n "$ANDROID_KEYSTORE_PASSWORD" ] && [ -n "$ANDROID_KEY_ALIAS" ] && [ -n "$ANDROID_KEY_PASSWORD" ]; then
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+            cat >> android/app/build.gradle <<'EOF'
+
+          if (System.getenv("ANDROID_KEYSTORE_PASSWORD")) {
+              android {
+                  signingConfigs {
+                      release {
+                          storeFile file("upload-keystore.jks")
+                          storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                          keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                          keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                      }
+                  }
+                  buildTypes {
+                      release {
+                          signingConfig signingConfigs.release
+                      }
+                  }
+              }
+          }
+          EOF
+            echo "ANDROID_RELEASE_SIGNED=true" >> "$GITHUB_ENV"
+          else
+            echo "ANDROID_RELEASE_SIGNED=false" >> "$GITHUB_ENV"
+          fi
       - name: Build release AAB and debug APK
         id: gradle
         continue-on-error: true
@@ -56,7 +96,7 @@ jobs:
         if: steps.gradle.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: SUBMARINE-Android-build
+          name: SUBMARINE-Android-build-${{ github.run_number }}
           path: |
             ios-app/android/app/build/outputs/bundle/release/*.aab
             ios-app/android/app/build/outputs/apk/debug/*.apk
@@ -66,7 +106,9 @@ jobs:
         run: |
           {
             echo "commit=$GITHUB_SHA"
+            echo "run_number=${{ github.run_number }}"
             echo "gradle_outcome=${{ steps.gradle.outcome }}"
+            echo "release_signed=${ANDROID_RELEASE_SIGNED:-false}"
             echo "timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
             echo "---- artifacts ----"
