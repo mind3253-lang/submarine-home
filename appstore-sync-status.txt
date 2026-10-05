@@ -4,6 +4,7 @@ version_id=8db672e6-8e05-42fc-894b-d94bd72239d4 state=PREPARE_FOR_SUBMISSION
 content_rights=uses_third_party_content
 categories=SPORTS,HEALTH_AND_FITNESS
 age_rating=FOUR_PLUS korea=None
+price=free baseTerritory=KOR
 copyright=updated
 appinfo_localization=updated:ko
 version_localization=updated:ko
