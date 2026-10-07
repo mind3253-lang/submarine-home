@@ -72,8 +72,12 @@ export default {
         });
         const raw=await r.text(); let data; try{data=JSON.parse(raw)}catch{data={raw:raw.slice(0,1000)}}
         const safe=data&&typeof data==="object"?{...data}:data;
+        // A successful Ready response proves DEV online-payment access. Keep tid server-side only.
+        if(r.ok&&data?.tid){
+          await env.IMAGES.put("system/kakaopay-dev-probe.json",JSON.stringify({tid:data.tid,partner_order_id:body.partner_order_id,partner_user_id:body.partner_user_id,createdAt:new Date().toISOString()}),{httpMetadata:{contentType:"application/json"}});
+        }
         if(safe&&typeof safe==="object"){delete safe.tid;delete safe.next_redirect_app_url;delete safe.next_redirect_mobile_url;delete safe.next_redirect_pc_url;delete safe.android_app_scheme;delete safe.ios_app_scheme}
-        return Response.json({ok:r.ok,httpStatus:r.status,stage:"ready",response:safe},{status:r.ok?200:r.status,headers:{"Cache-Control":"no-store"}});
+        return Response.json({ok:r.ok,httpStatus:r.status,stage:"ready",onlineDevAccess:r.ok,response:safe},{status:r.ok?200:r.status,headers:{"Cache-Control":"no-store"}});
       }catch(e){return Response.json({ok:false,stage:"network",error:e?.message||String(e)},{status:502,headers:{"Cache-Control":"no-store"}})}
     }
 
