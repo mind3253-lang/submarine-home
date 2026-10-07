@@ -81,16 +81,6 @@ export default {
       }catch(e){return Response.json({ok:false,stage:"network",error:e?.message||String(e)},{status:502,headers:{"Cache-Control":"no-store"}})}
     }
 
-    // KakaoPay merchant-review account. Kept separate from customer member records.
-    if (url.pathname === "/api/auth/local/login" && request.method === "POST") {
-      try {
-        const d=await request.json(),rawId=String(d.phone||"").trim(),password=String(d.password||"");
-        if(rawId==="kko"&&password==="1234"){
-          const safe={provider:"review",id:"kko",memberNo:"REVIEW-KKO",name:"카카오페이 심사",phone:"",profileCompleted:true,reviewAccount:true};
-          return Response.json({ok:true},{headers:{"Set-Cookie":await makeSession(safe)}});
-        }
-      }catch{}
-    }
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
       try {
         const d=await request.json(),name=String(d.name||"").trim(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||""),licenses=Array.isArray(d.licenses)?d.licenses:[];
