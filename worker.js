@@ -47,6 +47,36 @@ export default {
       try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(!s.expiresAt||Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
     }
     async function requireAdmin(){return await adminSessionValid()?null:Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401})}
+    // KakaoPay online payment DEV probe. Secret stays in Worker env, never in browser/GitHub.
+    if (url.pathname === "/api/payment/kakaopay/dev-probe" && request.method === "POST") {
+      const denied=await requireAdmin(); if(denied)return denied;
+      if(!env.KAKAOPAY_SECRET_KEY_DEV) return Response.json({ok:false,stage:"config",error:"KAKAOPAY_SECRET_KEY_DEV 환경변수가 없습니다."},{status:503});
+      try{
+        const origin="https://submarine.asia";
+        const body={
+          cid:"TC0ONETIME",
+          partner_order_id:"SUBMARINE-DEV-"+Date.now(),
+          partner_user_id:"admin-dev-probe",
+          item_name:"SUBMARINE 카카오페이 개발연동 테스트",
+          quantity:1,
+          total_amount:100,
+          tax_free_amount:0,
+          approval_url:origin+"/?kakaopay=success",
+          cancel_url:origin+"/?kakaopay=cancel",
+          fail_url:origin+"/?kakaopay=fail"
+        };
+        const r=await fetch("https://open-api.kakaopay.com/online/v1/payment/ready",{
+          method:"POST",
+          headers:{"Authorization":"SECRET_KEY "+env.KAKAOPAY_SECRET_KEY_DEV,"Content-Type":"application/json"},
+          body:JSON.stringify(body)
+        });
+        const raw=await r.text(); let data; try{data=JSON.parse(raw)}catch{data={raw:raw.slice(0,1000)}}
+        const safe=data&&typeof data==="object"?{...data}:data;
+        if(safe&&typeof safe==="object"){delete safe.tid;delete safe.next_redirect_app_url;delete safe.next_redirect_mobile_url;delete safe.next_redirect_pc_url;delete safe.android_app_scheme;delete safe.ios_app_scheme}
+        return Response.json({ok:r.ok,httpStatus:r.status,stage:"ready",response:safe},{status:r.ok?200:r.status,headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,stage:"network",error:e?.message||String(e)},{status:502,headers:{"Cache-Control":"no-store"}})}
+    }
+
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
       try {
         const d=await request.json(),name=String(d.name||"").trim(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||""),licenses=Array.isArray(d.licenses)?d.licenses:[];
