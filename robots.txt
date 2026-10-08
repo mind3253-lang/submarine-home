@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin-k-mobile.html
+Disallow: /api/
+
+Sitemap: https://submarine.asia/sitemap.xml
