@@ -456,7 +456,7 @@ export default {
     // Standards-based payload-free Web Push. Service worker displays generic payment notice.
     // Configure VAPID_PRIVATE_KEY as base64url PKCS#8 P-256 key, VAPID_PUBLIC_KEY
     // as base64url uncompressed public point, and VAPID_SUBJECT as mailto: address.
-    const kPushBase64url=bytes=>{let binary="";for(const b of bytes)binary+=String.fromCharCode(b);return btoa(binary).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"")};
+    const kPushBase64url=bytes=>{let binary="";for(const b of bytes)binary+=String.fromCharCode(b);return btoa(binary).split("+").join("-").split("/").join("_").replace(/=+$/,"")};
     const kPushDecode=str=>Uint8Array.from(atob(String(str).replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(String(str).length/4)*4,"=")),c=>c.charCodeAt(0));
     async function sendKPushNotifications(){
       const pub=String(env.VAPID_PUBLIC_KEY||"").trim(),priv=String(env.VAPID_PRIVATE_KEY||"").trim(),subject=String(env.VAPID_SUBJECT||"").trim();
