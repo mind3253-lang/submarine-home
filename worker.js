@@ -456,6 +456,36 @@ export default {
     async function readPayments(){try{const o=await env.IMAGES.get("system/payments.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writePayments(rows){await env.IMAGES.put("system/payments.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     if (url.pathname === "/api/payments" && request.method === "POST") {const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});try{const d=await request.json(),amount=Math.max(0,Number(d.amount)||0);if(!d.product||!amount)return Response.json({ok:false,error:"상품과 금액을 확인해 주세요."},{status:400});const quantity=Math.max(1,Math.floor(Number(d.quantity)||1)),unitAmount=Math.max(0,Number(d.unitAmount)||0),products=await readA3Products(),productIndex=products.findIndex(x=>String(x.title||"")===String(d.product||"")),product=products[productIndex],rewardRate=Math.max(0,Number(product?.rate)||0),rewardPoint=Math.round(amount*rewardRate/100),purchaseMileagePoint=productIndex===0?amount:0,rows=await readPayments(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",phone:member.phone||"",product:String(d.product),productIndex,quantity,unitAmount,amount,payerName:String(d.payerName||member.name||"").trim(),method:"bank",rewardRate,rewardPoint,purchaseMileagePoint,status:"pending",createdAt:new Date().toISOString()};rows.unshift(row);await writePayments(rows);return Response.json({ok:true,payment:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    // K-room push registration: each administrator phone registers independently.
+    // VAPID_PUBLIC_KEY is a public browser key; private signing key must remain server-side.
+    if (url.pathname === "/api/admin/k-push/public-key" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      const publicKey=String(env.VAPID_PUBLIC_KEY||"").trim();
+      return Response.json({ok:!!publicKey,publicKey,error:publicKey?undefined:"웹 푸시 서버 키가 아직 설정되지 않았습니다."},{status:publicKey?200:503,headers:{"Cache-Control":"no-store"}});
+    }
+    if (url.pathname === "/api/admin/k-push/subscriptions" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try {
+        const d=await request.json(),sub=d.subscription||{},endpoint=String(sub.endpoint||"");
+        if(!endpoint.startsWith("https://")||endpoint.length>2048||!sub.keys||!String(sub.keys.p256dh||"")||!String(sub.keys.auth||""))
+          return Response.json({ok:false,error:"올바른 푸시 구독 정보가 아닙니다."},{status:400});
+        const key="system/admin-k-push-subscriptions.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];
+        const now=new Date().toISOString(),entry={endpoint,keys:{p256dh:String(sub.keys.p256dh),auth:String(sub.keys.auth)},createdAt:now,updatedAt:now};
+        const i=rows.findIndex(x=>x.endpoint===endpoint);
+        if(i>=0)rows[i]={...rows[i],...entry,createdAt:rows[i].createdAt||now};else rows.push(entry);
+        await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,registered:true});
+      }catch(e){return Response.json({ok:false,error:e?.message||"등록 실패"},{status:500})}
+    }
+    if (url.pathname === "/api/admin/k-push/subscriptions" && request.method === "DELETE") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try {
+        const d=await request.json(),endpoint=String(d.endpoint||"");
+        const key="system/admin-k-push-subscriptions.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];
+        await env.IMAGES.put(key,JSON.stringify(rows.filter(x=>x.endpoint!==endpoint)),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:e?.message||"해제 실패"},{status:500})}
+    }
     if (url.pathname === "/api/admin/payments" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,payments:await readPayments()})}
     if (url.pathname === "/api/admin/payments/complete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readPayments(),i=rows.findIndex(x=>x.id===d.id);if(i<0)return Response.json({ok:false,error:"결제내역을 찾을 수 없습니다."},{status:404});if(rows[i].status==="completed")return Response.json({ok:true,payment:rows[i]});const products=await readA3Products(),productIndex=Number.isInteger(rows[i].productIndex)?rows[i].productIndex:products.findIndex(x=>String(x.title||"")===String(rows[i].product||"")),product=products[productIndex],rate=rows[i].rewardRate!=null?Math.max(0,Number(rows[i].rewardRate)||0):Math.max(0,Number(product?.rate)||0),reward=rows[i].rewardPoint!=null?Math.max(0,Number(rows[i].rewardPoint)||0):Math.round(Number(rows[i].amount||0)*rate/100),purchaseMileage=rows[i].purchaseMileagePoint!=null?Math.max(0,Number(rows[i].purchaseMileagePoint)||0):(productIndex===0?Math.max(0,Number(rows[i].amount)||0):0),credited=reward+purchaseMileage,mk="system/members.json";let members=[];const mo=await env.IMAGES.get(mk);if(mo)members=JSON.parse(await mo.text());const mi=members.findIndex(x=>x.memberNo===rows[i].memberNo);if(mi<0)return Response.json({ok:false,error:"결제 회원을 찾을 수 없습니다."},{status:404});members[mi].point=Number(members[mi].point||0)+credited;members[mi].balanceUpdatedAt=new Date().toISOString();rows[i].status="completed";rows[i].productIndex=productIndex;rows[i].rewardRate=rate;rows[i].rewardPoint=reward;rows[i].purchaseMileagePoint=purchaseMileage;rows[i].completedAt=new Date().toISOString();await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});try{await writePayments(rows)}catch(e){members[mi].point=Math.max(0,Number(members[mi].point||0)-credited);await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});throw e}return Response.json({ok:true,payment:rows[i],rewardPoint:reward,purchaseMileagePoint:purchaseMileage,creditedPoint:credited,memberPoint:members[mi].point})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/admin/payments/delete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readPayments(),i=rows.findIndex(x=>x.id===d.id);if(i<0)return Response.json({ok:false,error:"결제내역을 찾을 수 없습니다."},{status:404});rows.splice(i,1);await writePayments(rows);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
