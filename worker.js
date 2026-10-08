@@ -515,6 +515,17 @@ export default {
         return Response.json({ok:true,registered:true});
       }catch(e){return Response.json({ok:false,error:e?.message||"등록 실패"},{status:500})}
     }
+    if (url.pathname === "/api/admin/k-push/test" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      if(!env.VAPID_PUBLIC_KEY||!env.VAPID_PRIVATE_KEY||!env.VAPID_SUBJECT)
+        return Response.json({ok:false,error:"서버 푸시 인증키 설정이 필요합니다."},{status:503});
+      try {
+        const key="system/admin-k-push-subscriptions.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];
+        if(!rows.length)return Response.json({ok:false,error:"등록된 관리자 휴대폰이 없습니다."},{status:409});
+        await sendKPushNotifications();
+        return Response.json({ok:true,attempted:rows.length,note:"발송 시도 완료. 실제 수신은 휴대폰에서 확인하세요."});
+      }catch(e){return Response.json({ok:false,error:"테스트 알림 발송 실패"},{status:500})}
+    }
     if (url.pathname === "/api/admin/k-push/subscriptions" && request.method === "DELETE") {
       const denied=await requireAdmin();if(denied)return denied;
       try {
