@@ -36,9 +36,24 @@ list.addEventListener("click",async e=>{
  try{const r=await fetch("/api/admin/payments/complete",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:b.dataset.id})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||"승인 실패");alert("결제승인 완료 · 고객 충전 반영");previous=null;await refresh()}catch(e){alert("승인 실패: "+e.message);b.disabled=false}
 });
 document.querySelector("#refresh").onclick=refresh;
+const decodeKey=s=>{const raw=atob(s.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(s.length/4)*4,"="));return Uint8Array.from(raw,c=>c.charCodeAt(0))};
+document.querySelector("#notify").textContent="이 휴대폰 푸시 알림 등록";
 document.querySelector("#notify").onclick=async()=>{
- if(!("Notification" in window)){alert("이 브라우저에서는 화면 알림을 지원하지 않습니다.");return}
- const permission=await Notification.requestPermission();alert(permission==="granted"?"화면 알림 허용됨 (K방을 열어둔 동안 동작)":"알림 권한이 허용되지 않았습니다.");
+ const btn=document.querySelector("#notify");btn.disabled=true;
+ try{
+  if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))throw Error("현재 브라우저가 웹 푸시를 지원하지 않습니다.");
+  if(Notification.permission==="denied")throw Error("브라우저 설정에서 이 사이트의 알림 권한을 먼저 허용해 주세요.");
+  const permission=await Notification.requestPermission();if(permission!=="granted")throw Error("알림 권한이 허용되지 않았습니다.");
+  const keyResponse=await fetch("/api/admin/k-push/public-key",{credentials:"same-origin",cache:"no-store"}),keyData=await keyResponse.json();
+  if(!keyResponse.ok||!keyData.ok)throw Error(keyData.error||"서버 푸시 키 조회 실패");
+  const reg=await navigator.serviceWorker.register("/admin-k-sw.js",{scope:"/"});
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decodeKey(keyData.publicKey)});
+  const r=await fetch("/api/admin/k-push/subscriptions",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({subscription:sub.toJSON()})}),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||"구독 저장 실패");
+  btn.textContent="이 휴대폰 알림 등록됨";
+  alert("휴대폰 알림 수신 등록 완료. 실제 알림 발송은 서버 설정 및 발송 기능 연결 후 동작합니다.");
+ }catch(e){alert("푸시 등록 실패: "+e.message)}finally{btn.disabled=false}
 };
 refresh();setInterval(refresh,10000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 </script></body></html>
