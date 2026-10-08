@@ -6,7 +6,7 @@
 </style></head><body><header><h1>🦑 서브마린 K방</h1><a href="/admin?admin=K">전체 관리자방 ↗</a></header><main>
 <p class="hint">관리자 전용 · 실제 은행 입금을 확인한 뒤에만 승인하세요.</p>
 <div id="status" role="status">결제요청 확인 중…</div>
-<div class="actions"><button id="refresh" class="secondary">지금 새로고침</button><button id="notify" class="secondary">화면 알림 켜기</button></div>
+<div class="actions"><button id="refresh" class="secondary">지금 새로고침</button><button id="notify" class="secondary">화면 알림 켜기</button><button id="testpush" class="secondary">테스트 푸시 발송</button></div>
 <p class="hint">이 화면이 열려 있는 동안 10초마다 확인합니다. 화면을 닫아도 울리는 푸시 알림은 별도 서버 연동이 필요합니다.</p>
 <section id="requests" aria-live="polite"></section></main>
 <script>
@@ -35,6 +35,10 @@ list.addEventListener("click",async e=>{
  b.disabled=true;
  try{const r=await fetch("/api/admin/payments/complete",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:b.dataset.id})});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||"승인 실패");alert("결제승인 완료 · 고객 충전 반영");previous=null;await refresh()}catch(e){alert("승인 실패: "+e.message);b.disabled=false}
 });
+document.querySelector("#testpush").onclick=async()=>{
+ const b=document.querySelector("#testpush");b.disabled=true;
+ try{const r=await fetch("/api/admin/k-push/test",{method:"POST",credentials:"same-origin"}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||"테스트 발송 실패");alert("등록된 관리자 휴대폰 "+j.attempted+"대에 테스트 알림 발송을 시도했습니다. 수신 여부를 확인하세요.")}catch(e){alert("테스트 실패: "+e.message)}finally{b.disabled=false}
+};
 document.querySelector("#refresh").onclick=refresh;
 const decodeKey=s=>{const raw=atob(s.replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(s.length/4)*4,"="));return Uint8Array.from(raw,c=>c.charCodeAt(0))};
 document.querySelector("#notify").textContent="이 휴대폰 푸시 알림 등록";
