@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     async function bonusPhoneKey(phone){const normalized=String(phone||"").replace(/[^0-9]/g,"");if(!normalized)return "";const secret=String(env.NAVER_CLIENT_SECRET||env.KAKAO_REST_API_KEY||"submarine");const data=new TextEncoder().encode(secret+"|signup-bonus|"+normalized);const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",data));return Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("")}
@@ -453,9 +453,47 @@ export default {
       }catch(e){return back("fail",e?.message||"결제 승인 처리 중 오류가 발생했습니다.")}
     }
 
+    // Standards-based payload-free Web Push. Service worker displays generic payment notice.
+    // Configure VAPID_PRIVATE_KEY as base64url PKCS#8 P-256 key, VAPID_PUBLIC_KEY
+    // as base64url uncompressed public point, and VAPID_SUBJECT as mailto: address.
+    const kPushBase64url=bytes=>{let binary="";for(const b of bytes)binary+=String.fromCharCode(b);return btoa(binary).replace(/\\+/g,"-").replace(/\\//g,"_").replace(/=+$/,"")};
+    const kPushDecode=str=>Uint8Array.from(atob(String(str).replace(/-/g,"+").replace(/_/g,"/").padEnd(Math.ceil(String(str).length/4)*4,"=")),c=>c.charCodeAt(0));
+    async function sendKPushNotifications(){
+      const pub=String(env.VAPID_PUBLIC_KEY||"").trim(),priv=String(env.VAPID_PRIVATE_KEY||"").trim(),subject=String(env.VAPID_SUBJECT||"").trim();
+      if(!pub||!priv||!subject)return;
+      const key="system/admin-k-push-subscriptions.json",o=await env.IMAGES.get(key);
+      if(!o)return;
+      const subscriptions=JSON.parse(await o.text());
+      if(!Array.isArray(subscriptions)||!subscriptions.length)return;
+      const signingKey=await crypto.subtle.importKey("pkcs8",kPushDecode(priv),{name:"ECDSA",namedCurve:"P-256"},false,["sign"]);
+      const encoder=new TextEncoder(),header=kPushBase64url(encoder.encode(JSON.stringify({typ:"JWT",alg:"ES256"})));
+      const exp=Math.floor(Date.now()/1000)+3600;
+      const tokens=new Map();
+      const results=await Promise.allSettled(subscriptions.map(async sub=>{
+        const endpoint=String(sub.endpoint||""),url=new URL(endpoint);
+        if(url.protocol!=="https:")throw Error("invalid push endpoint");
+        const aud=url.origin;
+        let token=tokens.get(aud);
+        if(!token){
+          const payload=kPushBase64url(encoder.encode(JSON.stringify({aud,exp,sub:subject})));
+          const signingInput=header+"."+payload;
+          const signature=new Uint8Array(await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},signingKey,encoder.encode(signingInput)));
+          token=signingInput+"."+kPushBase64url(signature);tokens.set(aud,token);
+        }
+        const response=await fetch(endpoint,{method:"POST",headers:{"Authorization":"vapid t="+token+", k="+pub,"TTL":"60","Urgency":"high","Content-Length":"0"}});
+        return {endpoint,status:response.status,ok:response.ok,expired:response.status===404||response.status===410};
+      }));
+      const expired=new Set(results.filter(x=>x.status==="fulfilled"&&x.value.expired).map(x=>x.value.endpoint));
+      if(expired.size){
+        // Avoid overwriting registrations made while notifications were being sent.
+        const current=await env.IMAGES.get(key),rows=current?JSON.parse(await current.text()):[];
+        await env.IMAGES.put(key,JSON.stringify(rows.filter(x=>!expired.has(x.endpoint))),{httpMetadata:{contentType:"application/json"}});
+      }
+      for(const result of results)if(result.status==="rejected")console.error("K-room push failed",String(result.reason));
+    }
     async function readPayments(){try{const o=await env.IMAGES.get("system/payments.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writePayments(rows){await env.IMAGES.put("system/payments.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
-    if (url.pathname === "/api/payments" && request.method === "POST") {const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});try{const d=await request.json(),amount=Math.max(0,Number(d.amount)||0);if(!d.product||!amount)return Response.json({ok:false,error:"상품과 금액을 확인해 주세요."},{status:400});const quantity=Math.max(1,Math.floor(Number(d.quantity)||1)),unitAmount=Math.max(0,Number(d.unitAmount)||0),products=await readA3Products(),productIndex=products.findIndex(x=>String(x.title||"")===String(d.product||"")),product=products[productIndex],rewardRate=Math.max(0,Number(product?.rate)||0),rewardPoint=Math.round(amount*rewardRate/100),purchaseMileagePoint=productIndex===0?amount:0,rows=await readPayments(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",phone:member.phone||"",product:String(d.product),productIndex,quantity,unitAmount,amount,payerName:String(d.payerName||member.name||"").trim(),method:"bank",rewardRate,rewardPoint,purchaseMileagePoint,status:"pending",createdAt:new Date().toISOString()};rows.unshift(row);await writePayments(rows);return Response.json({ok:true,payment:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/payments" && request.method === "POST") {const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});try{const d=await request.json(),amount=Math.max(0,Number(d.amount)||0);if(!d.product||!amount)return Response.json({ok:false,error:"상품과 금액을 확인해 주세요."},{status:400});const quantity=Math.max(1,Math.floor(Number(d.quantity)||1)),unitAmount=Math.max(0,Number(d.unitAmount)||0),products=await readA3Products(),productIndex=products.findIndex(x=>String(x.title||"")===String(d.product||"")),product=products[productIndex],rewardRate=Math.max(0,Number(product?.rate)||0),rewardPoint=Math.round(amount*rewardRate/100),purchaseMileagePoint=productIndex===0?amount:0,rows=await readPayments(),row={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",phone:member.phone||"",product:String(d.product),productIndex,quantity,unitAmount,amount,payerName:String(d.payerName||member.name||"").trim(),method:"bank",rewardRate,rewardPoint,purchaseMileagePoint,status:"pending",createdAt:new Date().toISOString()};rows.unshift(row);await writePayments(rows);if(ctx&&typeof ctx.waitUntil==="function")ctx.waitUntil(sendKPushNotifications().catch(e=>console.error("K-room push delivery failed",String(e))));return Response.json({ok:true,payment:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     // K-room push registration: each administrator phone registers independently.
     // VAPID_PUBLIC_KEY is a public browser key; private signing key must remain server-side.
     if (url.pathname === "/api/admin/k-push/public-key" && request.method === "GET") {
