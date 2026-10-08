@@ -738,6 +738,30 @@ export default {
       return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}});
     }
 
+    // Public, server-rendered education pages: existing R2 book text, no duplicate content store.
+    if (request.method === "GET" && (url.pathname.startsWith("/academy/") || url.pathname === "/sitemap.xml")) {
+      const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+      const escapeXml = escapeHtml;
+      let posts = [];
+      try {
+        const obj = await env.IMAGES.get("system/education-posts.json");
+        if (obj) posts = JSON.parse(await obj.text()).filter(p => p && p.published !== false && String(p.title || "").trim() && String(p.title || "").trim() !== "한 줄, 상위 카테고리");
+      } catch {}
+      if (url.pathname === "/sitemap.xml") {
+        const paths = ["/", "/freediving.html", ...posts.filter(p => /^[a-zA-Z0-9_-]{1,120}$/.test(String(p.id || ""))).map(p => "/academy/" + encodeURIComponent(String(p.id)))];
+        const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + paths.map(p => "  <url><loc>https://submarine.asia" + escapeXml(p) + "</loc></url>").join("\n") + "\n</urlset>";
+        return new Response(xml, {headers: {"Content-Type":"application/xml; charset=utf-8","Cache-Control":"public, max-age=1800"}});
+      }
+      const id = decodeURIComponent(url.pathname.slice("/academy/".length));
+      const post = posts.find(p => String(p.id) === id);
+      if (!post || !/^[a-zA-Z0-9_-]{1,120}$/.test(id)) return new Response("교육자료를 찾을 수 없습니다.", {status:404,headers:{"Content-Type":"text/plain; charset=utf-8"}});
+      const title = escapeHtml(post.title), category = escapeHtml(post.category || "교육자료"), canonical = "https://submarine.asia/academy/" + encodeURIComponent(id);
+      const description = escapeHtml(String(post.bodyHtml || "").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim().slice(0,155) || String(post.title));
+      const body = String(post.bodyHtml || "").replace(/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi,"").replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,"").replace(/javascript\s*:/gi,"");
+      const html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + title + ' | 서브마린 교육자료실</title><meta name="description" content="' + description + '"><meta name="robots" content="index,follow"><link rel="canonical" href="' + canonical + '"><style>body{margin:0;background:#f7fafc;color:#20313d;font:16px/1.85 system-ui,-apple-system,sans-serif}header,main,footer{max-width:860px;margin:auto;padding:20px}main{background:#fff;padding:28px;border-radius:14px}h1{line-height:1.4;color:#155b88}h2,h3{color:#1769aa}img{max-width:100%;height:auto}a{color:#1769aa}.cta{display:inline-block;margin:16px 10px 16px 0;padding:10px 18px;background:#1769aa;color:white;border-radius:8px;text-decoration:none}@media(max-width:600px){main{padding:18px;border-radius:0}}</style></head><body><header><a href="/">서브마린 다이빙풀</a> · <a href="/?library=freediving">교육자료실</a></header><main><small>' + category + '</small><h1>' + title + '</h1>' + (post.image ? '<img src="' + escapeHtml(post.image) + '" alt="' + title + '">' : '') + '<article>' + body + '</article><a class="cta" href="/?library=freediving">교육자료 더 보기</a><a class="cta" href="/?view=schedule">다이빙풀 예약 안내</a></main><footer>서브마린 다이빙풀 · 경기도 부천시 경인로 459</footer></body></html>';
+      return new Response(html, {headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"public, max-age=300","X-Content-Type-Options":"nosniff"}});
+    }
+
     const response = await env.ASSETS.fetch(request);
     if (url.pathname.endsWith(".html") || url.pathname === "/") {
       const fresh = new Response(response.body, response);
