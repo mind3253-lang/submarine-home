@@ -473,7 +473,7 @@ function openInstructorCardInfo(kind){
  <label>소속 다이빙단체 (해당 시)<input name="organization" maxlength="150"></label>
  <label>강사번호 (해당 시)<input name="instructorNo" maxlength="100"></label>
  </div>
- <label class="instructor-attachment-label">자격증 및 증빙파일 첨부 (최대 5개, 파일당 5MB / JPG·PNG·WEBP·PDF)<input name="attachments" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple></label>
+ <label class="instructor-attachment-label">강사 자격증 및 기타 증빙파일 첨부 (최대 4개, 파일당 5MB / JPG·PNG·WEBP·PDF) *<input name="attachments" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple required></label><label class="instructor-attachment-label">책임보험 가입증명서 첨부 *<input name="insurance" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required></label>
  <h3>약정 내용</h3><ol class="instructor-clauses">${instructorAgreementClauses.map(x=>'<li>'+x+'</li>').join('')}</ol>
  <p class="instructor-agreement-ending">${instructorAgreementEnding}</p>
  <label class="instructor-agree-check"><input type="checkbox" name="agree" required> 위 약정 내용을 읽고 동의합니다.</label>
@@ -494,7 +494,7 @@ function clearInstructorSignature(){const c=document.getElementById('instructorS
 async function submitInstructorAgreement(e){
  e.preventDefault();const form=e.currentTarget,status=document.getElementById('instructorAgreementStatus'),btn=form.querySelector('button[type="submit"]');
  if(!instructorSigned){status.textContent='서명을 먼저 작성해 주세요.';return}
- const files=form.elements.attachments.files;if(files.length>5||Array.from(files).some(f=>f.size>5*1024*1024)){status.textContent='첨부파일은 최대 5개, 파일당 5MB 이하입니다.';return}
+ const files=form.elements.attachments.files;if(files.length>4||Array.from(files).some(f=>f.size>5*1024*1024)||form.elements.insurance.files[0]?.size>5*1024*1024){status.textContent='자격증 등 최대 4개와 보험증명서 1개, 파일당 5MB 이하입니다.';return}
  const data=new FormData(form);data.delete('agree');data.set('signature',document.getElementById('instructorSignature').toDataURL('image/png'));btn.disabled=true;status.textContent='제출 중입니다...';
  try{const res=await fetch('/api/instructor-agreement',{method:'POST',body:data});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'제출 실패');status.textContent='강사 이용 약정서가 제출되었습니다. 접수번호: '+j.id;form.querySelectorAll('input,button').forEach(x=>x.disabled=true)}
  catch(err){status.textContent=err.message||'제출 실패. 다시 시도해 주세요.';btn.disabled=false}
