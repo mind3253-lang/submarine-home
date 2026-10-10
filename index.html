@@ -176,7 +176,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 @media(max-width:760px){.instructor-benefit-grid{grid-template-columns:1fr;gap:14px}.instructor-benefit-panel{padding:24px 21px}}
 </style><style>
 .instructor-agreement-form{color:#17374b;line-height:1.75}.instructor-agreement-form h2{font-size:25px}.instructor-agreement-form h3{margin:25px 0 10px}.instructor-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.instructor-agreement-form label{display:block;font-weight:700;font-size:14px}.instructor-agreement-form input:not([type=checkbox]):not([type=file]){display:block;width:100%;padding:12px;border:1px solid #b7cbd9;border-radius:7px;background:#fff;color:#17374b;margin-top:5px;box-sizing:border-box}.instructor-attachment-label{margin:20px 0}.instructor-attachment-label input{display:block;margin-top:8px}.instructor-clauses{padding-left:23px}.instructor-clauses li{margin:0 0 13px}.instructor-agreement-ending{border-top:2px solid #176a9b;padding-top:16px}.instructor-agree-check{margin:20px 0}.instructor-agree-check input{margin-right:8px}#instructorSignature{width:100%;height:160px;border:2px solid #176a9b;border-radius:7px;background:#fff;touch-action:none;box-sizing:border-box}.instructor-agreement-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.instructor-agreement-actions button{background:#123c57;color:white;padding:12px 20px;border:0;border-radius:7px;cursor:pointer}.instructor-agreement-actions button:first-child{background:#e7eef3;color:#123c57}#instructorAgreementStatus{font-weight:700;color:#176a9b}@media(max-width:650px){.instructor-form-grid{grid-template-columns:1fr}}
-</style><style>.sm-instructor-apply{margin-top:30px;padding-top:24px;border-top:4px solid #1474a9}.sm-instructor-apply label{display:block;margin:15px 0}.sm-instructor-apply textarea{display:block;width:100%;box-sizing:border-box;padding:12px;border:1px solid #aabecb;border-radius:6px;font:inherit}.sm-instructor-apply button{background:#123c57;color:white;border:0;padding:13px 22px;border-radius:6px;font-weight:700}.sm-instructor-apply button:disabled{opacity:.4}</style></head>
+</style><style>.sm-instructor-apply{margin-top:30px;padding-top:24px;border-top:4px solid #1474a9}.sm-instructor-apply label{display:block;margin:15px 0}.sm-instructor-apply textarea{display:block;width:100%;box-sizing:border-box;padding:12px;border:1px solid #aabecb;border-radius:6px;font:inherit}.sm-instructor-apply button{background:#123c57;color:white;border:0;padding:13px 22px;border-radius:6px;font-weight:700}.sm-instructor-apply button:disabled{opacity:.4}</style><style>.instructor-back{background:#eef4f8;color:#123c57;border:1px solid #c7d8e3;padding:10px 15px;cursor:pointer;margin-bottom:16px;font-weight:700}</style></head>
 <body>
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer;width:205px;height:64px;display:flex;align-items:center"><img id="headerBrandLogo" alt="SUBMARINE" style="display:none;max-width:200px;max-height:58px;width:auto;height:auto;object-fit:contain"></div>
 <nav>
@@ -194,11 +194,11 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <button onclick="openWaiverMenu();closeMobileMenu()">약정서</button>
 <button onclick="openMemberMenu();closeMobileMenu()">My Dive</button><button onclick="openInstructorRegistrationMenu();closeMobileMenu()">강사등록</button>
 </div></header>
-<section id="instructorRegistration" class="page"><div class="wrap"><div class="visual-menu visual-menu-two">
+<section id="instructorRegistration" class="page"><div class="wrap"><div class="visual-menu visual-menu-two" id="instructorLandingCards">
 <div class="visual-card" onclick="openInstructorCardInfo('register')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openInstructorCardInfo('register')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-10/f664e417-012b-4fa8-acf9-04f1db14c5fb.jpg" alt="강사 이용 약정서"><div class="visual-label"><strong style="font-size:clamp(19px,2.2vw,27px);white-space:nowrap;letter-spacing:-.7px">Instructor Agreement</strong><span>— 강사 이용 약정서</span></div></div>
 <div class="visual-card" onclick="openInstructorCardInfo('apply')" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openInstructorCardInfo('apply')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-10/e46ac63e-b4a3-4f36-97a5-ff8647ff7354.jpg" alt="SM 강사 약정서"><div class="visual-label"><strong style="font-size:clamp(19px,2.2vw,27px);white-space:nowrap;letter-spacing:-.7px">SM Instructor Agreement</strong><span>— SM 강사 약정서</span></div></div>
 </div>
-<div class="instructor-benefits" style="margin:28px auto 0">
+<div class="instructor-benefits" id="instructorLandingBenefits" style="margin:28px auto 0">
 <div class="instructor-benefit-grid">
 <section class="instructor-benefit-panel instructor-benefit-blue">
 <div class="instructor-benefit-kicker">Instructor Registration</div><h2>강사등록</h2>
@@ -447,7 +447,7 @@ async function submitTourComment(inline=false){
 function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'},'view=submarine');}
 function openGuideMenu(){show('guide');navPush({view:'guide'},'view=guide');}
 function openProducts(){show('products');renderA3Shop();const d=document.getElementById('a3ProductPage');if(d)d.style.display='none';const old=document.querySelector('.a3-old-products');if(old)old.style.display='none';navPush({view:'products'},'view=products');}
-function openInstructorRegistrationMenu(){show('instructorRegistration');document.getElementById('instructorCardInfo').style.display='none';navPush({view:'instructorRegistration'},'view=instructorRegistration')}
+function openInstructorRegistrationMenu(){show('instructorRegistration');document.getElementById('instructorCardInfo').style.display='none';document.getElementById('instructorLandingCards').style.display='grid';document.getElementById('instructorLandingBenefits').style.display='block';navPush({view:'instructorRegistration'},'view=instructorRegistration')}
 const instructorAgreementClauses=[
 "매년 강사 자격을 갱신하여 유효한 강사 신분을 유지해야 한다. 자격을 갱신하지 않거나, 갱신하지 않았음을 알리지 아니한 상태에서 발생한 사고는 강사의 책임으로 한다.",
 "평균 강사와 학생의 비율(1:4)보다 더 큰 규모의 강습을 진행한다면, 다른 강사 또는 보조자를 참여시켜야 한다.",
@@ -461,9 +461,9 @@ const instructorAgreementClauses=[
 const instructorAgreementEnding="위 사항에 모두 동의하며, 동행 강습생 및 참여자의 안전을 최우선으로 고려한다. 또한 이후 서브마린다이빙풀의 규정에 반하여 발생하는 제재에 대하여 이의 제기를 하지 않을 것이며, 사고 발생 시 서브마린다이빙풀, 그에 소속된 이들에게 어떠한 민/형사상의 책임을 물을 수 없다. 본 약정은 서브마린다이빙풀 또는 강사가 약정해지의 뜻을 서면고지하기 이전까지 유지된다.";
 let instructorSigned=false;
 function openInstructorCardInfo(kind){
- const el=document.getElementById('instructorCardInfo');el.style.display='block';
+ const el=document.getElementById('instructorCardInfo');document.getElementById('instructorLandingCards').style.display='none';document.getElementById('instructorLandingBenefits').style.display='none';el.style.display='block';
  if(kind!=='register'){el.innerHTML='<h2>SM 강사 약정서</h2><p>일반 강사 이용 약정서를 완료하고, SM 강사 승인 후 별도 약정을 진행할 수 있습니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return}
- el.innerHTML=`<div class="instructor-agreement-form"><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
+ el.innerHTML=`<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
  <form id="instructorAgreementForm">
  <div class="instructor-form-grid">
  <label>강사 이름 *<input name="name" required maxlength="100"></label>
