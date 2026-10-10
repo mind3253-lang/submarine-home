@@ -617,6 +617,19 @@ export default {
       if(kind==="file"){const n=Number(indexText),file=row.attachments?.[n];if(!Number.isInteger(n)||!file)return Response.json({ok:false,error:"첨부파일 없음"},{status:404});const f=await env.IMAGES.get(file.key);if(!f)return Response.json({ok:false,error:"파일 없음"},{status:404});return new Response(f.body,{headers:{"Content-Type":file.type,"Content-Disposition":"attachment; filename*=UTF-8''"+encodeURIComponent(file.name),"Cache-Control":"no-store"}})}
       return Response.json({ok:true,agreement:row});
     }
+    if(url.pathname==="/api/sm-instructor-agreement"&&request.method==="POST"){
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{
+        const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[];
+        if(!member.memberNo||!rows.some(x=>String(x.memberNo||"").trim()===String(member.memberNo).trim()))return Response.json({ok:false,error:"F방에 등록된 강사회원만 제출할 수 있습니다."},{status:403});
+        const d=await request.json();const signature=String(d.signature||"");
+        if(d.agreed!==true||!signature.startsWith("data:image/png;base64,")||signature.length>500000)return Response.json({ok:false,error:"약정 동의 및 서명을 확인해 주세요."},{status:400});
+        const id=crypto.randomUUID(),record={id,memberId:member.id,memberNo:member.memberNo,name:member.name||"",version:"sm-instructor-2026-10-10",clauses:d.clauses,agreed:true,signature,submittedAt:new Date().toISOString()};
+        if(!Array.isArray(record.clauses)||record.clauses.length!==10)return Response.json({ok:false,error:"약정서 내용이 올바르지 않습니다."},{status:400});
+        await env.IMAGES.put("system/sm-instructor-agreements/"+id+".json",JSON.stringify(record),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,id});
+      }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/sm-instructor-applications" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{const d=await request.json(),id=String(d.agreementId||"");
