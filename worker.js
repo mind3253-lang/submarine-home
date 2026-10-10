@@ -306,8 +306,22 @@ export default {
         if(!geoBuckets[key])geoBuckets[key]=new Set();
         if(x.visitor)geoBuckets[key].add(String(x.visitor));
       }
+      // Aggregate Seoul-only coordinate patterns without exposing individual visitor or IP data.
+      const seoulCoordinateBuckets={};
+      for(const x of filtered){
+        if(String(x.country||"").toUpperCase()!=="KR")continue;
+        const city=String(x.city||"").trim(),region=String(x.region||"").trim(),code=String(x.regionCode||"").trim();
+        if(!(/seoul|서울/i.test(region)||code==="11"))continue;
+        const lat=String(x.latitude||"").trim(),lon=String(x.longitude||"").trim();
+        const valid=lat!==""&&lon!==""&&Number.isFinite(Number(lat))&&Number.isFinite(Number(lon));
+        const coord=valid?Number(lat).toFixed(3)+", "+Number(lon).toFixed(3):"(좌표 없음)";
+        const label=(city||"(도시 없음)")+" / "+coord;
+        if(!seoulCoordinateBuckets[label])seoulCoordinateBuckets[label]=new Set();
+        if(x.visitor)seoulCoordinateBuckets[label].add(String(x.visitor));
+      }
+      const seoulCoordinateSummary=Object.entries(seoulCoordinateBuckets).map(([name,visitors])=>({name,count:visitors.size})).sort((a,b)=>b.count-a.count).slice(0,30);
       const geoRawSummary=Object.entries(geoBuckets).map(([name,visitors])=>({name,count:visitors.size})).sort((a,b)=>b.count-a.count).slice(0,35);
-      return Response.json({ok:true,source:"site",summary:{visitors:visitorSet.size,requests:filtered.length,pageviews:filtered.length,registrations,reservations},daily,sources:rankSets(rv).slice(0,10),regions:rankSets(gm),cities:rankSets(gm),geoDiagnostics:{nonKoreanOrUnknown:geoUnclassified.size,countryMissing:geoCountryUnknown.size,foreignCountry:geoForeign.size,unmappedKorean:(gm["그 외 지역"]?.size||0),locationMissing:(gm["위치 확인 불가"]?.size||0),seoulUnknown:(gm["서울 지역 미상"]?.size||0),gyeonggiUnknown:(gm["경기 지역 미상"]?.size||0)},unknownGeo:rankSets(unknownGeo).slice(0,30),geoRawSummary,countries:[]});
+      return Response.json({ok:true,source:"site",summary:{visitors:visitorSet.size,requests:filtered.length,pageviews:filtered.length,registrations,reservations},daily,sources:rankSets(rv).slice(0,10),regions:rankSets(gm),cities:rankSets(gm),geoDiagnostics:{nonKoreanOrUnknown:geoUnclassified.size,countryMissing:geoCountryUnknown.size,foreignCountry:geoForeign.size,unmappedKorean:(gm["그 외 지역"]?.size||0),locationMissing:(gm["위치 확인 불가"]?.size||0),seoulUnknown:(gm["서울 지역 미상"]?.size||0),gyeonggiUnknown:(gm["경기 지역 미상"]?.size||0)},unknownGeo:rankSets(unknownGeo).slice(0,30),geoRawSummary,seoulCoordinateSummary,countries:[]});
     }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
     if (url.pathname === "/api/admin/naver-keywords" && request.method === "GET") {
