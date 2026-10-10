@@ -337,7 +337,19 @@ async function loadSmAgreements(){
  }catch(e){el.textContent=e.message}
 }
 async function viewSmAgreement(id,row){
- try{const r=await fetch('/api/admin/sm-instructor-agreements/'+encodeURIComponent(id)),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');const x=j.agreement,box=document.createElement('div');box.style.cssText='padding:16px;background:#edf4f8;margin-top:12px';const p=document.createElement('p');p.textContent='회원번호: '+x.memberNo+' / 제출: '+x.submittedAt;box.append(p);(x.clauses||[]).forEach((c,i)=>{const h=document.createElement('h4');h.textContent=(i+1)+'. '+c[0];const t=document.createElement('p');t.textContent=c[1];t.style.whiteSpace='pre-line';box.append(h,t)});const img=document.createElement('img');img.src=x.signature;img.alt='SM 강사 전자서명';img.style.cssText='display:block;max-width:100%;background:white;margin-top:12px';box.append(img);row.append(box)}catch(e){alert(e.message)}
+ const old=row.querySelector('.sm-agreement-detail');if(old){old.remove();return}
+ try{
+  const r=await fetch('/api/admin/sm-instructor-agreements/'+encodeURIComponent(id)),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
+  const x=j.agreement,box=document.createElement('div');box.className='sm-agreement-detail';
+  box.style.cssText='width:100%;padding:14px 16px;background:#edf4f8;margin-top:10px;border-radius:9px';
+  const p=document.createElement('p');p.style.margin='0 0 10px';
+  p.textContent='제출: '+(x.submittedAt?new Date(x.submittedAt).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}):'-');
+  box.append(p);
+  const img=document.createElement('img');img.src=x.signature;img.alt='SM 강사 전자서명';
+  img.style.cssText='display:block;width:220px;max-width:100%;max-height:75px;object-fit:contain;background:white;border:1px solid #d2dce2';
+  box.append(img);row.append(box);
+ }catch(e){alert(e.message||'조회 실패')}
 }
 function showInstructorPhoto(url){
  const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:999999;display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out';
