@@ -709,6 +709,31 @@ export default {
         return Response.json({ok:true,id});
       }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
     }
+    if (url.pathname === "/api/instructor-onboarding-status" && request.method === "GET") {
+      const member=await sessionMember();
+      if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{
+        const latest=async(prefix)=>{
+          let cursor,found=null;
+          do{
+            const batch=await env.IMAGES.list({prefix,cursor,limit:1000});
+            for(const item of batch.objects){
+              if(!item.key.endsWith(".json"))continue;
+              const obj=await env.IMAGES.get(item.key);
+              if(!obj)continue;
+              const row=JSON.parse(await obj.text());
+              if(String(row.memberId||"")!==String(member.id))continue;
+              if(!found||String(row.submittedAt||"")>String(found.submittedAt||""))found=row;
+            }
+            cursor=batch.truncated?batch.cursor:null;
+          }while(cursor);
+          return found;
+        };
+        const agreement=await latest("system/instructor-agreements/");
+        const application=await latest("system/sm-instructor-applications/");
+        return Response.json({ok:true,agreement:agreement?{id:agreement.id,submittedAt:agreement.submittedAt}:null,application:application?{id:application.id,status:application.status,submittedAt:application.submittedAt}:null},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:"강사 신청 상태 조회에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/sm-instructor-applications" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{const d=await request.json(),id=String(d.agreementId||"");
