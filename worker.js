@@ -261,7 +261,7 @@ export default {
       const exclusions=await analyticsExclusions(),excludedIps=new Set(exclusions.ipHashes||[]),excludedVisitors=new Set(exclusions.visitorHashes||[]),excludedSids=new Set(exclusions.sids||[]);const filtered=local.filter(x=>{const t=new Date(x.t||0).getTime();return t>=analyticsStart.getTime()&&t<=now.getTime()&&!excludedIps.has(x.ipHash)&&!excludedVisitors.has(x.visitor)&&!excludedSids.has(x.sid)});
       const visitorSet=new Set(),sidSet=new Set(),dailySets={},rv={},gm={},unknownGeo={},geoUnclassified=new Set(),geoCountryUnknown=new Set(),geoForeign=new Set();
       for(const x of filtered){const v=String(x.visitor||"");if(v)visitorSet.add(v);const sid=String(x.sid||"");if(sid)sidSet.add(sid);const day=String(x.t||"").slice(0,10);if(day){if(!dailySets[day])dailySets[day]=new Set();if(v)dailySets[day].add(v)}
-        const route=String(x.route||x.source||"직접접속");if(!rv[route])rv[route]=new Set();if(v)rv[route].add(v);
+        const rawRoute=String(x.route||x.source||"직접접속");const route=/google|구글/i.test(rawRoute)?"구글":/naver|네이버/i.test(rawRoute)?"네이버":rawRoute;if(!rv[route])rv[route]=new Set();if(v)rv[route].add(v);
         if(String(x.country||"").toUpperCase()==="KR"){
           const city=String(x.city||"").toLowerCase().replace(/[^a-z가-힣]/g,""),region=String(x.region||"").toLowerCase().replace(/[^a-z가-힣]/g,""),code=String(x.regionCode||"").toLowerCase();
           const has=(...words)=>words.some(w=>city.includes(w));
