@@ -709,6 +709,24 @@ export default {
         return Response.json({ok:true,id});
       }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
     }
+    if (url.pathname === "/api/admin/sm-instructor-applications" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const rows=[];let cursor;
+        do{
+          const batch=await env.IMAGES.list({prefix:"system/sm-instructor-applications/",cursor,limit:1000});
+          for(const item of batch.objects){
+            if(!item.key.endsWith(".json"))continue;
+            const obj=await env.IMAGES.get(item.key);
+            if(!obj)continue;
+            try{rows.push(JSON.parse(await obj.text()))}catch{}
+          }
+          cursor=batch.truncated?batch.cursor:null;
+        }while(cursor);
+        rows.sort((a,b)=>String(b.submittedAt||"").localeCompare(String(a.submittedAt||"")));
+        return Response.json({ok:true,applications:rows},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:"SM 강사 지원서 조회 실패"},{status:500})}
+    }
     if (url.pathname === "/api/instructor-onboarding-status" && request.method === "GET") {
       const member=await sessionMember();
       if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
