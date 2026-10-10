@@ -259,13 +259,38 @@ export default {
       const dates=[];for(let n=0;n<days;n++){const d=new Date(since.getTime()+n*86400000).toISOString().slice(0,10);dates.push(d)}
       const local=[];await Promise.all(dates.map(async day=>{try{const o=await env.IMAGES.get("analytics/"+day+".json");if(o)local.push(...JSON.parse(await o.text()))}catch{}}));
       const exclusions=await analyticsExclusions(),excludedIps=new Set(exclusions.ipHashes||[]),excludedVisitors=new Set(exclusions.visitorHashes||[]),excludedSids=new Set(exclusions.sids||[]);const filtered=local.filter(x=>{const t=new Date(x.t||0).getTime();return t>=analyticsStart.getTime()&&t<=now.getTime()&&!excludedIps.has(x.ipHash)&&!excludedVisitors.has(x.visitor)&&!excludedSids.has(x.sid)});
-      const visitorSet=new Set(),sidSet=new Set(),dailySets={},rv={},gm={};
+      const visitorSet=new Set(),sidSet=new Set(),dailySets={},rv={},gm={},unknownGeo={};
       for(const x of filtered){const v=String(x.visitor||"");if(v)visitorSet.add(v);const sid=String(x.sid||"");if(sid)sidSet.add(sid);const day=String(x.t||"").slice(0,10);if(day){if(!dailySets[day])dailySets[day]=new Set();if(v)dailySets[day].add(v)}
         const route=String(x.route||x.source||"직접접속");if(!rv[route])rv[route]=new Set();if(v)rv[route].add(v);
-        if(String(x.country||"").toUpperCase()==="KR"){const city=String(x.city||"").toLowerCase(),region=String(x.region||"").toLowerCase();let k="";if(city.includes("bucheon"))k="부천시";else if(city.includes("incheon"))k="인천시";else if(city.includes("gwangmyeong"))k="광명시";else if(city.includes("anyang"))k="안양시";else if(city.includes("gimpo"))k="김포시";else if(city.includes("goyang"))k="고양시";else if(city.includes("siheung"))k="시흥시";else if(region.includes("seoul")||city.includes("seoul")){const n=city.replace(/[^a-z]/g,"");if(/jongno|junggu|yongsan/.test(n))k="서울 도심권";else if(/seongdong|gwangjin|dongdaemun|jungnang|seongbuk|gangbuk|dobong|nowon/.test(n))k="서울 동북권";else if(/eunpyeong|seodaemun|mapo/.test(n))k="서울 서북권";else if(/yangcheon|gangseo|guro|geumcheon|yeongdeungpo|dongjak|gwanak/.test(n))k="서울 서남권";else if(/seocho|gangnam|songpa|gangdong/.test(n))k="서울 동남권"}else if(region.includes("gyeonggi"))k="그 외 지역";if(k){if(!gm[k])gm[k]=new Set();if(v)gm[k].add(v)}}}
+        if(String(x.country||"").toUpperCase()==="KR"){
+          const city=String(x.city||"").toLowerCase().replace(/[^a-z가-힣]/g,""),region=String(x.region||"").toLowerCase().replace(/[^a-z가-힣]/g,""),code=String(x.regionCode||"").toLowerCase();
+          const has=(...words)=>words.some(w=>city.includes(w));
+          const inIncheon=region.includes("incheon")||region.includes("인천")||code==="28";
+          const inGyeonggi=region.includes("gyeonggi")||region.includes("경기")||code==="41";
+          const inSeoul=region.includes("seoul")||region.includes("서울")||code==="11";
+          let k="";
+          if(has("bucheon","부천"))k="부천시";
+          else if(has("incheon","인천")||inIncheon)k="인천시";
+          else if(has("gwangmyeong","광명"))k="광명시";
+          else if(has("anyang","안양"))k="안양시";
+          else if(has("gimpo","김포"))k="김포시";
+          else if(has("goyang","ilsandong","ilsanseo","ilsan","deogyang","고양","일산","덕양"))k="고양시";
+          else if(has("siheung","시흥"))k="시흥시";
+          else if(inSeoul||has("seoul","서울")){
+            if(has("jongno","junggu","yongsan","종로","중구","용산"))k="서울 도심권";
+            else if(has("seongdong","gwangjin","dongdaemun","jungnang","seongbuk","gangbuk","dobong","nowon","성동","광진","동대문","중랑","성북","강북","도봉","노원"))k="서울 동북권";
+            else if(has("eunpyeong","seodaemun","mapo","은평","서대문","마포"))k="서울 서북권";
+            else if(has("yangcheon","gangseo","guro","geumcheon","yeongdeungpo","dongjak","gwanak","양천","강서","구로","금천","영등포","동작","관악"))k="서울 서남권";
+            else if(has("seocho","gangnam","songpa","gangdong","서초","강남","송파","강동"))k="서울 동남권";
+          }
+          if(!k)k="그 외 지역";
+          if(!gm[k])gm[k]=new Set();if(v)gm[k].add(v);
+          if(k==="그 외 지역"){const raw=[String(x.region||"")||"(region 없음)",String(x.city||"")||"(city 없음)",String(x.regionCode||"")||"(code 없음)"].join(" / ");if(!unknownGeo[raw])unknownGeo[raw]=new Set();if(v)unknownGeo[raw].add(v)}
+        }}
+      
       const daily=dates.map(date=>({date,count:dailySets[date]?.size||0})),rankSets=o=>Object.entries(o).map(([name,set])=>({name,count:set.size})).sort((a,b)=>b.count-a.count);
       let registrations=0,reservations=0;const start=analyticsStart.getTime(),finish=now.getTime();try{const o=await env.IMAGES.get("system/members.json"),x=o?JSON.parse(await o.text()):[];registrations=x.filter(v=>{const t=new Date(v.joinedAt||v.createdAt||0).getTime();return t>=start&&t<=finish}).length}catch{}try{const o=await env.IMAGES.get("system/reservations.json"),x=o?JSON.parse(await o.text()):[];reservations=x.filter(v=>{const t=new Date(v.createdAt||0).getTime();return t>=start&&t<=finish&&v.status!=="cancelled"}).length}catch{}
-      return Response.json({ok:true,source:"site",summary:{visitors:visitorSet.size,requests:filtered.length,pageviews:filtered.length,registrations,reservations},daily,sources:rankSets(rv).slice(0,10),regions:rankSets(gm),cities:rankSets(gm),countries:[]});
+      return Response.json({ok:true,source:"site",summary:{visitors:visitorSet.size,requests:filtered.length,pageviews:filtered.length,registrations,reservations},daily,sources:rankSets(rv).slice(0,10),regions:rankSets(gm),cities:rankSets(gm),unknownGeo:rankSets(unknownGeo).slice(0,30),countries:[]});
     }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
     if (url.pathname === "/api/admin/naver-keywords" && request.method === "GET") {
