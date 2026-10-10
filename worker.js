@@ -811,6 +811,8 @@ export default {
         const selected=new Date(String(data.lessonDate)+"T00:00:00"),n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());if(selected<today)return Response.json({ok:false,error:"지난 날짜에는 약정서를 제출할 수 없습니다."},{status:400});
         const rows=await readWaivers(), now=new Date().toISOString();
         const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:String(data.lessonDate),lessonTime:data.waiverCode==="D-3"?"":String(data.lessonTime).replace(/[^1-5]/g,"").slice(0,1),educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",instructorName:data.waiverCode==="D-2"?String(data.instructorName||"").trim().slice(0,100):"",memberNo:member.memberNo||"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
+        const duplicate=rows.find(x=>String(x.memberId||"")===String(member.id||"")&&x.waiverCode===row.waiverCode&&x.lessonDate===row.lessonDate&&String(x.lessonTime||"")===String(row.lessonTime||""));
+        if(duplicate)return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true});
         rows.push(row); await writeWaivers(rows);
         return Response.json({ok:true,id:row.id});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
@@ -829,6 +831,18 @@ export default {
       const denied=await requireAdmin(); if(denied)return denied;
       try { return Response.json({ok:true,waivers:await readWaivers()}); }
       catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+    if (url.pathname === "/api/admin/waivers/delete" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const d=await request.json(),id=String(d.id||"");
+        if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({ok:false,error:"잘못된 약정서 번호"},{status:400});
+        const rows=await readWaivers(),target=rows.find(x=>x.id===id);
+        if(!target)return Response.json({ok:false,error:"약정서를 찾을 수 없습니다."},{status:404});
+        if(target.hold)return Response.json({ok:false,error:"사고·분쟁 보존중인 약정서는 삭제할 수 없습니다."},{status:409});
+        await writeWaivers(rows.filter(x=>x.id!==id));
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:"약정서 삭제 실패"},{status:500})}
     }
     if (url.pathname === "/api/admin/waivers/hold" && request.method === "POST") {
       const denied=await requireAdmin(); if(denied)return denied;
