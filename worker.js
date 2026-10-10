@@ -592,6 +592,24 @@ export default {
         return JSON.parse(decodeURIComponent(escape(atob(pp))));
       } catch { return null; }
     }
+    if (url.pathname === "/api/admin/instructor-agreements" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      const listed=await env.IMAGES.list({prefix:"system/instructor-agreements/"});
+      const rows=[];for(const item of listed.objects){const o=await env.IMAGES.get(item.key);if(!o)continue;try{const x=JSON.parse(await o.text());delete x.signature;rows.push(x)}catch{}}
+      rows.sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)));
+      return Response.json({ok:true,agreements:rows});
+    }
+    if (url.pathname.startsWith("/api/admin/instructor-agreements/") && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      const tail=url.pathname.slice("/api/admin/instructor-agreements/".length);
+      const [id,kind,indexText]=tail.split("/");
+      if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({ok:false,error:"잘못된 접수번호"},{status:400});
+      const o=await env.IMAGES.get("system/instructor-agreements/"+id+".json");
+      if(!o)return Response.json({ok:false,error:"약정서 없음"},{status:404});
+      const row=JSON.parse(await o.text());
+      if(kind==="file"){const n=Number(indexText),file=row.attachments?.[n];if(!Number.isInteger(n)||!file)return Response.json({ok:false,error:"첨부파일 없음"},{status:404});const f=await env.IMAGES.get(file.key);if(!f)return Response.json({ok:false,error:"파일 없음"},{status:404});return new Response(f.body,{headers:{"Content-Type":file.type,"Content-Disposition":"attachment; filename*=UTF-8''"+encodeURIComponent(file.name),"Cache-Control":"no-store"}})}
+      return Response.json({ok:true,agreement:row});
+    }
     if (url.pathname === "/api/instructor-agreement" && request.method === "POST") {
       try {
         const member=await sessionMember();
@@ -601,7 +619,7 @@ export default {
         const name=get("name"),phone=get("phone"),address=get("address"),organization=get("organization"),instructorNo=get("instructorNo"),birthDate=get("birthDate"),signature=get("signature");
         if(!name||!phone||!address||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
         if(signature.length>500000)return Response.json({ok:false,error:"서명 이미지가 너무 큽니다."},{status:413});
-        const files=form.getAll("attachments");if(files.length>5)return Response.json({ok:false,error:"첨부파일은 최대 5개입니다."},{status:400});
+        const insurance=form.get("insurance");if(!insurance||typeof insurance==="string"||!insurance.size)return Response.json({ok:false,error:"책임보험 가입증명서를 첨부해 주세요."},{status:400});const files=[...form.getAll("attachments"),insurance];if(!files.some(f=>f&&typeof f!=="string"&&f.size))return Response.json({ok:false,error:"강사 자격증 및 책임보험 가입증명서를 첨부해 주세요."},{status:400});if(files.length>5)return Response.json({ok:false,error:"첨부파일은 최대 5개입니다."},{status:400});
         const id=crypto.randomUUID(),attachments=[];
         for(const file of files){
           if(!file||typeof file==="string"||!file.size)continue;
