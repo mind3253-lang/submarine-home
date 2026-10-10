@@ -291,8 +291,8 @@ const el=document.getElementById('instructorAgreementAdminList');el.textContent=
 try{const r=await fetch('/api/admin/instructor-agreements',{cache:'no-store'}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
 el.replaceChildren();
 for(const x of j.agreements||[]){const row=document.createElement('div');row.style.cssText='padding:14px;border-bottom:1px solid #ddd';
-const info=document.createElement('div');info.textContent=x.name+' / '+x.phone+' / '+x.submittedAt;row.append(info);
-const btn=document.createElement('button');btn.className='btn';btn.textContent='약정서·첨부 확인';btn.onclick=()=>viewInstructorAgreement(x.id,row);row.append(btn);el.append(row)}
+const info=document.createElement('div');info.textContent=x.name+' / '+x.phone+' / '+new Date(x.submittedAt).toLocaleString('ko-KR');row.append(info);row.style.display='flex';row.style.alignItems='center';row.style.gap='14px';row.style.flexWrap='wrap';info.style.flex='1';info.style.minWidth='240px';
+const btn=document.createElement('button');btn.className='btn';btn.textContent='상세 보기';btn.onclick=()=>viewInstructorAgreement(x.id,row);row.append(btn);el.append(row)}
 if(!(j.agreements||[]).length)el.textContent='접수된 약정서가 없습니다.'
 }catch(e){el.textContent=e.message}}
 async function loadSmApplications(){
@@ -303,8 +303,8 @@ async function loadSmApplications(){
   if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
   el.replaceChildren();
   for(const x of j.applications||[]){
-   const row=document.createElement('div');row.style.cssText='padding:15px;border-bottom:1px solid #ddd';
-   const h=document.createElement('p');h.textContent=(x.name||'강사')+' / 회원번호 '+(x.memberNo||'-')+' / '+(x.submittedAt||'')+' / '+({pending:'승인 대기',approved:'승인',rejected:'반려'}[x.status]||'접수');row.append(h);
+   const row=document.createElement('div');row.style.cssText='padding:12px 8px;border-bottom:1px solid #d7dfe5;display:flex;align-items:center;gap:12px;flex-wrap:wrap';
+   const h=document.createElement('p');h.textContent=(x.name||'강사')+' / 회원번호 '+(x.memberNo||'-')+' / '+(x.submittedAt||'')+' / '+({pending:'승인 대기',approved:'승인',rejected:'반려'}[x.status]||'접수');row.append(h);h.style.flex='1';h.style.minWidth='240px';h.style.margin='0';
    const b=document.createElement('button');b.className='btn';b.textContent='지원서 확인';
    b.onclick=()=>{
     const old=row.querySelector('.sm-application-detail');if(old){old.remove();return}
@@ -313,29 +313,59 @@ async function loadSmApplications(){
      const title=document.createElement('h4');title.textContent=label;
      const p=document.createElement('p');p.textContent=value||'-';p.style.whiteSpace='pre-wrap';detail.append(title,p)
     }
-    row.append(detail)
-   };row.append(b);el.append(row)
+    detail.style.width='100%';row.append(detail)
+   };row.append(b);
+   const approve=document.createElement('button');approve.className='btn primary';approve.textContent=x.status==='approved'?'승인 완료':'승인';approve.disabled=x.status==='approved';approve.onclick=()=>reviewSmApplication(x.id,'approved');row.append(approve);
+   el.append(row)
   }
   if(!(j.applications||[]).length)el.textContent='접수된 SM 등록강사 지원서가 없습니다.';
  }catch(e){el.textContent=e.message||'조회 실패'}
 }
+async function reviewSmApplication(id,status){
+ if(!confirm('이 SM 등록강사 지원서를 승인할까요?'))return;
+ try{
+  const r=await fetch('/api/admin/sm-instructor-applications/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'승인 실패');
+  await loadSmApplications();
+ }catch(e){alert(e.message||'승인 실패')}
+}
 async function loadSmAgreements(){
  const el=document.getElementById('smAgreementAdminList');if(!el)return;el.textContent='불러오는 중...';
  try{const r=await fetch('/api/admin/sm-instructor-agreements',{cache:'no-store'}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');el.replaceChildren();
- for(const x of j.agreements||[]){const row=document.createElement('div');row.style.cssText='padding:14px;border-bottom:1px solid #ddd';const p=document.createElement('p');p.textContent=(x.name||'강사회원')+' / 회원번호 '+(x.memberNo||'-')+' / '+x.submittedAt;row.append(p);const b=document.createElement('button');b.className='btn';b.textContent='SM 약정서·서명 확인';b.onclick=()=>viewSmAgreement(x.id,row);row.append(b);el.append(row)}
+ for(const x of j.agreements||[]){const row=document.createElement('div');row.style.cssText='padding:12px 8px;border-bottom:1px solid #d7dfe5;display:flex;align-items:center;gap:12px;flex-wrap:wrap';const p=document.createElement('p');p.style.cssText='flex:1;min-width:240px;margin:0';p.textContent=(x.name||'강사회원')+' / 회원번호 '+(x.memberNo||'-')+' / '+new Date(x.submittedAt).toLocaleString('ko-KR');row.append(p);const b=document.createElement('button');b.className='btn';b.textContent='SM 약정서·서명 확인';b.onclick=()=>viewSmAgreement(x.id,row);row.append(b);el.append(row)}
  if(!(j.agreements||[]).length)el.textContent='접수된 SM 강사 약정서가 없습니다.';
  }catch(e){el.textContent=e.message}
 }
 async function viewSmAgreement(id,row){
  try{const r=await fetch('/api/admin/sm-instructor-agreements/'+encodeURIComponent(id)),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');const x=j.agreement,box=document.createElement('div');box.style.cssText='padding:16px;background:#edf4f8;margin-top:12px';const p=document.createElement('p');p.textContent='회원번호: '+x.memberNo+' / 제출: '+x.submittedAt;box.append(p);(x.clauses||[]).forEach((c,i)=>{const h=document.createElement('h4');h.textContent=(i+1)+'. '+c[0];const t=document.createElement('p');t.textContent=c[1];t.style.whiteSpace='pre-line';box.append(h,t)});const img=document.createElement('img');img.src=x.signature;img.alt='SM 강사 전자서명';img.style.cssText='display:block;max-width:100%;background:white;margin-top:12px';box.append(img);row.append(box)}catch(e){alert(e.message)}
 }
+function showInstructorPhoto(url){
+ const overlay=document.createElement('div');overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:999999;display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out';
+ const img=document.createElement('img');img.src=url;img.style.cssText='max-width:95vw;max-height:90vh;object-fit:contain';overlay.append(img);overlay.onclick=()=>{overlay.remove();URL.revokeObjectURL(url)};document.body.append(overlay)
+}
 async function viewInstructorAgreement(id,row){
-try{const r=await fetch('/api/admin/instructor-agreements/'+encodeURIComponent(id)),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
-const x=j.agreement,box=document.createElement('div');box.style.cssText='padding:15px;background:#edf4f8;margin-top:12px';
-for(const line of ['이름: '+x.name,'생년월일: '+(x.birthDate||''),'연락처: '+x.phone,'주소: '+x.address,'단체: '+x.organization,'강사번호: '+x.instructorNo,'제출: '+x.submittedAt]){const p=document.createElement('p');p.textContent=line;box.append(p)}
-(x.attachments||[]).forEach((f,i)=>{const b=document.createElement('button');b.className='btn';b.textContent='첨부: '+f.name;b.onclick=async()=>{const res=await fetch('/api/admin/instructor-agreements/'+id+'/file/'+i);if(!res.ok)return alert('다운로드 실패');const url=URL.createObjectURL(await res.blob()),a=document.createElement('a');a.href=url;a.download=f.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};box.append(b)});
-const img=document.createElement('img');img.src=x.signature;img.alt='강사 전자서명';img.style.cssText='display:block;max-width:100%;background:white;margin-top:12px';box.append(img);row.append(box)
-}catch(e){alert(e.message)}}
+ const old=row.querySelector('.instructor-detail');if(old){old.remove();return}
+ try{
+  const r=await fetch('/api/admin/instructor-agreements/'+encodeURIComponent(id)),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
+  const x=j.agreement,box=document.createElement('div');box.className='instructor-detail';box.style.cssText='width:100%;padding:18px;background:#edf4f8;margin-top:10px;border-radius:10px;display:grid;grid-template-columns:minmax(220px,1fr) minmax(260px,1.2fr);gap:20px';
+  const left=document.createElement('div');
+  for(const [label,value] of [['이름',x.name],['주민번호 일부',x.identity7],['연락처',x.phone],['주소',x.address],['단체',x.organization],['강사번호',x.instructorNo],['제출',new Date(x.submittedAt).toLocaleString('ko-KR')]]){
+   const p=document.createElement('p');p.style.margin='6px 0';p.textContent=label+': '+(value||'-');left.append(p)
+  }
+  const signTitle=document.createElement('h4');signTitle.textContent='전자서명';left.append(signTitle);
+  const sign=document.createElement('img');sign.src=x.signature;sign.alt='강사 전자서명';sign.style.cssText='display:block;width:220px;max-width:100%;max-height:75px;object-fit:contain;background:#fff;border:1px solid #d2dce2';left.append(sign);box.append(left);
+  const right=document.createElement('div');right.style.cssText='display:flex;flex-wrap:wrap;gap:14px;align-content:start';
+  for(const [i,file] of (x.attachments||[]).entries()){
+   const card=document.createElement('div');card.style.cssText='width:180px;max-width:100%';
+   const label=document.createElement('strong');label.textContent=i===(x.attachments.length-1)?'책임보험':'강사 자격증';card.append(label);
+   const img=document.createElement('img');img.alt=label.textContent;img.style.cssText='display:block;width:180px;height:130px;object-fit:contain;background:#fff;border:1px solid #d0d9df;border-radius:7px;margin-top:7px;cursor:zoom-in';card.append(img);right.append(card);
+   const response=await fetch('/api/admin/instructor-agreements/'+encodeURIComponent(id)+'/file/'+i);
+   if(response.ok){const blob=await response.blob(),url=URL.createObjectURL(blob);img.src=url;img.onclick=()=>showInstructorPhoto(URL.createObjectURL(blob))}
+  }
+  box.append(right);row.append(box)
+ }catch(e){alert(e.message||'조회 실패')}
+}
 async function loadCommunityAdmin(board='tour'){const box=document.getElementById('communityAdminList');if(!box)return;box.innerHTML='<p class="note">불러오는 중...</p>';try{const r=await fetch('/api/admin/community',{cache:'no-store'}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'불러오기 실패');const posts=board==='independent'?(j.independent||[]):(j.tours||[]),reports=(j.reports||[]).filter(x=>x.board===board&&x.status==='open');let html='';if(reports.length){html+='<div style="margin-bottom:22px;padding:18px;border:1px solid #efc7c7;border-radius:12px;background:#fff8f8"><h3 style="margin:0 0 10px;color:#a22">신고 접수 '+reports.length+'건</h3>'+reports.map(x=>'<div style="padding:11px 0;border-top:1px solid #f0dede"><div><strong>'+adminEsc(x.contentType==='comment'?'댓글 신고':'게시글 신고')+'</strong> · '+adminEsc(x.targetName||'회원')+'</div><div class="note">사유: '+adminEsc(x.reason||'')+'</div><div class="note">내용: '+adminEsc(String(x.contentText||'').slice(0,180))+'</div><div style="margin-top:7px"><button class="btn primary" onclick="adminResolveCommunityReport(\''+x.id+'\',\''+board+'\',\'resolved\')">처리완료</button><button class="btn" onclick="adminResolveCommunityReport(\''+x.id+'\',\''+board+'\',\'dismissed\')">기각</button></div></div>').join('')+'</div>'}html+=posts.length?posts.map(p=>'<div style="border-top:1px solid #dde5e9;padding:16px 0"><div style="display:flex;justify-content:space-between;gap:12px;align-items:start"><div><strong>'+adminEsc(p.title)+'</strong><div class="note">'+adminEsc(p.author||'회원')+' · 회원 '+adminEsc(p.authorKey||'')+' · '+adminEsc(board==='independent'?(p.pool||''):(p.place||''))+' · '+adminEsc(p.status||'모집중')+'</div></div><div style="white-space:nowrap"><button class="btn" onclick="adminCommunityAction(\''+board+'\',\'close\',\''+p.id+'\')">모집마감</button><button class="btn" onclick="adminCommunityAction(\''+board+'\',\'delete\',\''+p.id+'\')">글 삭제</button></div></div>'+(p.comments||[]).map(x=>'<div style="margin:9px 0 0 20px;padding:8px 10px;background:#fff;border-radius:7px;font-size:14px"><span>'+adminEsc(x.author||x.name||'회원')+' · '+adminEsc(x.text||'')+'</span><button class="btn" style="float:right;padding:4px 8px" onclick="adminCommunityAction(\''+board+'\',\'deleteComment\',\''+p.id+'\',\''+x.id+'\')">댓글 삭제</button></div>').join('')+'</div>').join(''):'<p class="note">등록된 게시글이 없습니다.</p>';const logs=(j.logs||[]).filter(x=>x.board===board);if(logs.length)html+='<details style="margin-top:22px"><summary>관리자 처리기록 '+logs.length+'건</summary><div style="margin-top:10px">'+logs.slice(0,100).map(x=>'<div class="note" style="padding:6px 0;border-bottom:1px solid #e5eaee">'+adminEsc(new Date(x.at).toLocaleString())+' · '+adminEsc(x.action)+' · '+adminEsc(x.title||'')+' · '+adminEsc(x.author||'')+'</div>').join('')+'</div></details>';box.innerHTML=html}catch(e){box.innerHTML='<p class="error">'+adminEsc(e.message)+'</p>'}}
 async function adminResolveCommunityReport(id,board,status){try{const r=await fetch('/api/admin/community/report',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'신고 처리 실패');await loadCommunityAdmin(board)}catch(e){alert(e.message)}}
 async function adminCommunityAction(board,action,postId,commentId=''){const labels={close:'모집을 마감할까요?',delete:'관리자 권한으로 이 게시글을 삭제할까요?',deleteComment:'관리자 권한으로 이 댓글을 삭제할까요?'};if(!confirm(labels[action]||'처리할까요?'))return;try{const r=await fetch('/api/admin/community/'+board,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,postId,commentId})}),j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'처리 실패');await loadCommunityAdmin(board)}catch(e){alert(e.message)}}
