@@ -643,6 +643,21 @@ export default {
     if (url.pathname === "/api/admin/education-posts" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readEducationPosts(),id=String(d.id||crypto.randomUUID()),i=rows.findIndex(x=>String(x.id)===id),old=i>=0?rows[i]:{},post={...old,id,category:String(d.category||""),title:String(d.title||""),bodyHtml:String(d.bodyHtml||""),image:String(d.image||""),tags:Array.isArray(d.tags)?d.tags.map(String):[],published:d.published!==false,createdAt:old.createdAt||new Date().toISOString(),updatedAt:new Date().toISOString()};if(i>=0)rows[i]=post;else rows.push(post);await writeEducationPosts(rows);return Response.json({ok:true,post})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/admin/education-posts/delete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=(await readEducationPosts()).filter(x=>String(x.id)!==String(d.id));await writeEducationPosts(rows);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
+    // License uploads are needed before signup as well as by signed-in members.
+    // Keep the generic image-upload endpoint admin-only.
+    if (url.pathname === "/api/member/license-image" && request.method === "POST") {
+      try {
+        const form=await request.formData(),file=form.get("file");
+        if(!file||typeof file==="string")return Response.json({ok:false,error:"이미지 파일이 없습니다."},{status:400});
+        if(file.size>3145728)return Response.json({ok:false,error:"파일당 최대 3MB까지 업로드할 수 있습니다."},{status:413});
+        const extMap={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/gif":"gif"};
+        if(!Object.prototype.hasOwnProperty.call(extMap,file.type))return Response.json({ok:false,error:"JPG, PNG, WEBP, GIF 이미지만 업로드할 수 있습니다."},{status:415});
+        const key="member-licenses/"+new Date().toISOString().slice(0,10)+"/"+crypto.randomUUID()+"."+extMap[file.type];
+        await env.IMAGES.put(key,file.stream(),{httpMetadata:{contentType:file.type}});
+        return Response.json({ok:true,url:"https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/"+key});
+      }catch(e){return Response.json({ok:false,error:"자격증 이미지 업로드 실패: "+(e?.message||String(e))},{status:500})}
+    }
+
     if (url.pathname === "/api/upload-image" && request.method === "POST") {
       const denied=await requireAdmin(); if(denied)return denied;
       try {
