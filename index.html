@@ -174,6 +174,8 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 .instructor-benefit-panel .instructor-benefit-note{margin-top:12px;font-weight:700}
 .instructor-benefit-panel .instructor-benefit-closing{margin-top:20px;font-weight:700}
 @media(max-width:760px){.instructor-benefit-grid{grid-template-columns:1fr;gap:14px}.instructor-benefit-panel{padding:24px 21px}}
+</style><style>
+.instructor-agreement-form{color:#17374b;line-height:1.75}.instructor-agreement-form h2{font-size:25px}.instructor-agreement-form h3{margin:25px 0 10px}.instructor-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.instructor-agreement-form label{display:block;font-weight:700;font-size:14px}.instructor-agreement-form input:not([type=checkbox]):not([type=file]){display:block;width:100%;padding:12px;border:1px solid #b7cbd9;border-radius:7px;background:#fff;color:#17374b;margin-top:5px;box-sizing:border-box}.instructor-attachment-label{margin:20px 0}.instructor-attachment-label input{display:block;margin-top:8px}.instructor-clauses{padding-left:23px}.instructor-clauses li{margin:0 0 13px}.instructor-agreement-ending{border-top:2px solid #176a9b;padding-top:16px}.instructor-agree-check{margin:20px 0}.instructor-agree-check input{margin-right:8px}#instructorSignature{width:100%;height:160px;border:2px solid #176a9b;border-radius:7px;background:#fff;touch-action:none;box-sizing:border-box}.instructor-agreement-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}.instructor-agreement-actions button{background:#123c57;color:white;padding:12px 20px;border:0;border-radius:7px;cursor:pointer}.instructor-agreement-actions button:first-child{background:#e7eef3;color:#123c57}#instructorAgreementStatus{font-weight:700;color:#176a9b}@media(max-width:650px){.instructor-form-grid{grid-template-columns:1fr}}
 </style></head>
 <body>
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer;width:205px;height:64px;display:flex;align-items:center"><img id="headerBrandLogo" alt="SUBMARINE" style="display:none;max-width:200px;max-height:58px;width:auto;height:auto;object-fit:contain"></div>
@@ -446,7 +448,57 @@ function openSubmarineMenu(){show('submarineMenu');navPush({view:'submarineMenu'
 function openGuideMenu(){show('guide');navPush({view:'guide'},'view=guide');}
 function openProducts(){show('products');renderA3Shop();const d=document.getElementById('a3ProductPage');if(d)d.style.display='none';const old=document.querySelector('.a3-old-products');if(old)old.style.display='none';navPush({view:'products'},'view=products');}
 function openInstructorRegistrationMenu(){show('instructorRegistration');document.getElementById('instructorCardInfo').style.display='none';navPush({view:'instructorRegistration'},'view=instructorRegistration')}
-function openInstructorCardInfo(kind){const el=document.getElementById('instructorCardInfo');el.style.display='block';el.innerHTML=kind==='register'?'<h2>강사등록</h2><p>서브마린 시설을 이용하는 강사를 위한 등록 절차입니다.</p><p>등록 신청과 전자약정 기능은 준비 중입니다.</p>':'<h2>SM 강사 지원</h2><p>서브마린 교육생의 교육에 참여할 강사를 위한 지원 절차입니다.</p><p>지원 신청 기능은 준비 중입니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'})}
+const instructorAgreementClauses=[
+"매년 강사 자격을 갱신하여 유효한 강사 신분을 유지해야 한다. 자격을 갱신하지 않거나, 갱신하지 않았음을 알리지 아니한 상태에서 발생한 사고는 강사의 책임으로 한다.",
+"평균 강사와 학생의 비율(1:4)보다 더 큰 규모의 강습을 진행한다면, 다른 강사 또는 보조자를 참여시켜야 한다.",
+"시설 이용 전, 강사와 강습생 사이에 반드시 면책동의서를 작성해야 하고, 서류 미작성에 따른 강습생과의 민형사상의 책임 및 배상 문제가 생길 경우, 면책동의서를 작성하지 않은 강사의 책임으로 한다.",
+"강사는 동행한 다이버들에게 단체의 다이빙 규정, 서브마린다이빙풀의 이용규정 및 풀장 내 구조물에 대한 위험성 및 사용방법에 대하여 설명한다.",
+"강사는 동행한 다이버들의 안전에 대해 책임지고 감독을 한다.",
+"노핀다이빙 시, 강사의 인솔 시에만 가능하며, 인솔 강사는 이를 책임지고 집중 감독한다.",
+"강사 또는 다이빙업체의 권유로 보내는 자격증 취득 이전 연습반 또는 기타 교육생에 대해서도 강사의 위 사항과 동일한 책임이 따른다.",
+"강사의 고객이 아니더라도, 위험에 처한 다이버를 발견하면 즉각 구조에 동참해야 한다."
+];
+const instructorAgreementEnding="위 사항에 모두 동의하며, 동행 강습생 및 참여자의 안전을 최우선으로 고려한다. 또한 이후 서브마린다이빙풀의 규정에 반하여 발생하는 제재에 대하여 이의 제기를 하지 않을 것이며, 사고 발생 시 서브마린다이빙풀, 그에 소속된 이들에게 어떠한 민/형사상의 책임을 물을 수 없다. 본 약정은 서브마린다이빙풀 또는 강사가 약정해지의 뜻을 서면고지하기 이전까지 유지된다.";
+let instructorSigned=false;
+function openInstructorCardInfo(kind){
+ const el=document.getElementById('instructorCardInfo');el.style.display='block';
+ if(kind!=='register'){el.innerHTML='<h2>SM 강사 약정서</h2><p>일반 강사 이용 약정서를 완료하고, SM 강사 승인 후 별도 약정을 진행할 수 있습니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ el.innerHTML=`<div class="instructor-agreement-form"><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
+ <form id="instructorAgreementForm">
+ <div class="instructor-form-grid">
+ <label>강사 이름 *<input name="name" required maxlength="100"></label>
+ <label>생년월일 (선택)<input name="birthDate" type="date"></label>
+ <label>연락처 *<input name="phone" type="tel" required maxlength="50"></label>
+ <label>주소 *<input name="address" required maxlength="300"></label>
+ <label>소속 다이빙단체 (해당 시)<input name="organization" maxlength="150"></label>
+ <label>강사번호 (해당 시)<input name="instructorNo" maxlength="100"></label>
+ </div>
+ <label class="instructor-attachment-label">자격증 및 증빙파일 첨부 (최대 5개, 파일당 5MB / JPG·PNG·WEBP·PDF)<input name="attachments" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple></label>
+ <h3>약정 내용</h3><ol class="instructor-clauses">${instructorAgreementClauses.map(x=>'<li>'+x+'</li>').join('')}</ol>
+ <p class="instructor-agreement-ending">${instructorAgreementEnding}</p>
+ <label class="instructor-agree-check"><input type="checkbox" name="agree" required> 위 약정 내용을 읽고 동의합니다.</label>
+ <h3>강사 서명 *</h3><p>아래 서명란에 손가락 또는 마우스로 직접 서명해 주세요.</p>
+ <canvas id="instructorSignature" width="800" height="200" aria-label="강사 서명란"></canvas>
+ <div class="instructor-agreement-actions"><button type="button" onclick="clearInstructorSignature()">서명 지우기</button><button type="submit">약정서 제출</button></div>
+ <p id="instructorAgreementStatus" role="status"></p></form></div>`;
+ instructorSigned=false;setupInstructorSignature();document.getElementById('instructorAgreementForm').addEventListener('submit',submitInstructorAgreement);el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function setupInstructorSignature(){
+ const canvas=document.getElementById('instructorSignature'),ctx=canvas.getContext('2d');let drawing=false;
+ const point=e=>{const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}};
+ canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y)});
+ canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#102f49';ctx.lineTo(p.x,p.y);ctx.stroke();instructorSigned=true});
+ canvas.addEventListener('pointerup',()=>drawing=false);canvas.addEventListener('pointercancel',()=>drawing=false);
+}
+function clearInstructorSignature(){const c=document.getElementById('instructorSignature');c.getContext('2d').clearRect(0,0,c.width,c.height);instructorSigned=false}
+async function submitInstructorAgreement(e){
+ e.preventDefault();const form=e.currentTarget,status=document.getElementById('instructorAgreementStatus'),btn=form.querySelector('button[type="submit"]');
+ if(!instructorSigned){status.textContent='서명을 먼저 작성해 주세요.';return}
+ const files=form.elements.attachments.files;if(files.length>5||Array.from(files).some(f=>f.size>5*1024*1024)){status.textContent='첨부파일은 최대 5개, 파일당 5MB 이하입니다.';return}
+ const data=new FormData(form);data.delete('agree');data.set('signature',document.getElementById('instructorSignature').toDataURL('image/png'));btn.disabled=true;status.textContent='제출 중입니다...';
+ try{const res=await fetch('/api/instructor-agreement',{method:'POST',body:data});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'제출 실패');status.textContent='강사 이용 약정서가 제출되었습니다. 접수번호: '+j.id;form.querySelectorAll('input,button').forEach(x=>x.disabled=true)}
+ catch(err){status.textContent=err.message||'제출 실패. 다시 시도해 주세요.';btn.disabled=false}
+}
 function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style.display='none';const vm=document.querySelector('#member .visual-menu');if(vm)vm.style.display='grid';navPush({view:'member'},'view=member');}
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 
