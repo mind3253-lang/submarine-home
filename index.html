@@ -521,7 +521,7 @@ async function openInstructorCardInfo(kind){
  <form id="instructorAgreementForm">
  <div class="instructor-form-grid">
  <label>강사 이름 *<input name="name" required maxlength="100"></label>
- <label>주민번호 앞 6자리 + 뒷자리 첫 숫자 *<input name="identity7" required inputmode="numeric" pattern="[0-9]{6}-[1-4]" placeholder="YYMMDD-1" maxlength="8"></label>
+ <label>주민번호 앞 6자리 + 뒷자리 첫 숫자 *<span style="display:flex;align-items:center;gap:7px"><input name="identityBirth" required inputmode="numeric" pattern="[0-9]{6}" placeholder="생년월일 6자리" maxlength="6" style="min-width:0;flex:1"><b>-</b><input name="identityFirst" required inputmode="numeric" pattern="[1-4]" placeholder="1" maxlength="1" style="width:45px;flex:none;text-align:center"><span aria-label="뒷자리 나머지 6자리 생략">●●●●●●</span></span><input name="identity7" type="hidden"></label>
  <label>연락처 *<input name="phone" type="tel" required maxlength="50"></label>
  <label>주소 *<input name="address" required maxlength="300"></label>
  <label>소속 다이빙단체 *<input name="organization" required maxlength="150" placeholder="AIDA, PADI 등"></label>
@@ -535,7 +535,31 @@ async function openInstructorCardInfo(kind){
  <canvas id="instructorSignature" width="800" height="200" aria-label="강사 서명란"></canvas>
  <div class="instructor-agreement-actions"><button type="button" onclick="clearInstructorSignature()">서명 지우기</button><button type="submit">약정서 제출</button></div>
  <p id="instructorAgreementStatus" role="status"></p></form><div id="smInstructorApply" class="sm-instructor-apply"><h3>SM 등록강사 신청</h3><p>강사 이용 약정서를 제출한 후, 아래 자기소개를 작성하여 지원할 수 있습니다.</p><form id="smInstructorForm"><label>강사 경력 및 전문 분야 *<textarea name="experience" required maxlength="3000" rows="4"></textarea></label><label>교육 방식과 강점 · 안전관리 방식 *<textarea name="strengths" required maxlength="3000" rows="4"></textarea></label><label>지원 동기 및 활동 계획 *<textarea name="motivation" required maxlength="3000" rows="4"></textarea></label><button type="submit" id="smInstructorSubmit" disabled>SM 등록강사 신청</button><p id="smInstructorStatus" role="status">강사 이용 약정서 제출 후 신청할 수 있습니다.</p></form></div></div>`;
- instructorSigned=false;window.submittedInstructorAgreementId=null;setupInstructorSignature();document.getElementById('smInstructorForm').addEventListener('submit',submitSmInstructorApplication);document.getElementById('instructorAgreementForm').addEventListener('submit',submitInstructorAgreement);el.scrollIntoView({behavior:'smooth',block:'start'});
+ instructorSigned=false;window.submittedInstructorAgreementId=null;setupInstructorSignature();document.getElementById('smInstructorForm').addEventListener('submit',submitSmInstructorApplication);document.getElementById('instructorAgreementForm').addEventListener('submit',submitInstructorAgreement);refreshInstructorOnboarding();el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function refreshInstructorOnboarding(){
+ const form=document.getElementById('instructorAgreementForm'),sm=document.getElementById('smInstructorForm');
+ if(!form||!sm)return;
+ const status=document.getElementById('instructorAgreementStatus');
+ status.textContent='기존 약정서 제출 여부를 확인하고 있습니다...';
+ try{
+  const r=await fetch('/api/instructor-onboarding-status',{cache:'no-store'}),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
+  if(j.agreement){
+   window.submittedInstructorAgreementId=j.agreement.id;
+   form.style.display='none';
+   const note=document.createElement('p');note.id='instructorAlreadySubmitted';note.style.cssText='padding:16px;background:#e9f8ee;border-radius:10px;font-weight:700';note.textContent='강사 약정서는 이미 제출되었습니다.';
+   form.before(note);
+   document.getElementById('smInstructorSubmit').disabled=false;
+   document.getElementById('smInstructorStatus').textContent='기존 강사 약정서를 확인했습니다. SM 등록강사 신청을 진행해 주세요.';
+  }else status.textContent='';
+  if(j.application){
+   sm.style.display='none';
+   const note=document.createElement('p');note.style.cssText='padding:16px;background:#e9f8ee;border-radius:10px;font-weight:700';
+   note.textContent='SM 등록강사 신청이 완료되었습니다. 현재 상태: '+({pending:'승인 대기',approved:'승인',rejected:'반려'}[j.application.status]||'접수 완료');
+   sm.before(note);
+  }
+ }catch(err){status.textContent='기존 제출 내역을 확인하지 못했습니다. 중복 제출을 방지하기 위해 잠시 후 다시 시도해 주세요.';form.querySelector('button[type="submit"]').disabled=true;document.getElementById('smInstructorSubmit').disabled=true}
 }
 let smInstructorSigned=false;
 function setupSmInstructorSignature(){
@@ -565,11 +589,11 @@ async function submitInstructorAgreement(e){
  e.preventDefault();const form=e.currentTarget,status=document.getElementById('instructorAgreementStatus'),btn=form.querySelector('button[type="submit"]');
  if(!instructorSigned){status.textContent='서명을 먼저 작성해 주세요.';return}
  const files=form.elements.attachments.files;const allFiles=[...Array.from(files),...Array.from(form.elements.insurance.files)];if(allFiles.some(f=>!['image/jpeg','image/png'].includes(f.type))){status.textContent='JPG 또는 PNG 파일만 첨부할 수 있습니다.';return}if(files.length>4||Array.from(files).some(f=>f.size>5*1024*1024)||form.elements.insurance.files[0]?.size>5*1024*1024){status.textContent='자격증 등 최대 4개와 보험증명서 1개, 파일당 5MB 이하입니다.';return}
- const data=new FormData(form);data.delete('agree');data.set('signature',document.getElementById('instructorSignature').toDataURL('image/png'));btn.disabled=true;status.textContent='제출 중입니다...';
- try{const res=await fetch('/api/instructor-agreement',{method:'POST',body:data});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'제출 실패');status.textContent='강사 이용 약정서가 제출되었습니다. 접수번호: '+j.id;window.submittedInstructorAgreementId=j.id;document.getElementById('smInstructorSubmit').disabled=false;document.getElementById('smInstructorStatus').textContent='이제 SM 등록강사 지원서를 제출할 수 있습니다.';form.querySelectorAll('input,button').forEach(x=>x.disabled=true)}
+ const data=new FormData(form);data.delete('agree');data.set('identity7',form.elements.identityBirth.value+'-'+form.elements.identityFirst.value);data.delete('identityBirth');data.delete('identityFirst');data.set('signature',document.getElementById('instructorSignature').toDataURL('image/png'));btn.disabled=true;status.textContent='제출 중입니다...';
+ try{const res=await fetch('/api/instructor-agreement',{method:'POST',body:data});const j=await res.json();if(!res.ok||!j.ok)throw Error(j.error||'제출 실패');status.textContent='';window.submittedInstructorAgreementId=j.id;form.style.display='none';const note=document.createElement('p');note.style.cssText='padding:16px;background:#e9f8ee;border-radius:10px;font-weight:700';note.textContent='강사 약정서는 이미 제출되었습니다.';form.before(note);clearInstructorSignature();document.getElementById('smInstructorSubmit').disabled=false;document.getElementById('smInstructorStatus').textContent='이제 SM 등록강사 지원서를 제출할 수 있습니다.';await siteMessage('약정서 제출 완료','강사 이용 약정서와 서명이 정상적으로 접수되었습니다.')}
  catch(err){status.textContent=err.message||'제출 실패. 다시 시도해 주세요.';btn.disabled=false}
 }
-async function submitSmInstructorApplication(e){e.preventDefault();const form=e.currentTarget,status=document.getElementById('smInstructorStatus'),btn=document.getElementById('smInstructorSubmit');if(!window.submittedInstructorAgreementId){status.textContent='강사 이용 약정서를 먼저 제출해 주세요.';return}btn.disabled=true;status.textContent='신청 중...';try{const d={agreementId:window.submittedInstructorAgreementId,experience:form.elements.experience.value,strengths:form.elements.strengths.value,motivation:form.elements.motivation.value};const r=await fetch('/api/sm-instructor-applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'신청 실패');status.textContent='SM 등록강사 신청이 접수되었습니다. 접수번호: '+j.id;form.querySelectorAll('textarea').forEach(x=>x.disabled=true)}catch(err){status.textContent=err.message;btn.disabled=false}}
+async function submitSmInstructorApplication(e){e.preventDefault();const form=e.currentTarget,status=document.getElementById('smInstructorStatus'),btn=document.getElementById('smInstructorSubmit');if(!window.submittedInstructorAgreementId){status.textContent='강사 이용 약정서를 먼저 제출해 주세요.';return}btn.disabled=true;status.textContent='신청 중...';try{const d={agreementId:window.submittedInstructorAgreementId,experience:form.elements.experience.value,strengths:form.elements.strengths.value,motivation:form.elements.motivation.value};const r=await fetch('/api/sm-instructor-applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.error||'신청 실패');status.textContent='SM 등록강사 신청이 완료되었습니다.';form.querySelectorAll('textarea').forEach(x=>x.disabled=true);btn.disabled=true;await siteMessage('신청 완료','SM 등록강사 신청이 정상적으로 접수되었습니다.')}catch(err){status.textContent=err.message;btn.disabled=false}}
 function openMemberMenu(){show('member');memberBrand.innerHTML='';memberE1.style.display='none';const vm=document.querySelector('#member .visual-menu');if(vm)vm.style.display='grid';navPush({view:'member'},'view=member');}
 function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');scrollTo(0,0)}
 
