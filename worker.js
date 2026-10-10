@@ -610,6 +610,18 @@ export default {
       if(kind==="file"){const n=Number(indexText),file=row.attachments?.[n];if(!Number.isInteger(n)||!file)return Response.json({ok:false,error:"첨부파일 없음"},{status:404});const f=await env.IMAGES.get(file.key);if(!f)return Response.json({ok:false,error:"파일 없음"},{status:404});return new Response(f.body,{headers:{"Content-Type":file.type,"Content-Disposition":"attachment; filename*=UTF-8''"+encodeURIComponent(file.name),"Cache-Control":"no-store"}})}
       return Response.json({ok:true,agreement:row});
     }
+    if (url.pathname === "/api/sm-instructor-applications" && request.method === "POST") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const d=await request.json(),id=String(d.agreementId||"");
+        if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({ok:false,error:"강사 이용 약정서를 먼저 제출해 주세요."},{status:400});
+        const o=await env.IMAGES.get("system/instructor-agreements/"+id+".json");if(!o)return Response.json({ok:false,error:"강사 약정서 접수 내역이 없습니다."},{status:404});
+        const agreement=JSON.parse(await o.text());if(String(agreement.memberId)!==String(member.id))return Response.json({ok:false,error:"본인의 약정서만 사용할 수 있습니다."},{status:403});
+        const fields=["experience","strengths","motivation"];if(fields.some(k=>!String(d[k]||"").trim()||String(d[k]).length>3000))return Response.json({ok:false,error:"자기소개 항목을 모두 작성해 주세요(각 3000자 이내). "},{status:400});
+        const row={id:crypto.randomUUID(),agreementId:id,memberId:member.id,memberNo:member.memberNo||"",name:agreement.name,experience:String(d.experience).trim(),strengths:String(d.strengths).trim(),motivation:String(d.motivation).trim(),status:"pending",submittedAt:new Date().toISOString()};
+        await env.IMAGES.put("system/sm-instructor-applications/"+row.id+".json",JSON.stringify(row),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,id:row.id});
+      }catch(e){return Response.json({ok:false,error:"신청 저장에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/instructor-agreement" && request.method === "POST") {
       try {
         const member=await sessionMember();
@@ -617,7 +629,7 @@ export default {
         const form=await request.formData();
         const get=k=>String(form.get(k)||"").trim();
         const name=get("name"),phone=get("phone"),address=get("address"),organization=get("organization"),instructorNo=get("instructorNo"),birthDate=get("birthDate"),signature=get("signature");
-        if(!name||!phone||!address||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
+        if(!name||!phone||!address||!/^\\d{6}-[1-4]$/.test(get("identity7"))||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
         if(signature.length>500000)return Response.json({ok:false,error:"서명 이미지가 너무 큽니다."},{status:413});
         const insurance=form.get("insurance");if(!insurance||typeof insurance==="string"||!insurance.size)return Response.json({ok:false,error:"책임보험 가입증명서를 첨부해 주세요."},{status:400});const files=[...form.getAll("attachments"),insurance];if(!files.some(f=>f&&typeof f!=="string"&&f.size))return Response.json({ok:false,error:"강사 자격증 및 책임보험 가입증명서를 첨부해 주세요."},{status:400});if(files.length>5)return Response.json({ok:false,error:"첨부파일은 최대 5개입니다."},{status:400});
         const id=crypto.randomUUID(),attachments=[];
@@ -630,7 +642,7 @@ export default {
           await env.IMAGES.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type}});
           attachments.push({name:String(file.name||"").slice(0,150),key,type:file.type,size:file.size});
         }
-        const row={id,name:name.slice(0,100),phone:phone.slice(0,50),address:address.slice(0,300),birthDate:birthDate.slice(0,20),organization:organization.slice(0,150),instructorNo:instructorNo.slice(0,100),attachments,signature,agreementVersion:"2026-10-10",memberNo:member.memberNo||"",memberId:member.id||"",submittedAt:new Date().toISOString()};
+        const row={id,name:name.slice(0,100),phone:phone.slice(0,50),address:address.slice(0,300),birthDate:birthDate.slice(0,20),identity7:get("identity7").slice(0,8),organization:organization.slice(0,150),instructorNo:instructorNo.slice(0,100),attachments,signature,agreementVersion:"2026-10-10",memberNo:member.memberNo||"",memberId:member.id||"",submittedAt:new Date().toISOString()};
         await env.IMAGES.put("system/instructor-agreements/"+id+".json",JSON.stringify(row),{httpMetadata:{contentType:"application/json"}});
         return Response.json({ok:true,id});
       }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
