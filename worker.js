@@ -283,7 +283,13 @@ export default {
             else if(has("yangcheon","gangseo","guro","geumcheon","yeongdeungpo","dongjak","gwanak","양천","강서","구로","금천","영등포","동작","관악"))k="서울 서남권";
             else if(has("seocho","gangnam","songpa","gangdong","서초","강남","송파","강동"))k="서울 동남권";
           }
-          if(!k)k=inSeoul?"서울 지역 미상":inIncheon?"인천시":inGyeonggi?"경기 지역 미상":(!city&&!region&&!code)?"위치 확인 불가":"그 외 지역";
+          if(!k){
+            const lat=Number(x.latitude),lon=Number(x.longitude),valid=Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=33&&lat<=39&&lon>=124&&lon<=132;
+            // Conservative inner-city bounds only: never infer a district or use a broad metro rectangle.
+            if(valid&&lat>=37.47&&lat<=37.62&&lon>=126.84&&lon<=127.12)k="서울 지역 미상";
+            else if(valid&&lat>=37.40&&lat<=37.52&&lon>=126.62&&lon<=126.76)k="인천시";
+            else k=inSeoul?"서울 지역 미상":inIncheon?"인천시":inGyeonggi?"경기 지역 미상":(!city&&!region&&!code)?"위치 확인 불가":"그 외 지역";
+          }
           if(!gm[k])gm[k]=new Set();if(v)gm[k].add(v);
           if(k==="그 외 지역"||k==="위치 확인 불가"){const raw=[String(x.region||"")||"(region 없음)",String(x.city||"")||"(city 없음)",String(x.regionCode||"")||"(code 없음)"].join(" / ");if(!unknownGeo[raw])unknownGeo[raw]=new Set();if(v)unknownGeo[raw].add(v)}
         }}
