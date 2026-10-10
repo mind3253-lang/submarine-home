@@ -703,6 +703,15 @@ export default {
         if(!member.memberNo||!rows.some(x=>String(x.memberNo||"").trim()===String(member.memberNo).trim()))return Response.json({ok:false,error:"F방에 등록된 강사회원만 제출할 수 있습니다."},{status:403});
         const d=await request.json();const signature=String(d.signature||"");
         if(d.agreed!==true||!signature.startsWith("data:image/png;base64,")||signature.length>500000)return Response.json({ok:false,error:"약정 동의 및 서명을 확인해 주세요."},{status:400});
+        const priorList=await env.IMAGES.list({prefix:"system/sm-instructor-agreements/",limit:1000});
+        for(const item of priorList.objects){
+          if(!item.key.endsWith(".json"))continue;
+          const priorObj=await env.IMAGES.get(item.key);if(!priorObj)continue;
+          const prior=JSON.parse(await priorObj.text());
+          if(String(prior.memberId||"")===String(member.id)||String(prior.memberNo||"")===String(member.memberNo)){
+            return Response.json({ok:true,id:prior.id,alreadySubmitted:true});
+          }
+        }
         const id=crypto.randomUUID(),record={id,memberId:member.id,memberNo:member.memberNo,name:member.name||"",version:"sm-instructor-2026-10-10",clauses:d.clauses,agreed:true,signature,submittedAt:new Date().toISOString()};
         if(!Array.isArray(record.clauses)||record.clauses.length!==10)return Response.json({ok:false,error:"약정서 내용이 올바르지 않습니다."},{status:400});
         await env.IMAGES.put("system/sm-instructor-agreements/"+id+".json",JSON.stringify(record),{httpMetadata:{contentType:"application/json"}});
@@ -761,8 +770,9 @@ export default {
           return found;
         };
         const agreement=await latest("system/instructor-agreements/");
+        const smAgreement=await latest("system/sm-instructor-agreements/");
         const application=await latest("system/sm-instructor-applications/");
-        return Response.json({ok:true,agreement:agreement?{id:agreement.id,submittedAt:agreement.submittedAt}:null,application:application?{id:application.id,status:application.status,submittedAt:application.submittedAt}:null},{headers:{"Cache-Control":"no-store"}});
+        return Response.json({ok:true,agreement:agreement?{id:agreement.id,submittedAt:agreement.submittedAt}:null,application:application?{id:application.id,status:application.status,submittedAt:application.submittedAt}:null,smAgreement:smAgreement?{id:smAgreement.id,submittedAt:smAgreement.submittedAt}:null},{headers:{"Cache-Control":"no-store"}});
       }catch(e){return Response.json({ok:false,error:"강사 신청 상태 조회에 실패했습니다."},{status:500})}
     }
     if (url.pathname === "/api/sm-instructor-applications" && request.method === "POST") {
