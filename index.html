@@ -470,8 +470,8 @@ function openInstructorCardInfo(kind){
  <label>주민번호 앞 6자리 + 뒷자리 첫 숫자 *<input name="identity7" required inputmode="numeric" pattern="[0-9]{6}-[1-4]" placeholder="YYMMDD-1" maxlength="8"></label>
  <label>연락처 *<input name="phone" type="tel" required maxlength="50"></label>
  <label>주소 *<input name="address" required maxlength="300"></label>
- <label>소속 다이빙단체 (해당 시)<input name="organization" maxlength="150"></label>
- <label>강사번호 (해당 시)<input name="instructorNo" maxlength="100"></label>
+ <label>소속 다이빙단체 *<input name="organization" required maxlength="150" placeholder="AIDA, PADI 등"></label>
+ <label>강사번호 *<input name="instructorNo" required maxlength="100" placeholder="강사 자격증에 기재된 번호"></label>
  </div>
  <label class="instructor-attachment-label">강사 자격증 및 기타 증빙파일 첨부 (최대 4개, 파일당 5MB / JPG·PNG·WEBP·PDF) *<input name="attachments" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple required></label><label class="instructor-attachment-label">책임보험 가입증명서 첨부 *<input name="insurance" type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" required></label>
  <h3>약정 내용</h3><ol class="instructor-clauses">${instructorAgreementClauses.map(x=>'<li>'+x+'</li>').join('')}</ol>
