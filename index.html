@@ -771,7 +771,9 @@ function clearFieldError(el){if(!el)return;const target=el.closest('.waiver-fiel
 function showFieldError(el,msg){if(!el)return false;const target=el.closest('.waiver-field,.waiver-agree,.waiver-sign-wrap,.reserve-types,.reserve-fields label')||el;document.querySelectorAll('.field-error').forEach(x=>x.classList.remove('field-error'));document.querySelectorAll('.field-error-message').forEach(x=>x.remove());target.classList.add('field-error');const m=document.createElement('div');m.className='field-error-message';m.textContent=msg;target.appendChild(m);target.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>{try{if(el.focus)el.focus({preventScroll:true})}catch(e){}},350);return false}
 function clearAllFieldErrors(){document.querySelectorAll('.field-error').forEach(x=>x.classList.remove('field-error'));document.querySelectorAll('.field-error-message').forEach(x=>x.remove())}
 
+let waiverSubmitting=false;
 async function submitWaiver(){
+ if(waiverSubmitting)return;
  clearAllFieldErrors();waiverResult.textContent='';
  if(!waiverLessonDate.value)return showFieldError(waiverDateButton,'이용일을 선택해 주세요.');
  if(activeWaiverCode!=='D-3'&&!waiverLessonTime.value)return showFieldError(waiverLessonTime,'타임을 선택해 주세요.');
@@ -780,14 +782,16 @@ async function submitWaiver(){
  if(activeWaiverCode==='D-2'&&!document.getElementById('waiverEducationLevel').value)return showFieldError(document.getElementById('waiverEducationLevel'),'교육 레벨을 선택해 주세요.');
  if(!waiverAgree.checked)return showFieldError(waiverAgree,'약정서 전체 동의가 필요합니다.');
  if(!waiverSigned)return showFieldError(document.querySelector('.waiver-sign-wrap'),'서명을 해주세요.');
- waiverResult.textContent='약정서를 저장하고 있습니다.';
+ waiverSubmitting=true;const submitButton=document.querySelector('.waiver-submit');if(submitButton)submitButton.disabled=true;
+ waiverResult.textContent='제출 중입니다. 잠시만 기다려 주세요.';
  try{
    const equipmentType=activeWaiverCode==='D-3'?(document.querySelector('input[name="equipmentType"]:checked')||{}).value||'':'';
    const payload={waiverCode:activeWaiverCode,lessonDate:waiverLessonDate.value,lessonTime:activeWaiverCode==='D-3'?'':waiverLessonTime.value,educationLevel:activeWaiverCode==='D-2'?document.getElementById('waiverEducationLevel').value:'',instructorName:activeWaiverCode==='D-2'?document.getElementById('waiverInstructorName').value.trim():'',agreementHtml:(activeWaiverCode==='D-2'?'<p><strong>담당 강사: '+document.getElementById('waiverInstructorName').value.trim().replace(/[<>&]/g,'')+'</strong></p>':'')+(activeWaiverCode==='D-3'?'<p><strong>장비 종류: '+equipmentType+'</strong></p>':'')+waiverBody.innerHTML,signatureData:document.getElementById('waiverSign').toDataURL('image/png')};
    const r=await fetch('/api/waivers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),j=await r.json();
    if(!r.ok||!j.ok){waiverResult.textContent='';await siteMessage('제출 실패',j.error||'약정서 저장에 실패했습니다.');return}
-   const completedWaiver=activeWaiverCode==='D-3'?'장비 확인서':'약정서';clearWaiverSign();waiverForm.style.display='none';waiverBody.innerHTML='';waiverResult.textContent='';waiverResult.classList.remove('success');waiverSuccessTitle.textContent=completedWaiver+' 제출이 완료되었습니다.';waiverSuccessAlert.classList.add('open');
+   const completedWaiver=activeWaiverCode==='D-3'?'장비 확인서':'약정서';clearWaiverSign();waiverForm.style.display='none';waiverBody.innerHTML='';waiverResult.textContent='';waiverResult.classList.remove('success');waiverSuccessTitle.textContent=j.alreadySubmitted?'이미 제출된 '+completedWaiver+'입니다.':completedWaiver+'가 정상적으로 제출되었습니다.';waiverSuccessAlert.classList.add('open');
  }catch(e){waiverResult.textContent='';await siteMessage('제출 실패','약정서 저장에 실패했습니다.')}
+ finally{waiverSubmitting=false;if(submitButton)submitButton.disabled=false}
 }
 function openScheduleMenu(){show('schedule');navPush({view:'scheduleMenu'},'view=schedule');scheduleBrand.innerHTML='';showSchedulePanel('menu',true);}
 function showSchedulePanel(which,skipHistory){show('schedule');if(!skipHistory&&which!=='menu')navPush({view:'schedule',panel:which},'schedule='+which);if(which!=='menu')bindPageBrand(scheduleBrand,'C');scheduleMenu.style.display=which==='menu'?'grid':'none';scheduleStatus.style.display=which==='status'?'block':'none';scheduleReserve.style.display=which==='reserve'?'block':'none';}
