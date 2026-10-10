@@ -636,8 +636,8 @@ export default {
         for(const file of files){
           if(!file||typeof file==="string"||!file.size)continue;
           if(file.size>5*1024*1024)return Response.json({ok:false,error:"첨부파일은 개당 5MB 이하로 등록해 주세요."},{status:413});
-          if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type))return Response.json({ok:false,error:"첨부파일은 JPG, PNG, WEBP, PDF만 가능합니다."},{status:415});
-          const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","application/pdf":"pdf"}[file.type];
+          if(!["image/jpeg","image/png"].includes(file.type))return Response.json({ok:false,error:"첨부파일은 JPG, PNG만 가능합니다."},{status:415});
+          const ext={"image/jpeg":"jpg","image/png":"png"}[file.type];
           const key="instructor-agreements/"+id+"/"+crypto.randomUUID()+"."+ext;
           await env.IMAGES.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type}});
           attachments.push({name:String(file.name||"").slice(0,150),key,type:file.type,size:file.size});
