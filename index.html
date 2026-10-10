@@ -185,7 +185,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 .instructor-file-names{font-size:13px;font-weight:500;color:#5e5670;overflow-wrap:anywhere;min-width:0}
 .instructor-file-picker:hover .instructor-file-label{background:#6134a3}
 @media(max-width:450px){.instructor-file-picker{gap:8px;padding:8px}.instructor-file-label{padding:10px 12px}}
-</style></head>
+</style><style>.sm-draft-label{display:inline-block;padding:8px 13px;background:#e9f4f8;border-left:4px solid #1680a6;color:#12445d;font-weight:800;font-size:13px;margin-bottom:10px}.instructor-clauses li strong{color:#123c57}.instructor-clauses li p{margin:5px 0 12px}</style></head>
 <body>
 <header><div class="wrap top"><div class="logo" onclick="goHome()" style="cursor:pointer;width:205px;height:64px;display:flex;align-items:center"><img id="headerBrandLogo" alt="SUBMARINE" style="display:none;max-width:200px;max-height:58px;width:auto;height:auto;object-fit:contain"></div>
 <nav>
@@ -472,7 +472,20 @@ let instructorSigned=false;
 async function openInstructorCardInfo(kind){
  if(kind==='apply'){try{const r=await fetch('/api/instructor-membership',{cache:'no-store'}),j=await r.json();if(!r.ok||!j.ok)throw Error('회원등급을 확인할 수 없습니다.');if(!j.isInstructor){await siteMessage('강사회원 전용','두 번째 카드는 관리자 F방에 등록된 강사회원만 이용할 수 있습니다.');return}}catch(e){await siteMessage('이용 불가',e.message||'회원등급 확인에 실패했습니다.');return}}
  const el=document.getElementById('instructorCardInfo');document.getElementById('instructorLandingCards').style.display='none';document.getElementById('instructorLandingBenefits').style.display='none';el.style.display='block';
- if(kind!=='register'){el.innerHTML='<button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>SM 강사 약정서</h2><p>F방에 등록된 강사회원 전용 화면입니다. SM 강사 약정 내용은 별도로 등록될 예정입니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ if(kind!=='register'){
+ const smClauses=[
+ ['적용 대상','본 약정은 관리자 F방에 등록된 강사회원이 서브마린을 통해 모집된 교육생의 교육에 참여하는 경우에 적용한다. 기본 강사 이용 약정서의 시설 안전 관련 의무는 별도로 유지된다.'],
+ ['교육 일정의 개설 및 수락','강사는 본인의 교육 가능 일정과 교육 내용을 정확하게 등록·관리한다. 서브마린에서 제공하는 교육 기회는 강사가 수락한 때에 해당 교육 일정을 성실히 이행할 의무가 발생한다.'],
+ ['예약 및 사전 확인','강사는 수락한 강습의 시설 예약 및 교육생 관련 필수 서류를 교육 시작 전에 확인하여야 한다. 예약을 고의로 지연하거나 교육 직전에 처리하여 시설 운영과 교육생 안전관리에 지장을 주어서는 안 된다. 구체적인 예약 확정 기한은 별도로 정한다.'],
+ ['교육생 안전과 강습 책임','강사는 교육생의 자격·교육 수준·건강 및 안전 관련 고지사항을 확인하고, 강습 중 안전감독과 사고 발생 시 필요한 조치를 성실히 수행한다.'],
+ ['지각·불참·무단취소','강사는 수락한 교육 일정에 정당한 사유 없이 지각하거나 불참하거나 임의로 취소해서는 안 된다. 불가피한 변경이 필요한 경우 지체 없이 서브마린과 교육생에게 알리고 대체 일정 또는 대체강사 조정에 협조한다.'],
+ ['교육생 결석 및 취소 처리','교육생의 결석·취소·환불 여부를 사실과 다르게 보고하거나, 예약을 의도적으로 지연하여 교육생 또는 시설에 불이익을 주어서는 안 된다. 교육생으로부터 수령한 금원과 예약·강습 진행 내역은 정확하게 관리한다.'],
+ ['실제 손해와 책임','강사의 귀책사유로 수락한 교육이 이행되지 않아 교육생 환불, 대체강사 투입 등 실제 손해가 발생한 경우 그 책임 범위를 협의·확인한다. 불가항력 또는 서브마린의 귀책으로 발생한 손해는 강사에게 일률적으로 전가하지 않는다.'],
+ ['활동 및 정산','강습료·활동 실적·정산 기준은 별도로 정한 운영 기준에 따른다. 강사는 교육 진행 및 정산에 필요한 사실을 정확하게 기록한다.'],
+ ['자격 유지 및 활동 종료','강사는 유효한 강사 자격과 책임보험을 유지하고 변경·만료 사실을 즉시 알린다. 중대한 안전 위반이나 반복적인 일정 불이행이 발생하면 서브마린은 교육 배정을 중단하거나 SM 활동 자격을 재검토할 수 있다.']
+ ];
+ el.innerHTML='<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><div class="sm-draft-label">검토용 초안 · 아직 서명 및 제출 전</div><h2>서브마린다이빙풀 SM 강사 약정서</h2><p>서브마린 교육생의 강습에 참여하는 강사에게 적용하는 별도 약정입니다. 아래 내용을 검토하고 조항을 확정한 뒤 전자서명 기능을 연결합니다.</p><ol class="instructor-clauses">'+smClauses.map(x=>'<li><strong>'+x[0]+'</strong><p>'+x[1]+'</p></li>').join('')+'</ol><p class="instructor-agreement-ending">본 약정은 일반 강사 이용 약정서와 별도로 적용되며, 최종 문구·예약 확정 기한·정산 기준·손해배상 기준은 검토 후 확정합니다.</p></div>';
+ el.scrollIntoView({behavior:'smooth',block:'start'});return}
  el.innerHTML=`<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
  <form id="instructorAgreementForm">
  <div class="instructor-form-grid">
