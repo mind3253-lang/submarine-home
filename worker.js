@@ -709,6 +709,19 @@ export default {
         return Response.json({ok:true,id});
       }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
     }
+    if (url.pathname === "/api/admin/sm-instructor-applications/status" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const d=await request.json(),id=String(d.id||""),status=String(d.status||"");
+        if(!/^[0-9a-f-]{36}$/.test(id)||!["approved","rejected"].includes(status))return Response.json({ok:false,error:"잘못된 승인 요청"},{status:400});
+        const key="system/sm-instructor-applications/"+id+".json",obj=await env.IMAGES.get(key);
+        if(!obj)return Response.json({ok:false,error:"지원서를 찾을 수 없습니다."},{status:404});
+        const row=JSON.parse(await obj.text());
+        row.status=status;row.reviewedAt=new Date().toISOString();
+        await env.IMAGES.put(key,JSON.stringify(row),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,status});
+      }catch(e){return Response.json({ok:false,error:"승인 상태 저장 실패"},{status:500})}
+    }
     if (url.pathname === "/api/admin/sm-instructor-applications" && request.method === "GET") {
       const denied=await requireAdmin();if(denied)return denied;
       try{
