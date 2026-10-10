@@ -469,9 +469,10 @@ const instructorAgreementClauses=[
 ];
 const instructorAgreementEnding="위 사항에 모두 동의하며, 동행 강습생 및 참여자의 안전을 최우선으로 고려한다. 또한 이후 서브마린다이빙풀의 규정에 반하여 발생하는 제재에 대하여 이의 제기를 하지 않을 것이며, 사고 발생 시 서브마린다이빙풀, 그에 소속된 이들에게 어떠한 민/형사상의 책임을 물을 수 없다. 본 약정은 서브마린다이빙풀 또는 강사가 약정해지의 뜻을 서면고지하기 이전까지 유지된다.";
 let instructorSigned=false;
-function openInstructorCardInfo(kind){
+async function openInstructorCardInfo(kind){
+ if(kind==='apply'){try{const r=await fetch('/api/instructor-membership',{cache:'no-store'}),j=await r.json();if(!r.ok||!j.ok)throw Error('회원등급을 확인할 수 없습니다.');if(!j.isInstructor){await siteMessage('강사회원 전용','두 번째 카드는 관리자 F방에 등록된 강사회원만 이용할 수 있습니다.');return}}catch(e){await siteMessage('이용 불가',e.message||'회원등급 확인에 실패했습니다.');return}}
  const el=document.getElementById('instructorCardInfo');document.getElementById('instructorLandingCards').style.display='none';document.getElementById('instructorLandingBenefits').style.display='none';el.style.display='block';
- if(kind!=='register'){el.innerHTML='<h2>SM 강사 약정서</h2><p>일반 강사 이용 약정서를 완료하고, SM 강사 승인 후 별도 약정을 진행할 수 있습니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ if(kind!=='register'){el.innerHTML='<button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>SM 강사 약정서</h2><p>F방에 등록된 강사회원 전용 화면입니다. SM 강사 약정 내용은 별도로 등록될 예정입니다.</p>';el.scrollIntoView({behavior:'smooth',block:'nearest'});return}
  el.innerHTML=`<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
  <form id="instructorAgreementForm">
  <div class="instructor-form-grid">
