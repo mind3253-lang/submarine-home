@@ -276,6 +276,16 @@ export default {
           else if(has("gimpo","김포"))k="김포시";
           else if(has("goyang","ilsandong","ilsanseo","ilsan","deogyang","고양","일산","덕양"))k="고양시";
           else if(has("siheung","시흥"))k="시흥시";
+          else if(has("suwon","수원"))k="수원시";
+          else if(has("seongnam","성남"))k="성남시";
+          else if(has("ansan","안산"))k="안산시";
+          else if(has("hwaseong","화성"))k="화성시";
+          else if(has("gwangju","광주")&&inGyeonggi)k="광주시";
+          else if(has("guri","구리"))k="구리시";
+          else if(has("hanam","하남"))k="하남시";
+          else if(has("pyeongtaek","평택"))k="평택시";
+          else if(has("osan","오산"))k="오산시";
+          else if(has("yongin","용인"))k="용인시";
           else if(inSeoul||has("seoul","서울")){
             if(has("jongno","junggu","yongsan","종로","중구","용산"))k="서울 도심권";
             else if(has("seongdong","gwangjin","dongdaemun","jungnang","seongbuk","gangbuk","dobong","nowon","성동","광진","동대문","중랑","성북","강북","도봉","노원"))k="서울 동북권";
