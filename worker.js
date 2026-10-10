@@ -629,7 +629,7 @@ export default {
         const form=await request.formData();
         const get=k=>String(form.get(k)||"").trim();
         const name=get("name"),phone=get("phone"),address=get("address"),organization=get("organization"),instructorNo=get("instructorNo"),birthDate=get("birthDate"),signature=get("signature");
-        if(!name||!phone||!address||!/^\\d{6}-[1-4]$/.test(get("identity7"))||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
+        if(!name||!phone||!address||!/^[0-9]{6}-[1-4]$/.test(get("identity7"))||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
         if(signature.length>500000)return Response.json({ok:false,error:"서명 이미지가 너무 큽니다."},{status:413});
         const insurance=form.get("insurance");if(!insurance||typeof insurance==="string"||!insurance.size)return Response.json({ok:false,error:"책임보험 가입증명서를 첨부해 주세요."},{status:400});const files=[...form.getAll("attachments"),insurance];if(!files.some(f=>f&&typeof f!=="string"&&f.size))return Response.json({ok:false,error:"강사 자격증 및 책임보험 가입증명서를 첨부해 주세요."},{status:400});if(files.length>5)return Response.json({ok:false,error:"첨부파일은 최대 5개입니다."},{status:400});
         const id=crypto.randomUUID(),attachments=[];
