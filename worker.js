@@ -284,16 +284,9 @@ export default {
             else if(has("seocho","gangnam","songpa","gangdong","서초","강남","송파","강동"))k="서울 동남권";
           }
           if(!k){
-            const lat=Number(x.latitude),lon=Number(x.longitude),valid=String(x.latitude||"").trim()!==""&&String(x.longitude||"").trim()!==""&&Number.isFinite(lat)&&Number.isFinite(lon)&&lat>=33&&lat<=39&&lon>=124&&lon<=132;
-            const seoulCoord=valid&&lat>=37.42&&lat<=37.71&&lon>=126.76&&lon<=127.20;
-            if((inSeoul||has("seoul","서울"))&&seoulCoord){
-              // Approximate marketing-zone classification from IP coordinates, not administrative boundaries.
-              if(lon<126.985)k=lat>=37.56?"서울 서북권":"서울 서남권";
-              else if(lon>=127.025)k=lat>=37.55?"서울 동북권":"서울 동남권";
-              else k=lat>=37.545&&lat<=37.595?"서울 도심권":lat>37.595?"서울 동북권":"서울 서남권";
-            }else if(valid&&lat>=37.47&&lat<=37.62&&lon>=126.84&&lon<=127.12)k="서울 지역 미상";
-            else if(valid&&lat>=37.40&&lat<=37.52&&lon>=126.62&&lon<=126.76)k="인천시";
-            else k=inSeoul?"서울 지역 미상":inIncheon?"인천시":inGyeonggi?"경기 지역 미상":(!city&&!region&&!code)?"위치 확인 불가":"그 외 지역";
+            // IP geolocation coordinates often point to an ISP gateway, not a visitor's district.
+            // Never force unknown Seoul/Gyeonggi visitors into a named marketing zone.
+            k=inSeoul?"서울 지역 미상":inIncheon?"인천시":inGyeonggi?"경기 지역 미상":(!city&&!region&&!code)?"위치 확인 불가":"그 외 지역";
           }
           if(!gm[k])gm[k]=new Set();if(v)gm[k].add(v);
           if(k==="그 외 지역"||k==="위치 확인 불가"){const raw=[String(x.region||"")||"(region 없음)",String(x.city||"")||"(city 없음)",String(x.regionCode||"")||"(code 없음)"].join(" / ");if(!unknownGeo[raw])unknownGeo[raw]=new Set();if(v)unknownGeo[raw].add(v)}
