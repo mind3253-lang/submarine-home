@@ -592,6 +592,31 @@ export default {
         return JSON.parse(decodeURIComponent(escape(atob(pp))));
       } catch { return null; }
     }
+    if (url.pathname === "/api/instructor-agreement" && request.method === "POST") {
+      try {
+        const member=await sessionMember();
+        if(!member)return Response.json({ok:false,error:"로그인 후 제출할 수 있습니다."},{status:401});
+        const form=await request.formData();
+        const get=k=>String(form.get(k)||"").trim();
+        const name=get("name"),phone=get("phone"),address=get("address"),organization=get("organization"),instructorNo=get("instructorNo"),birthDate=get("birthDate"),signature=get("signature");
+        if(!name||!phone||!address||!signature.startsWith("data:image/png;base64,"))return Response.json({ok:false,error:"필수 입력사항과 서명을 확인해 주세요."},{status:400});
+        if(signature.length>500000)return Response.json({ok:false,error:"서명 이미지가 너무 큽니다."},{status:413});
+        const files=form.getAll("attachments");if(files.length>5)return Response.json({ok:false,error:"첨부파일은 최대 5개입니다."},{status:400});
+        const id=crypto.randomUUID(),attachments=[];
+        for(const file of files){
+          if(!file||typeof file==="string"||!file.size)continue;
+          if(file.size>5*1024*1024)return Response.json({ok:false,error:"첨부파일은 개당 5MB 이하로 등록해 주세요."},{status:413});
+          if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type))return Response.json({ok:false,error:"첨부파일은 JPG, PNG, WEBP, PDF만 가능합니다."},{status:415});
+          const ext={"image/jpeg":"jpg","image/png":"png","image/webp":"webp","application/pdf":"pdf"}[file.type];
+          const key="instructor-agreements/"+id+"/"+crypto.randomUUID()+"."+ext;
+          await env.IMAGES.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type}});
+          attachments.push({name:String(file.name||"").slice(0,150),key,type:file.type,size:file.size});
+        }
+        const row={id,name:name.slice(0,100),phone:phone.slice(0,50),address:address.slice(0,300),birthDate:birthDate.slice(0,20),organization:organization.slice(0,150),instructorNo:instructorNo.slice(0,100),attachments,signature,agreementVersion:"2026-10-10",memberNo:member.memberNo||"",memberId:member.id||"",submittedAt:new Date().toISOString()};
+        await env.IMAGES.put("system/instructor-agreements/"+id+".json",JSON.stringify(row),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,id});
+      }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/waivers" && request.method === "POST") {
       try {
         const member=await sessionMember();
