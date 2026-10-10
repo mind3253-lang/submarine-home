@@ -617,6 +617,19 @@ export default {
       if(kind==="file"){const n=Number(indexText),file=row.attachments?.[n];if(!Number.isInteger(n)||!file)return Response.json({ok:false,error:"첨부파일 없음"},{status:404});const f=await env.IMAGES.get(file.key);if(!f)return Response.json({ok:false,error:"파일 없음"},{status:404});return new Response(f.body,{headers:{"Content-Type":file.type,"Content-Disposition":"attachment; filename*=UTF-8''"+encodeURIComponent(file.name),"Cache-Control":"no-store"}})}
       return Response.json({ok:true,agreement:row});
     }
+    if(url.pathname==="/api/admin/sm-instructor-agreements"&&request.method==="GET"){
+      const denied=await requireAdmin();if(denied)return denied;
+      const listed=await env.IMAGES.list({prefix:"system/sm-instructor-agreements/"}),rows=[];
+      for(const item of listed.objects){const o=await env.IMAGES.get(item.key);if(!o)continue;try{const x=JSON.parse(await o.text());delete x.signature;rows.push(x)}catch{}}
+      rows.sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)));
+      return Response.json({ok:true,agreements:rows});
+    }
+    if(url.pathname.startsWith("/api/admin/sm-instructor-agreements/")&&request.method==="GET"){
+      const denied=await requireAdmin();if(denied)return denied;
+      const id=url.pathname.split("/").pop();if(!/^[0-9a-f-]{36}$/.test(id))return Response.json({ok:false,error:"잘못된 접수번호"},{status:400});
+      const o=await env.IMAGES.get("system/sm-instructor-agreements/"+id+".json");if(!o)return Response.json({ok:false,error:"약정서 없음"},{status:404});
+      return Response.json({ok:true,agreement:JSON.parse(await o.text())});
+    }
     if(url.pathname==="/api/sm-instructor-agreement"&&request.method==="POST"){
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{
