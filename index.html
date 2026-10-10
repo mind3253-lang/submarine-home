@@ -515,7 +515,7 @@ async function openInstructorCardInfo(kind){
   "1) 본 약정서 2항 3항, 6항 위반\n시설에 고의로 피해를 주는 이러한 행위가 반복될 경우, 약정서를 확인해야 하는 시설은 매우 큰 차질이 발생되며, 교육생 역시 입장시간이 늦어져 불만이 생긴다. 이에 따라,\n1회 주의, 2회 경고, 3회 이상 부터는 패널티를 부과하며, 교육생 1인당 2만원의 패널티를 부과한다. 마일리지 차감. 마일리지가 없을 시, 해당 패널티를 납부하기 전까지 입장 제한 한다. 5회 이상 반복 시 서브마린 회원 자격을 해지할 수 있다. 잔여 마일리지는 그동안 적용받은 할인 혜택을 정상 이용요금 기준으로 재정산하여 차감한 후, 남은 금액을 지급한다. 다회권 구입 회원에게도 동일한 정산 기준을 적용한다.\n\n2) 본 약정서 5항 위반\n1회 위반시 경고. 2회 이상 시, 일반강사로 강등. 교육생 배분 중지.\n\n3) 본 약정서 7항 위반\n해당 사항 위반으로 교육생 환불요청이 들어올 시, 강사는 교육생 환불금 전액을 책임져야 한다. 대체강사 투입에 대한 비용은, 대체강사 지급원가 전체를 강사가 책임진다."
  ]
 ];
- el.innerHTML='<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 SM 강사 약정서</h2><p>서브마린 교육생의 강습에 참여하는 강사에게 적용하는 별도 약정입니다. 아래 약정 내용을 확인한 후 동의하고 직접 서명해 주세요.</p><ol class="instructor-clauses">'+window.currentSmInstructorClauses.map(x=>'<li><strong>'+x[0]+'</strong><p style="white-space:pre-line">'+x[1]+'</p></li>').join('')+'</ol><form id="smAgreementForm"><label class="instructor-agree-check"><input type="checkbox" name="agree" required> 위 SM 강사 약정서의 모든 내용을 확인하고 동의합니다.</label><h3>SM 강사 서명 *</h3><p>아래에 손가락 또는 마우스로 직접 서명해 주세요.</p><canvas id="smInstructorSignature" width="800" height="200" style="display:block;width:100%;height:130px;border:2px solid #aabecb;border-radius:8px;touch-action:none;background:white"></canvas><button type="button" onclick="clearSmInstructorSignature()">서명 지우기</button> <button type="submit">SM 강사 약정서 제출</button><p id="smAgreementStatus" role="status"></p></form></div>';setupSmInstructorSignature();document.getElementById('smAgreementForm').addEventListener('submit',submitSmInstructorAgreement);
+ el.innerHTML='<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 SM 강사 약정서</h2><p>서브마린 교육생의 강습에 참여하는 강사에게 적용하는 별도 약정입니다. 아래 약정 내용을 확인한 후 동의하고 직접 서명해 주세요.</p><ol class="instructor-clauses">'+window.currentSmInstructorClauses.map(x=>'<li><strong>'+x[0]+'</strong><p style="white-space:pre-line">'+x[1]+'</p></li>').join('')+'</ol><form id="smAgreementForm"><label class="instructor-agree-check"><input type="checkbox" name="agree" required> 위 SM 강사 약정서의 모든 내용을 확인하고 동의합니다.</label><h3>SM 강사 서명 *</h3><p>아래에 손가락 또는 마우스로 직접 서명해 주세요.</p><canvas id="smInstructorSignature" width="800" height="200" style="display:block;width:100%;height:130px;border:2px solid #aabecb;border-radius:8px;touch-action:none;background:white"></canvas><button type="button" onclick="clearSmInstructorSignature()">서명 지우기</button> <button type="submit">SM 강사 약정서 제출</button><p id="smAgreementStatus" role="status"></p></form></div>';setupSmInstructorSignature();document.getElementById('smAgreementForm').addEventListener('submit',submitSmInstructorAgreement);refreshSmInstructorAgreementStatus();
  el.scrollIntoView({behavior:'smooth',block:'start'});return}
  el.innerHTML=`<div class="instructor-agreement-form"><button type="button" class="instructor-back" onclick="openInstructorRegistrationMenu()">← 강사등록 안내로 돌아가기</button><h2>서브마린다이빙풀 강사 이용 약정서</h2><p>강사 정보를 입력하고 자격증 등 증빙자료를 첨부한 후 서명해 주세요.</p>
  <form id="instructorAgreementForm">
@@ -536,6 +536,22 @@ async function openInstructorCardInfo(kind){
  <div class="instructor-agreement-actions"><button type="button" onclick="clearInstructorSignature()">서명 지우기</button><button type="submit">약정서 제출</button></div>
  <p id="instructorAgreementStatus" role="status"></p></form><div id="smInstructorApply" class="sm-instructor-apply"><h3>SM 등록강사 신청</h3><p>강사 이용 약정서를 제출한 후, 아래 자기소개를 작성하여 지원할 수 있습니다.</p><form id="smInstructorForm"><label>강사 경력 및 전문 분야 *<textarea name="experience" required maxlength="3000" rows="4"></textarea></label><label>교육 방식과 강점 · 안전관리 방식 *<textarea name="strengths" required maxlength="3000" rows="4"></textarea></label><label>지원 동기 및 활동 계획 *<textarea name="motivation" required maxlength="3000" rows="4"></textarea></label><button type="submit" id="smInstructorSubmit" disabled>SM 등록강사 신청</button><p id="smInstructorStatus" role="status">강사 이용 약정서 제출 후 신청할 수 있습니다.</p></form></div></div>`;
  instructorSigned=false;window.submittedInstructorAgreementId=null;setupInstructorSignature();document.getElementById('smInstructorForm').addEventListener('submit',submitSmInstructorApplication);document.getElementById('instructorAgreementForm').addEventListener('submit',submitInstructorAgreement);refreshInstructorOnboarding();el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function refreshSmInstructorAgreementStatus(){
+ const form=document.getElementById('smAgreementForm');if(!form)return;
+ const status=document.getElementById('smAgreementStatus');
+ const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
+ status.textContent='기존 제출 내역을 확인하고 있습니다...';
+ try{
+  const r=await fetch('/api/instructor-onboarding-status',{cache:'no-store'}),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'조회 실패');
+  if(j.smAgreement){
+   form.style.display='none';
+   const note=document.createElement('p');note.style.cssText='padding:18px;background:#e9f8ee;border-radius:10px;font-weight:700';
+   note.textContent='SM 강사 약정서는 이미 제출되었습니다.';
+   form.before(note);
+  }else{status.textContent='';if(submit)submit.disabled=false}
+ }catch(e){status.textContent='제출 이력을 확인할 수 없습니다. 잠시 후 다시 접속해 주세요.'}
 }
 async function refreshInstructorOnboarding(){
  const form=document.getElementById('instructorAgreementForm'),sm=document.getElementById('smInstructorForm');
