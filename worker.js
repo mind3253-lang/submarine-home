@@ -413,6 +413,26 @@ export default {
     async function readSiteContent(){try{const o=await env.IMAGES.get("system/site-content.json");return o?JSON.parse(await o.text()):{}}catch{return {}}}
     if (url.pathname === "/api/site-content" && request.method === "GET") {return Response.json({ok:true,content:await readSiteContent()})}
     if (url.pathname === "/api/admin/site-content" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),content=d.content&&typeof d.content==="object"?d.content:{};await env.IMAGES.put("system/site-content.json",JSON.stringify(content),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/admin/member-history" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try {
+        const no=String(url.searchParams.get("memberNo")||"").trim();
+        if(!no)return Response.json({ok:false,error:"회원번호가 필요합니다."},{status:400});
+        const read=async key=>{const o=await env.IMAGES.get(key);return o?JSON.parse(await o.text()):[]};
+        const [members,reservations,payments,audit]=await Promise.all([
+          read("system/members.json"),read("system/reservations.json"),read("system/payments.json"),read("system/member-audit.json")
+        ]);
+        const member=members.find(x=>String(x.memberNo||"")===no);
+        if(!member)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});
+        const mine=x=>String(x.memberNo||x.member_no||x.userMemberNo||"")===no;
+        const events=[];
+        for(const x of reservations.filter(mine))events.push({at:x.createdAt||x.updatedAt||x.date||"",kind:"예약",detail:[x.date,x.time,x.type,x.people!=null?x.people+"명":null,x.status].filter(Boolean).join(" · "),source:"서버 예약 원본",data:x});
+        for(const x of payments.filter(mine))events.push({at:x.completedAt||x.paidAt||x.createdAt||x.updatedAt||"",kind:"결제",detail:[x.product||x.productName,x.amount!=null?x.amount+"원":null,x.status].filter(Boolean).join(" · "),source:"서버 결제 원본",data:x});
+        for(const x of audit.filter(mine))events.push({at:x.at||"",kind:x.kind||"잔액 변경",detail:[x.cashDelta!=null?"캐시 "+x.cashDelta:null,x.pointDelta!=null?"포인트 "+x.pointDelta:null,x.note].filter(Boolean).join(" · "),source:"서버 변경 이력",data:x});
+        events.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
+        return Response.json({ok:true,member:{memberNo:member.memberNo,name:member.name,cash:member.cash,point:member.point,balanceUpdatedAt:member.balanceUpdatedAt},events,notice:"과거 잔액 변경 중 서버 이력에 기록되지 않은 건은 행위자와 금액을 복원할 수 없습니다."},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/admin/members" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
       try {
