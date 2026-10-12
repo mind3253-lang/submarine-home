@@ -426,7 +426,7 @@ export default {
         if(!member)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});
         const mine=x=>String(x.memberNo||x.member_no||x.userMemberNo||"")===no;
         const events=[];
-        for(const x of reservations.filter(mine))events.push({at:x.createdAt||x.updatedAt||x.date||"",kind:"예약",detail:[x.date,x.time,x.type,x.people!=null?x.people+"명":null,x.status].filter(Boolean).join(" · "),source:"서버 예약 원본",data:x});
+        for(const x of reservations.filter(mine))events.push({at:x.createdAt||x.updatedAt||x.date||"",kind:"예약",actor:x.adminManual===true?"관리자 직권":x.adminManual===false||x.usePoint!=null||x.useCash!=null?"회원 직접 예약":"작성자 확인 불가",pointEffect:x.usePoint!=null?-Number(x.usePoint):null,cashEffect:x.useCash!=null?-Number(x.useCash):null,detail:[x.date,x.time,x.type,x.people!=null?x.people+"명":null,x.status].filter(Boolean).join(" · "),source:"서버 예약 원본",data:x});
         for(const x of payments.filter(mine))events.push({at:x.completedAt||x.paidAt||x.createdAt||x.updatedAt||"",kind:"결제",detail:[x.product||x.productName,x.amount!=null?x.amount+"원":null,x.status].filter(Boolean).join(" · "),source:"서버 결제 원본",data:x});
         for(const x of audit.filter(mine))events.push({at:x.at||"",kind:x.kind||"잔액 변경",detail:[x.cashDelta!=null?"캐시 "+x.cashDelta:null,x.pointDelta!=null?"포인트 "+x.pointDelta:null,x.note].filter(Boolean).join(" · "),source:"서버 변경 이력",data:x});
         events.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
