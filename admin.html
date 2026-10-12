@@ -151,7 +151,7 @@ let activeHistoryMember='';async function showAdminHistory(no){
   if(activeHistoryMember!==no)return;
   const rows=j.events||[];
   const summary='<p class="note">현재 캐시 '+Number(j.member.cash||0).toLocaleString()+'원 · 포인트 '+Number(j.member.point||0).toLocaleString()+'P · 잔액 최종변경 '+esc(j.member.balanceUpdatedAt||'기록 없음')+'</p>';
-  const items=rows.map(x=>'<details class="sched-item"><summary><strong>'+esc(x.kind)+'</strong> · '+esc(x.at||'시간 미기록')+' · '+esc(x.detail||'')+' <small>['+esc(x.source)+']</small></summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">'+esc(JSON.stringify(x.data,null,2))+'</pre></details>').join('');
+  const items=rows.map(x=>'<details class="sched-item"><summary><strong>'+esc(x.kind)+'</strong> · '+esc(x.at||'시간 미기록')+' · '+(x.kind==='예약'?'<strong>['+esc(x.actor||'작성자 확인 불가')+']</strong> ':'')+esc(x.detail||'')+(x.kind==='예약'?' · '+(x.pointEffect==null?'포인트 차감 확인 불가':'포인트 '+Number(x.pointEffect).toLocaleString()+'P')+' / '+(x.cashEffect==null?'캐시 차감 확인 불가':'캐시 '+Number(x.cashEffect).toLocaleString()+'원'):'')+' <small>['+esc(x.source)+']</small></summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">'+esc(JSON.stringify(x.data,null,2))+'</pre></details>').join('');
   const local=historyRows(no).reverse();
   const localHtml=local.length?'<h4>현재 브라우저에만 저장된 기존 기록 (서버 증빙 아님)</h4>'+local.map(x=>'<div class="sched-item">'+esc(x.at||'')+' · '+esc(x.kind||'')+' · '+esc(x.note||'')+'</div>').join(''):'';
   adminMemberHistory.innerHTML='<h3>'+esc(m.name||'회원')+' 전체 히스토리</h3>'+summary+'<p class="note">'+esc(j.notice||'')+'</p>'+(items||'<p class="note">서버 예약·결제·변경 이력이 없습니다.</p>')+localHtml;
