@@ -519,7 +519,7 @@ export default {
       const c=npayCredentials();if(!c.clientId||!c.chainId)return Response.json({ok:false,error:"Npay 샌드박스 인증정보가 설정되지 않았습니다."},{status:503});
       return Response.json({ok:true,mode:"development",clientId:c.clientId,chainId:c.chainId},{headers:{"Cache-Control":"no-store"}});
     }
-    if(url.pathname==="/api/npay/prepare"&&request.method==="POST"){
+    if(url.pathname==="/api/npay/prepare"&&request.method==="POST"){return Response.json({ok:false,error:"현재 Npay 결제를 제공하지 않습니다."},{status:503});
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       try{
         const c=npayCredentials();if(!c.clientId||!c.clientSecret||!c.chainId)return Response.json({ok:false,error:"Npay 샌드박스 인증정보가 완전하지 않습니다."},{status:503});
