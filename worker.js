@@ -44,7 +44,7 @@ export default {
       return null;
     }
     async function adminSessionValid(){
-      try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(s.expiresAt&&Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
+      try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(s.expiresAt&&Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}const cfg=await adminConfig();return !!cfg&&(s.authVersion||"legacy")===(cfg.authVersion||"legacy")}catch{return false}
     }
     async function requireAdmin(){return await adminSessionValid()?null:Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401})}
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
@@ -855,7 +855,7 @@ export default {
         const data=await request.json(),password=String(data.password||"");
         if(password.length<8)return Response.json({ok:false,error:"비밀번호는 8자 이상 입력해 주세요."},{status:400});
         const salt=crypto.randomUUID(),passwordHash=await hashPassword(password,salt);
-        await env.IMAGES.put("system/admin-auth.json",JSON.stringify({salt,passwordHash}),{httpMetadata:{contentType:"application/json"}});
+        await env.IMAGES.put("system/admin-auth.json",JSON.stringify({salt,passwordHash,authVersion:crypto.randomUUID()}),{httpMetadata:{contentType:"application/json"}});
         return Response.json({ok:true});
       }catch(e){return Response.json({ok:false,error:"비밀번호 변경에 실패했습니다."},{status:500})}
     }
@@ -872,7 +872,7 @@ export default {
         const valid=String(data.id||"")==="submarine" && await hashPassword(String(data.password||""),cfg.salt)===cfg.passwordHash;
         if(!valid)return Response.json({ok:false,error:"관리자 ID 또는 비밀번호가 서버에 등록된 정보와 일치하지 않습니다. (로그인 인증 401)"},{status:401});
         const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-","");
-        await env.IMAGES.put("system/admin-sessions/"+token+".json",JSON.stringify({createdAt:new Date().toISOString()}),{httpMetadata:{contentType:"application/json"}});
+        await env.IMAGES.put("system/admin-sessions/"+token+".json",JSON.stringify({createdAt:new Date().toISOString(),authVersion:cfg.authVersion||"legacy"}),{httpMetadata:{contentType:"application/json"}});
         return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=315360000"}});
       } catch { return Response.json({ok:false},{status:400}); }
     }
