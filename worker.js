@@ -47,40 +47,6 @@ export default {
       try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(!s.expiresAt||Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
     }
     async function requireAdmin(){return await adminSessionValid()?null:Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401})}
-    // KakaoPay online payment DEV probe. Secret stays in Worker env, never in browser/GitHub.
-    if (url.pathname === "/api/payment/kakaopay/dev-probe" && request.method === "POST") {
-      const denied=await requireAdmin(); if(denied)return denied;
-      if(!env.KAKAOPAY_SECRET_KEY_DEV) return Response.json({ok:false,stage:"config",error:"KAKAOPAY_SECRET_KEY_DEV 환경변수가 없습니다."},{status:503});
-      try{
-        const origin="https://submarine.asia";
-        const body={
-          cid:"TC0ONETIME",
-          partner_order_id:"SUBMARINE-DEV-"+Date.now(),
-          partner_user_id:"admin-dev-probe",
-          item_name:"SUBMARINE 카카오페이 개발연동 테스트",
-          quantity:1,
-          total_amount:100,
-          tax_free_amount:0,
-          approval_url:origin+"/?kakaopay=success",
-          cancel_url:origin+"/?kakaopay=cancel",
-          fail_url:origin+"/?kakaopay=fail"
-        };
-        const r=await fetch("https://open-api.kakaopay.com/online/v1/payment/ready",{
-          method:"POST",
-          headers:{"Authorization":"SECRET_KEY "+env.KAKAOPAY_SECRET_KEY_DEV,"Content-Type":"application/json"},
-          body:JSON.stringify(body)
-        });
-        const raw=await r.text(); let data; try{data=JSON.parse(raw)}catch{data={raw:raw.slice(0,1000)}}
-        const safe=data&&typeof data==="object"?{...data}:data;
-        // A successful Ready response proves DEV online-payment access. Keep tid server-side only.
-        if(r.ok&&data?.tid){
-          await env.IMAGES.put("system/kakaopay-dev-probe.json",JSON.stringify({tid:data.tid,partner_order_id:body.partner_order_id,partner_user_id:body.partner_user_id,createdAt:new Date().toISOString()}),{httpMetadata:{contentType:"application/json"}});
-        }
-        if(safe&&typeof safe==="object"){delete safe.tid;delete safe.next_redirect_app_url;delete safe.next_redirect_mobile_url;delete safe.next_redirect_pc_url;delete safe.android_app_scheme;delete safe.ios_app_scheme}
-        return Response.json({ok:r.ok,httpStatus:r.status,stage:"ready",onlineDevAccess:r.ok,response:safe},{status:r.ok?200:r.status,headers:{"Cache-Control":"no-store"}});
-      }catch(e){return Response.json({ok:false,stage:"network",error:e?.message||String(e)},{status:502,headers:{"Cache-Control":"no-store"}})}
-    }
-
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
       try {
         const d=await request.json(),name=String(d.name||"").trim(),phone=String(d.phone||"").replace(/[^0-9]/g,""),password=String(d.password||""),licenses=Array.isArray(d.licenses)?d.licenses:[];
@@ -493,59 +459,6 @@ export default {
       try{const d=await request.json(),key="system/refund-requests.json";let rows=[];try{const o=await env.IMAGES.get(key);if(o)rows=JSON.parse(await o.text())}catch{}const req={id:crypto.randomUUID(),memberNo:member.memberNo,name:member.name||"회원",program:String(d.program||"교육 프로그램"),type:"education",status:"requested",submittedAt:new Date().toISOString(),termsAcknowledged:true};rows.push(req);await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});const requests=await readRequests();requests.unshift({id:req.id,kind:"education_refund",status:"requested",memberNo:req.memberNo,name:req.name,program:req.program,submittedAt:req.submittedAt});await writeRequests(requests);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
-    function npayCredentials(){
-      return {
-        clientId:String(env.NPAY_CLIENT_ID||env["Client Id"]||""),
-        clientSecret:String(env.NPAY_CLIENT_SECRET||env["Client Secret"]||""),
-        chainId:String(env.NPAY_CHAIN_ID||env["Chain Id"]||"")
-      };
-    }
-    async function npayUserKey(memberNo){
-      const b=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(memberNo||""))));
-      return Array.from(b,x=>x.toString(16).padStart(2,"0")).join("").slice(0,44);
-    }
-    async function completeNpayPayment(row,detail,rows){
-      if(row.status==="completed")return row;
-      const mk="system/members.json";let members=[];const mo=await env.IMAGES.get(mk);if(mo)members=JSON.parse(await mo.text());
-      const mi=members.findIndex(x=>x.memberNo===row.memberNo);if(mi<0)throw new Error("결제 회원을 찾을 수 없습니다.");
-      const reward=Math.max(0,Number(row.rewardPoint)||0),products=await readA3Products(),productIndex=Number.isInteger(row.productIndex)?row.productIndex:products.findIndex(x=>String(x.title||"")===String(row.product||"")),purchaseMileage=row.purchaseMileagePoint!=null?Math.max(0,Number(row.purchaseMileagePoint)||0):(productIndex===0?Math.max(0,Number(row.amount)||0):0),credited=reward+purchaseMileage;
-      members[mi].point=Number(members[mi].point||0)+credited;members[mi].balanceUpdatedAt=new Date().toISOString();
-      row.status="completed";row.productIndex=productIndex;row.purchaseMileagePoint=purchaseMileage;row.completedAt=new Date().toISOString();row.npayPaymentId=String(detail.paymentId||"");row.npayPayHistId=String(detail.payHistId||"");row.npayDetail={paymentId:row.npayPaymentId,payHistId:row.npayPayHistId,primaryPayMeans:detail.primaryPayMeans||"",totalPayAmount:Number(detail.totalPayAmount)||0};
-      await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
-      try{await writePayments(rows)}catch(e){members[mi].point=Math.max(0,Number(members[mi].point||0)-credited);await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});throw e}
-      return row;
-    }
-    if(url.pathname==="/api/npay/config"&&request.method==="GET"){
-      const c=npayCredentials();if(!c.clientId||!c.chainId)return Response.json({ok:false,error:"Npay 샌드박스 인증정보가 설정되지 않았습니다."},{status:503});
-      return Response.json({ok:true,mode:"development",clientId:c.clientId,chainId:c.chainId},{headers:{"Cache-Control":"no-store"}});
-    }
-    if(url.pathname==="/api/npay/prepare"&&request.method==="POST"){return Response.json({ok:false,error:"현재 Npay 결제를 제공하지 않습니다."},{status:503});
-      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
-      try{
-        const c=npayCredentials();if(!c.clientId||!c.clientSecret||!c.chainId)return Response.json({ok:false,error:"Npay 샌드박스 인증정보가 완전하지 않습니다."},{status:503});
-        const d=await request.json(),quantity=Math.max(1,Math.min(10,Math.floor(Number(d.quantity)||1))),products=await readA3Products(),productIndex=products.findIndex(x=>x.published!==false&&String(x.title||"")===String(d.product||"")),product=products[productIndex];
-        if(!product)return Response.json({ok:false,error:"상품을 찾을 수 없습니다."},{status:404});
-        const unitAmount=Number(String(product.price||"").replace(/[^0-9]/g,""))||0,amount=unitAmount*quantity;if(amount<10)return Response.json({ok:false,error:"결제금액을 확인해 주세요."},{status:400});
-        const rewardRate=Math.max(0,Number(product.npay)||0),rewardPoint=Math.round(amount*rewardRate/100),purchaseMileagePoint=productIndex===0?amount:0,rows=await readPayments(),id=crypto.randomUUID(),merchantUserKey=await npayUserKey(member.memberNo);
-        const row={id,memberNo:member.memberNo,name:member.name||"회원",phone:member.phone||"",product:String(product.title),productIndex,quantity,unitAmount,amount,payerName:member.name||"",method:"npay",rewardRate,rewardPoint,purchaseMileagePoint,status:"awaiting_auth",createdAt:new Date().toISOString()};rows.unshift(row);await writePayments(rows);
-        return Response.json({ok:true,payment:{id,product:row.product,quantity,amount},reserve:{merchantUserKey,merchantPayKey:id,productName:row.product,productCount:quantity,totalPayAmount:amount,taxScopeAmount:amount,taxExScopeAmount:0,returnUrl:"https://submarine.asia/api/npay/return?orderId="+encodeURIComponent(id),productItems:[{categoryType:"ETC",categoryId:"ETC",uid:"submarine-"+id.replaceAll("-","").slice(0,20),name:row.product,payReferrer:"ETC",count:quantity}]}});
-      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
-    }
-    if(url.pathname==="/api/npay/return"&&request.method==="GET"){
-      const orderId=String(url.searchParams.get("orderId")||""),resultCode=String(url.searchParams.get("resultCode")||""),paymentId=String(url.searchParams.get("paymentId")||""),resultMessage=String(url.searchParams.get("resultMessage")||"");
-      const back=(status,msg)=>new Response(null,{status:302,headers:{Location:"https://submarine.asia/?npayResult="+encodeURIComponent(status)+(msg?"&npayMessage="+encodeURIComponent(msg):"")}});
-      try{
-        const rows=await readPayments(),row=rows.find(x=>x.id===orderId&&x.method==="npay");if(!row)return back("fail","결제 주문을 찾을 수 없습니다.");
-        if(row.status==="completed")return back("success","");
-        if(resultCode!=="Success"||!paymentId){row.status="auth_failed";row.npayError=resultMessage||resultCode||"결제 인증 실패";await writePayments(rows);return back("fail",row.npayError)}
-        const c=npayCredentials();if(!c.clientId||!c.clientSecret||!c.chainId)throw new Error("Npay 인증정보가 없습니다.");
-        const body=new URLSearchParams({paymentId}),r=await fetch("https://dev-pay.paygate.naver.com/naverpay-partner/naverpay/payments/v2.2/apply/payment",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded","X-Naver-Client-Id":c.clientId,"X-Naver-Client-Secret":c.clientSecret,"X-NaverPay-Chain-Id":c.chainId,"X-NaverPay-Idempotency-Key":orderId},body});
-        const j=await r.json();if(!r.ok||j.code!=="Success"||!j.body?.detail){row.status="approval_failed";row.npayError=j.message||j.code||("HTTP "+r.status);await writePayments(rows);return back("fail",row.npayError)}
-        const detail=j.body.detail;if(String(detail.merchantPayKey||"")!==orderId||Number(detail.totalPayAmount)!==Number(row.amount)){row.status="review";row.npayError="결제 검증값 불일치";row.npayPaymentId=paymentId;await writePayments(rows);return back("fail","결제 확인이 필요합니다. 관리자에게 문의해 주세요.")}
-        await completeNpayPayment(row,detail,rows);return back("success","");
-      }catch(e){return back("fail",e?.message||"결제 승인 처리 중 오류가 발생했습니다.")}
-    }
-
     // Standards-based payload-free Web Push. Service worker displays generic payment notice.
     // Configure VAPID_PRIVATE_KEY as base64url PKCS#8 P-256 key, VAPID_PUBLIC_KEY
     // as base64url uncompressed public point, and VAPID_SUBJECT as mailto: address.
@@ -888,7 +801,7 @@ export default {
     async function writeA3Products(rows){await env.IMAGES.put("system/a3-products.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     if (url.pathname === "/api/a3-products" && request.method === "GET") {const rows=(await readA3Products()).filter(x=>x.published!==false&&x.title);return Response.json({ok:true,products:rows})}
     if (url.pathname === "/api/admin/a3-products" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,products:await readA3Products()})}
-    if (url.pathname === "/api/admin/a3-products" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=Array.isArray(d.products)?d.products:[];const clean=rows.slice(0,20).map(x=>({category:String(x.category||""),title:String(x.title||""),price:String(x.price||""),npay:Number(x.npay)||0,rate:Number(x.rate)||0,desc:String(x.desc||""),tag:String(x.tag||""),detail:String(x.detail||""),options:String(x.options||""),extras:String(x.extras||""),published:x.published!==false,image:String(x.image||"")}));await writeA3Products(clean);return Response.json({ok:true,products:clean})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/admin/a3-products" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=Array.isArray(d.products)?d.products:[];const clean=rows.slice(0,20).map(x=>({category:String(x.category||""),title:String(x.title||""),price:String(x.price||""),rate:Number(x.rate)||0,desc:String(x.desc||""),tag:String(x.tag||""),detail:String(x.detail||""),options:String(x.options||""),extras:String(x.extras||""),published:x.published!==false,image:String(x.image||"")}));await writeA3Products(clean);return Response.json({ok:true,products:clean})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
     async function readEducationPosts(){try{const o=await env.IMAGES.get("system/education-posts.json");if(!o)return [];const rows=JSON.parse(await o.text());const clean=rows.filter(x=>String(x.title||"").trim()!=="한 줄, 상위 카테고리");if(clean.length!==rows.length)await env.IMAGES.put("system/education-posts.json",JSON.stringify(clean),{httpMetadata:{contentType:"application/json"}});return clean}catch{return []}}
     async function writeEducationPosts(rows){await env.IMAGES.put("system/education-posts.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
