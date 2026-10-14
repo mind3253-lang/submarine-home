@@ -423,21 +423,11 @@ export default {
     if (url.pathname === "/api/admin/member-expel" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),memberNo=String(d.memberNo||""),key="system/members.json";const o=await env.IMAGES.get(key),members=o?JSON.parse(await o.text()):[],i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});members[i].status="expelled";members[i].expelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     async function readReservations(){try{const o=await env.IMAGES.get("system/reservations.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
-    // One shared administrator-controlled schedule for reservations and visit waivers.
-    const openSlotsKey="system/open-visit-slots.json";
-    async function readOpenSlots(){const o=await env.IMAGES.get(openSlotsKey);if(!o)return {};const data=JSON.parse(await o.text());return data&&typeof data==="object"&&!Array.isArray(data)?data:{}}
-    function validOpenDate(date){return /^\d{4}-\d{2}-\d{2}$/.test(String(date||""))&&!Number.isNaN(Date.parse(String(date)+"T00:00:00"))}
+    // C-category administrator schedule is the single source of available visit slots.
     function slotNumber(time){const m=/^([1-5])(?:타임)?$/.exec(String(time||"").trim());return m?Number(m[1]):0}
-    async function isOpenVisitSlot(date,time){if(!validOpenDate(date)||!slotNumber(time))return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(slotNumber(time))}
-    if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"개방 타임 조회 실패"},{status:500})}}
-    if(url.pathname==="/api/admin/open-visit-slots"&&request.method==="POST"){
-      const denied=await requireAdmin();if(denied)return denied;
-      try{const d=await request.json(),date=String(d.date||""),times=d.times;if(!validOpenDate(date)||!Array.isArray(times)||times.some(t=>!Number.isInteger(t)||t<1||t>5))return Response.json({ok:false,error:"날짜 또는 타임이 올바르지 않습니다."},{status:400});
-        const slots=await readOpenSlots(),unique=[...new Set(times)].sort((a,b)=>a-b);if(unique.length)slots[date]=unique;else delete slots[date];
-        await env.IMAGES.put(openSlotsKey,JSON.stringify(slots),{httpMetadata:{contentType:"application/json"}});
-        return Response.json({ok:true,slots});
-      }catch(e){return Response.json({ok:false,error:"개방 타임 저장 실패"},{status:500})}
-    }
+    async function readOpenSlots(){const rows=await readReservations(),slots={};for(const row of rows){if(row.status==="cancelled"||!(Number(row.people)>0)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.date||"")))continue;const n=slotNumber(row.time);if(!n)continue;(slots[row.date]||(slots[row.date]=[]));if(!slots[row.date].includes(n))slots[row.date].push(n)}for(const date of Object.keys(slots))slots[date].sort((a,b)=>a-b);return slots}
+    async function isOpenVisitSlot(date,time){const n=slotNumber(time);if(!n)return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(n)}
+    if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"스케줄 조회 실패"},{status:500})}}
     if (url.pathname === "/api/reservations" && request.method === "GET") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
