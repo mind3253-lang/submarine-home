@@ -426,7 +426,7 @@ export default {
     // One shared administrator-controlled schedule for reservations and visit waivers.
     const openSlotsKey="system/open-visit-slots.json";
     async function readOpenSlots(){const o=await env.IMAGES.get(openSlotsKey);if(!o)return {};const data=JSON.parse(await o.text());return data&&typeof data==="object"&&!Array.isArray(data)?data:{}}
-    function validOpenDate(date){return /^\\d{4}-\\d{2}-\\d{2}$/.test(String(date||""))&&!Number.isNaN(Date.parse(String(date)+"T00:00:00"))}
+    function validOpenDate(date){return /^\d{4}-\d{2}-\d{2}$/.test(String(date||""))&&!Number.isNaN(Date.parse(String(date)+"T00:00:00"))}
     function slotNumber(time){const m=/^([1-5])(?:타임)?$/.exec(String(time||"").trim());return m?Number(m[1]):0}
     async function isOpenVisitSlot(date,time){if(!validOpenDate(date)||!slotNumber(time))return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(slotNumber(time))}
     if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"개방 타임 조회 실패"},{status:500})}}
