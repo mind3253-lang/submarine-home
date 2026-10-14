@@ -425,7 +425,7 @@ export default {
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     // C-category administrator schedule is the single source of available visit slots.
     function slotNumber(time){const m=/^([1-5])(?:타임)?$/.exec(String(time||"").trim());return m?Number(m[1]):0}
-    async function readOpenSlots(){const rows=await readReservations(),slots={};for(const row of rows){if(row.status==="cancelled"||!(Number(row.people)>0)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(row.date||"")))continue;const n=slotNumber(row.time);if(!n)continue;(slots[row.date]||(slots[row.date]=[]));if(!slots[row.date].includes(n))slots[row.date].push(n)}for(const date of Object.keys(slots))slots[date].sort((a,b)=>a-b);return slots}
+    async function readOpenSlots(){const rows=await readReservations(),slots={};for(const row of rows){if(row.status==="cancelled"||!(Number(row.people)>0)||!/^\d{4}-\d{2}-\d{2}$/.test(String(row.date||"")))continue;const n=slotNumber(row.time);if(!n)continue;(slots[row.date]||(slots[row.date]=[]));if(!slots[row.date].includes(n))slots[row.date].push(n)}for(const date of Object.keys(slots))slots[date].sort((a,b)=>a-b);return slots}
     async function isOpenVisitSlot(date,time){const n=slotNumber(time);if(!n)return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(n)}
     if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"스케줄 조회 실패"},{status:500})}}
     if (url.pathname === "/api/reservations" && request.method === "GET") {
