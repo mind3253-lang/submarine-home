@@ -98,7 +98,7 @@ function drawVisitorChart(rows,days=7){
  const cutoffDay=cutoff.toISOString().slice(0,10),cutoffMonth=cutoffDay.slice(0,7);
  let keys=[];
  if(monthly){const base=first?new Date(first+'-01T00:00:00Z'):new Date(Date.UTC(Number(part('year')),Number(part('month'))-12,1));for(let i=0;i<12;i++){const d=new Date(Date.UTC(base.getUTCFullYear(),base.getUTCMonth()+i,1));keys.push(d.toISOString().slice(0,7))}}
- else{const base=first?new Date(first+'T00:00:00Z'):new Date(Date.UTC(Number(part('year')),Number(part('month'))-1,Number(part('day')-days));for(let i=0;i<days;i++){const d=new Date(base.getTime()+i*86400000);keys.push(d.toISOString().slice(0,10))}}
+ else{const base=first?new Date(first+'T00:00:00Z'):new Date(Date.UTC(Number(part('year')),Number(part('month'))-1,Number(part('day'))-days));for(let i=0;i<days;i++){const d=new Date(base.getTime()+i*86400000);keys.push(d.toISOString().slice(0,10))}}
  const values=keys.map(k=>k>(monthly?cutoffMonth:cutoffDay)?null:(counts.has(k)?counts.get(k):null));
  visitorChart=new Chart(canvas,{type:'line',data:{labels:keys.map(k=>monthly?k.replace('-','.'):k.slice(5).replace('-','.')),datasets:[{label:'방문인원',data:values,tension:.4,cubicInterpolationMode:'monotone',spanGaps:false,fill:false,borderWidth:2,pointRadius:0,pointHoverRadius:4}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{grid:{display:false}}}}})
 }
