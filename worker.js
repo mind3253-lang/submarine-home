@@ -44,7 +44,7 @@ export default {
       return null;
     }
     async function adminSessionValid(){
-      try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(!s.expiresAt||Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
+      try{const cookie=request.headers.get("Cookie")||"",token=(cookie.match(/(?:^|;\s*)submarine_admin=([^;]+)/)||[])[1];if(!token)return false;const o=await env.IMAGES.get("system/admin-sessions/"+token+".json");if(!o)return false;const s=JSON.parse(await o.text());if(s.expiresAt&&Date.now()>s.expiresAt){await env.IMAGES.delete("system/admin-sessions/"+token+".json");return false}return true}catch{return false}
     }
     async function requireAdmin(){return await adminSessionValid()?null:Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401})}
     if (url.pathname === "/api/auth/local/register" && request.method === "POST") {
@@ -871,9 +871,9 @@ export default {
         }
         const valid=String(data.id||"")==="submarine" && await hashPassword(String(data.password||""),cfg.salt)===cfg.passwordHash;
         if(!valid)return Response.json({ok:false,error:"관리자 ID 또는 비밀번호가 서버에 등록된 정보와 일치하지 않습니다. (로그인 인증 401)"},{status:401});
-        const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-",""),expiresAt=Date.now()+12*60*60*1000;
-        await env.IMAGES.put("system/admin-sessions/"+token+".json",JSON.stringify({expiresAt}),{httpMetadata:{contentType:"application/json"}});
-        return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200"}});
+        const token=crypto.randomUUID()+crypto.randomUUID().replaceAll("-","");
+        await env.IMAGES.put("system/admin-sessions/"+token+".json",JSON.stringify({createdAt:new Date().toISOString()}),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true},{headers:{"Set-Cookie":"submarine_admin="+token+"; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=315360000"}});
       } catch { return Response.json({ok:false},{status:400}); }
     }
     async function readIndependentPosts(){let rows=[];try{const o=await env.IMAGES.get("system/independent-posts.json");if(o)rows=JSON.parse(await o.text())}catch{}return Array.isArray(rows)?rows:[]}
