@@ -423,6 +423,21 @@ export default {
     if (url.pathname === "/api/admin/member-expel" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),memberNo=String(d.memberNo||""),key="system/members.json";const o=await env.IMAGES.get(key),members=o?JSON.parse(await o.text()):[],i=members.findIndex(x=>x.memberNo===memberNo);if(i<0)return Response.json({ok:false,error:"회원을 찾을 수 없습니다."},{status:404});members[i].status="expelled";members[i].expelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     async function readReservations(){try{const o=await env.IMAGES.get("system/reservations.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
+    // One shared administrator-controlled schedule for reservations and visit waivers.
+    const openSlotsKey="system/open-visit-slots.json";
+    async function readOpenSlots(){const o=await env.IMAGES.get(openSlotsKey);if(!o)return {};const data=JSON.parse(await o.text());return data&&typeof data==="object"&&!Array.isArray(data)?data:{}}
+    function validOpenDate(date){return /^\\d{4}-\\d{2}-\\d{2}$/.test(String(date||""))&&!Number.isNaN(Date.parse(String(date)+"T00:00:00"))}
+    function slotNumber(time){const m=/^([1-5])(?:타임)?$/.exec(String(time||"").trim());return m?Number(m[1]):0}
+    async function isOpenVisitSlot(date,time){if(!validOpenDate(date)||!slotNumber(time))return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(slotNumber(time))}
+    if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"개방 타임 조회 실패"},{status:500})}}
+    if(url.pathname==="/api/admin/open-visit-slots"&&request.method==="POST"){
+      const denied=await requireAdmin();if(denied)return denied;
+      try{const d=await request.json(),date=String(d.date||""),times=d.times;if(!validOpenDate(date)||!Array.isArray(times)||times.some(t=>!Number.isInteger(t)||t<1||t>5))return Response.json({ok:false,error:"날짜 또는 타임이 올바르지 않습니다."},{status:400});
+        const slots=await readOpenSlots(),unique=[...new Set(times)].sort((a,b)=>a-b);if(unique.length)slots[date]=unique;else delete slots[date];
+        await env.IMAGES.put(openSlotsKey,JSON.stringify(slots),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,slots});
+      }catch(e){return Response.json({ok:false,error:"개방 타임 저장 실패"},{status:500})}
+    }
     if (url.pathname === "/api/reservations" && request.method === "GET") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
@@ -430,7 +445,7 @@ export default {
     if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled").map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,status:x.status||"confirmed"}))})}
     if (url.pathname === "/api/admin/reservations" && request.method === "GET") {if(!await adminSessionValid())return Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401});const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled")})}
     if (url.pathname === "/api/admin/reservations/edit" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readReservations(),i=rows.findIndex(x=>x.id===d.id);if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});if(d.date)rows[i].date=String(d.date);if(d.time)rows[i].time=String(d.time);if(d.type&&["강습","스킬업","펀다","독립군"].includes(d.type))rows[i].type=d.type;if(d.people!=null){const people=Math.max(0,Math.floor(Number(d.people)||0));if(people===0){const removed=rows[i];rows.splice(i,1);await writeReservations(rows);return Response.json({ok:true,deleted:true,reservation:removed})}rows[i].people=people}rows[i].adminEditedAt=new Date().toISOString();await writeReservations(rows);return Response.json({ok:true,reservation:rows[i]})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
-    if (url.pathname === "/api/admin/reservations/add" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:"ADMIN",name:String(d.name||"관리자입력"),date:String(d.date),time:String(d.time),type:d.type,people,status:"confirmed",adminManual:true,createdAt:new Date().toISOString()};rows.push(row);await writeReservations(rows);return Response.json({ok:true,reservation:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/admin/reservations/add" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!await isOpenVisitSlot(d.date,d.time))return Response.json({ok:false,error:"예약시간을 확인하신 후 다시 신청해 주세요. 별도 이용은 고객센터로 문의해 주세요."},{status:400});if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:"ADMIN",name:String(d.name||"관리자입력"),date:String(d.date),time:String(d.time),type:d.type,people,status:"confirmed",adminManual:true,createdAt:new Date().toISOString()};rows.push(row);await writeReservations(rows);return Response.json({ok:true,reservation:row})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
 
     if (url.pathname === "/api/reservations" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
@@ -750,6 +765,7 @@ export default {
         const member=await sessionMember();
         if(!member) return Response.json({ok:false,error:"로그인 후 약정서를 제출할 수 있습니다."},{status:401});
         const data=await request.json();
+        if(data.waiverCode!=="D-3"&&!await isOpenVisitSlot(data.lessonDate,data.lessonTime))return Response.json({ok:false,error:"예약시간을 확인하신 후 다시 작성해 주세요. 별도 이용은 고객센터로 문의해 주세요."},{status:400});
         if(!["D-1","D-2","D-3"].includes(data.waiverCode)||!data.lessonDate||(data.waiverCode!=="D-3"&&!data.lessonTime)||!data.signatureData) return Response.json({ok:false,error:"약정서 제출정보가 부족합니다."},{status:400});
         const selected=new Date(String(data.lessonDate)+"T00:00:00"),n=new Date(),today=new Date(n.getFullYear(),n.getMonth(),n.getDate());if(selected<today)return Response.json({ok:false,error:"지난 날짜에는 약정서를 제출할 수 없습니다."},{status:400});
         const rows=await readWaivers(), now=new Date().toISOString();
