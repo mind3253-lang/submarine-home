@@ -764,7 +764,8 @@ export default {
         const duplicate=rows.find(x=>String(x.memberId||"")===String(member.id||"")&&x.waiverCode===row.waiverCode&&x.lessonDate===row.lessonDate&&String(x.lessonTime||"")===String(row.lessonTime||""));
         if(duplicate)return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true});
         rows.push(row); await writeWaivers(rows);
-        return Response.json({ok:true,id:row.id});
+        const bookingMatched=row.waiverCode!=="D-2"?true:(await readReservations()).some(x=>x.status!=="cancelled"&&x.date===row.lessonDate&&slotNumber(x.time)===Number(row.lessonTime)&&String(x.instructorName||"").trim()===row.instructorName&&Number(x.people)>0);
+        return Response.json({ok:true,id:row.id,bookingMatched});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/instructor-waivers" && request.method === "GET") {
