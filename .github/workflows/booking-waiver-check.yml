@@ -13,6 +13,8 @@ jobs:
           node-version: '22'
       - name: Check worker syntax
         run: node --check worker.js
+      - name: Execute booking coordinator integration tests
+        run: node tests/booking-coordinator.mjs
       - name: Check Cloudflare config
         run: node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));if(!c.durable_objects?.bindings?.some(x=>x.name==='BOOKING_COORDINATOR'))process.exit(1);if(!c.triggers?.crons?.length)process.exit(1)"
       - name: Validate reservation invariants
