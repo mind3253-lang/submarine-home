@@ -674,16 +674,16 @@ export default {
     }
 
     async function educationBookingMatches(row){if(row.waiverCode!=="D-2")return true;const reservations=await readReservations();return reservations.some(x=>x.status!=="cancelled"&&x.date===row.lessonDate&&slotNumber(x.time)===Number(row.lessonTime)&&String(x.instructorName||"").trim()===String(row.instructorName||"").trim()&&Number(x.people)>0)}
-    async function readWaiverCutoffHour(){const o=await env.IMAGES.get("system/waiver-settings.json"),cfg=o?JSON.parse(await o.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return /^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):null}
+    async function readWaiverCutoffHour(){const o=await env.IMAGES.get("system/waiver-settings.json"),cfg=o?JSON.parse(await o.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return /^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):23}
     async function readWaivers() {
       const key = "system/waivers.json";
       let rows = [];
       try { const o = await env.IMAGES.get(key); if (o) rows = JSON.parse(await o.text()); } catch {}
       const cutoff1y = Date.now() - 365 * 24 * 60 * 60 * 1000;
       const cutoff2y = Date.now() - 730 * 24 * 60 * 60 * 1000;
-      const cutoffHour=await readWaiverCutoffHour(),configured=cutoffHour!==null;
+      const cutoffHour=(await readWaiverCutoffHour())??23,configured=true;
       const bookings=configured?await readReservations():[];
-      const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T"+String(cutoffHour).padStart(2,"0")+":00:00+09:00");if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
+      const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T00:00:00+09:00")-86400000+(cutoffHour+1)*3600000-1;if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
       if (kept.length !== rows.length) await env.IMAGES.put(key, JSON.stringify(kept), {httpMetadata:{contentType:"application/json"}});
       return kept;
     }
@@ -1065,14 +1065,13 @@ export default {
   },
   async scheduled(event,env,ctx){
     const setting=await env.IMAGES.get("system/waiver-settings.json"),cfg=setting?JSON.parse(await setting.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();
-    if(!/^(?:[01]?\d|2[0-3])$/.test(raw))return;
-    const hour=Number(raw),key="system/waivers.json";
+    const hour=/^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):23,key="system/waivers.json";
     const o=await env.IMAGES.get(key);if(!o)return;
     const rows=JSON.parse(await o.text());
     const r=await env.IMAGES.get("system/reservations.json"),bookings=r?JSON.parse(await r.text()):[];
     const kept=rows.filter(x=>{
       if(x.hold||x.waiverCode!=="D-2"||!/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||"")))return true;
-      const deadline=Date.parse(x.lessonDate+"T"+String(hour).padStart(2,"0")+":00:00+09:00");
+      const deadline=Date.parse(x.lessonDate+"T00:00:00+09:00")-86400000+(hour+1)*3600000-1;
       if(Date.now()<deadline)return true;
       return bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&Number(String(b.time||"").match(/^[1-5]/)?.[0])===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0);
     });

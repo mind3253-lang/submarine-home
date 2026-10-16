@@ -812,7 +812,7 @@ async function submitWaiver(){
    const detail=document.getElementById('waiverSuccessDetail');
    if(warning){
      waiverSuccessTitle.textContent='약정서 제출 완료 · 담당 강사 예약 미확인';
-     detail.textContent='해당 타임에 담당 강사 명의의 예약이 확인되지 않았습니다.\n'+(Number.isInteger(j.bookingDeadlineHour)?String(j.bookingDeadlineHour).padStart(2,'0')+'시까지 예약이 없으면 약정서가 자동 폐기됩니다.\n':'')+'담당 강사에게 예약 여부를 확인해 주세요.\n약정서 제출은 입장권 예약 확정이 아닙니다.';
+     detail.textContent='해당 타임에 담당 강사 명의의 예약이 확인되지 않았습니다.\n'+(Number.isInteger(j.bookingDeadlineHour)?'예약일 하루 전 '+String(j.bookingDeadlineHour).padStart(2,'0')+'시까지 실제 입장권 예약이 없으면 약정서가 자동 폐기됩니다.\n':'')+'담당 강사에게 예약 여부를 확인해 주세요.\n약정서 제출은 입장권 예약 확정이 아닙니다.';
      detail.style.whiteSpace='pre-line';detail.style.color='#b42318';detail.style.fontWeight='700';
    }else{
      detail.textContent='정상적으로 제출되었습니다.';detail.style.whiteSpace='';detail.style.color='';detail.style.fontWeight='';
