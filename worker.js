@@ -4,6 +4,29 @@ export class BookingCoordinator {
   async process(request){
     const env=this.env;
     const payload=await request.json();
+    if(payload.action==="complete"){
+      const qk="system/service-requests.json",rk="system/reservations.json",mk="system/members.json";
+      const qo=await env.IMAGES.get(qk),requests=qo?JSON.parse(await qo.text()):[];
+      const ri=requests.findIndex(x=>x.id===payload.requestId);if(ri<0)return Response.json({ok:false,error:"접수내역을 찾을 수 없습니다."},{status:404});
+      if(requests[ri].status==="completed")return Response.json({ok:true,alreadyCompleted:true});
+      if(requests[ri].kind==="reservation_cancel"){
+        const ro=await env.IMAGES.get(rk),reservations=ro?JSON.parse(await ro.text()):[],bi=reservations.findIndex(x=>x.id===requests[ri].reservationId);
+        if(bi<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
+        const booking=reservations[bi];
+        if(booking.status!=="cancelled"){
+          const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[],mi=members.findIndex(x=>String(x.memberNo||"")===String(booking.memberNo||""));
+          if(booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&mi<0)return Response.json({ok:false,error:"환불 대상 회원을 찾을 수 없습니다."},{status:404});
+          if(mi>=0&&booking.ticketDeducted!==false&&booking.bookingSource!=="admin"){
+            members[mi].point=Number(members[mi].point||0)+Number(booking.usePoint||0);members[mi].cash=Number(members[mi].cash||0)+Number(booking.useCash||0);
+            await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+          }
+          booking.status="cancelled";booking.cancelledAt=new Date().toISOString();booking.ticketRefunded=true;
+          await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});
+        }
+      }
+      requests[ri].status="completed";requests[ri].completedAt=new Date().toISOString();await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
+      return Response.json({ok:true});
+    }
     const member=payload.member;
     const d=payload.booking;
     const people=Math.max(1,Math.floor(Number(d.people)||1));
@@ -484,7 +507,9 @@ export default {
       try{const d=await request.json(),reservations=await readReservations(),booking=reservations.find(x=>x.id===d.id&&x.memberNo===member.memberNo);if(!booking)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());if(String(booking.date||"")<today)return Response.json({ok:false,error:"지난 이용일의 예약은 취소 접수할 수 없습니다."},{status:409});const requests=await readRequests();if(requests.some(x=>x.kind==="reservation_cancel"&&x.reservationId===booking.id&&x.status==="requested"))return Response.json({ok:false,error:"이미 취소 접수된 예약입니다."},{status:409});requests.unshift({id:crypto.randomUUID(),kind:"reservation_cancel",status:"requested",reservationId:booking.id,memberNo:member.memberNo,name:booking.name||member.name||"회원",date:booking.date,time:booking.time,type:booking.type,people:booking.people,cost:booking.cost||0,submittedAt:new Date().toISOString()});await writeRequests(requests);return Response.json({ok:true,requested:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/service-requests" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,requests:await readRequests()})}
-    if (url.pathname === "/api/admin/service-requests/complete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readRequests(),i=rows.findIndex(x=>x.id===d.id);if(i<0)return Response.json({ok:false,error:"접수내역을 찾을 수 없습니다."},{status:404});rows[i].status="completed";rows[i].completedAt=new Date().toISOString();await writeRequests(rows);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    if (url.pathname === "/api/admin/service-requests/complete" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{const d=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations"),stub=env.BOOKING_COORDINATOR.get(id);return await stub.fetch("https://booking.internal/complete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"complete",requestId:d.id})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/refund-request" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
