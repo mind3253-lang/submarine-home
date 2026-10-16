@@ -76,7 +76,7 @@ export class BookingCoordinator {
     const self=instructors.find(x=>String(x.memberNo||"")===String(members[mi].memberNo||""));
     if(!self)return Response.json({ok:false,error:"등록 강사만 직접 입장권 예약을 할 수 있습니다."},{status:403});
     if(d.type==="강습"&&String(self.name||"").trim()!==String(d.instructorName||"").trim())return Response.json({ok:false,error:"등록 강사 본인 이름으로 예약해 주세요."},{status:403});
-    const useDate=new Date(String(d.date)+"T00:00:00"),weekend=[0,6].includes(useDate.getDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
+    const useDate=new Date(String(d.date)+"T00:00:00+09:00");if(!Number.isFinite(useDate.getTime())||new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(useDate)!==String(d.date))return Response.json({ok:false,error:"올바른 예약 날짜를 입력해 주세요."},{status:400});const weekend=[0,6].includes(useDate.getDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
     const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
     if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
     const usePoint=Math.min(point,cost),useCash=cost-usePoint;
