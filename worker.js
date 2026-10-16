@@ -68,7 +68,7 @@ export class BookingCoordinator {
     const mi=members.findIndex(x=>String(x.memberNo||"")===String(member.memberNo||"")&&member.memberNo);
     if(mi<0)return Response.json({ok:false,error:"회원 정보를 찾을 수 없습니다."},{status:404});
     const ro=await env.IMAGES.get(rk),rows=ro?JSON.parse(await ro.text()):[];
-    const key=String(payload.idempotencyKey||"");if(!key||key.length<16)return Response.json({ok:false,error:"예약 요청 식별값이 없습니다. 화면을 새로고침해 주세요."},{status:400});
+    const key=String(payload.idempotencyKey||"");if(!/^[a-zA-Z0-9_-]{16,100}$/.test(key))return Response.json({ok:false,error:"예약 요청 식별값이 없습니다. 화면을 새로고침해 주세요."},{status:400});
     if(key){const existing=rows.find(x=>x.memberNo===members[mi].memberNo&&x.idempotencyKey===key);if(existing)return Response.json({ok:true,reservation:existing,alreadySubmitted:true,balance:Number(members[mi].point||0)+Number(members[mi].cash||0)});}
     const slot=/^([1-5])(?:타임)?$/.exec(String(d.time||""));
     if(!slot)return Response.json({ok:false,error:"예약 타임을 확인해 주세요."},{status:400});
