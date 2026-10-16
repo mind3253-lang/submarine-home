@@ -14,7 +14,7 @@ jobs:
       - name: Check worker syntax
         run: node --check worker.js
       - name: Check Cloudflare config
-        run: node -e "const c=require('./wrangler.jsonc');if(!c.durable_objects?.bindings?.some(x=>x.name==='BOOKING_COORDINATOR'))process.exit(1);if(!c.triggers?.crons?.length)process.exit(1)"
+        run: node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));if(!c.durable_objects?.bindings?.some(x=>x.name==='BOOKING_COORDINATOR'))process.exit(1);if(!c.triggers?.crons?.length)process.exit(1)"
       - name: Validate reservation invariants
         run: |
           node - <<'NODE'
