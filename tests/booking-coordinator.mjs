@@ -23,4 +23,13 @@ const complete=await send({action:'complete',requestId:JSON.parse(store.get('sys
 assert.equal(JSON.parse(store.get('system/members.json'))[0].point,200000);
 const again=await send({action:'complete',requestId:JSON.parse(store.get('system/service-requests.json'))[0].id});assert.equal(again.body.alreadyCompleted,true);
 assert.equal(JSON.parse(store.get('system/members.json'))[0].point,200000);
+// Simulate failure while persisting member deduction: the reservation must roll back.
+let failMemberWrite=true;
+const originalPut=env.IMAGES.put;
+env.IMAGES.put=async(k,v)=>{if(k==='system/members.json'&&failMemberWrite){failMemberWrite=false;throw Error('injected member storage failure')}return originalPut(k,v)};
+let writeFailed=false;
+try{await send({member:{memberNo:'I01'},booking:{...booking,time:'3타임',people:1},idempotencyKey:'storage-failure-0000006'})}catch(e){writeFailed=true}
+assert.equal(writeFailed,true);
+assert.equal(JSON.parse(store.get('system/reservations.json')).filter(x=>x.idempotencyKey==='storage-failure-0000006').length,0);
+assert.equal(JSON.parse(store.get('system/members.json'))[0].point,200000);
 console.log('PASS: concurrent idempotency, first booking, quantity validation, instructor authorization, admin no-charge, cancellation and single refund');
