@@ -872,7 +872,7 @@ export default {
         const licenseMatches=certs.filter(x=>String(x.type||"").includes(discipline)&&String(x.level||"")!=="없음"&&String(x.imageUrl||"").startsWith("https://"));
         if(data.waiverCode==="D-1"&&!licenseMatches.length)return Response.json({ok:false,error:"펀다이빙 약정서는 마이페이지에서 해당 종목 자격증 이미지를 등록한 회원만 제출할 수 있습니다."},{status:403});
         const rows=await readWaivers(), now=new Date().toISOString();if(data.waiverCode==="D-2"){const io=await env.IMAGES.get("system/instructors.json"),registered=io?JSON.parse(await io.text()):[];if(!registered.some(x=>String(x.name||"").trim()===String(data.instructorName||"").trim()))return Response.json({ok:false,error:"등록된 강사를 선택해 주세요."},{status:400});}
-        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:String(data.lessonDate),lessonTime:data.waiverCode==="D-3"?"":String(data.lessonTime).charAt(0),discipline:data.waiverCode==="D-3"?"":discipline,licenseImages:data.waiverCode==="D-1"?licenseMatches.map(x=>({type:String(x.type||""),level:String(x.level||""),imageUrl:String(x.imageUrl||"")})):[],educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",instructorName:data.waiverCode==="D-2"?String(data.instructorName||"").trim().slice(0,100):"",memberNo:member.memberNo||"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
+        const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:String(data.lessonDate),lessonTime:data.waiverCode==="D-3"?"":String(data.lessonTime).charAt(0),discipline:data.waiverCode==="D-3"?"":discipline,licenseImages:data.waiverCode!=="D-3"?licenseMatches.map(x=>({type:String(x.type||""),level:String(x.level||""),imageUrl:String(x.imageUrl||"")})):[],educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",instructorName:data.waiverCode==="D-2"?String(data.instructorName||"").trim().slice(0,100):"",memberNo:member.memberNo||"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
         const duplicate=rows.find(x=>String(x.memberId||"")===String(member.id||"")&&x.waiverCode===row.waiverCode&&x.lessonDate===row.lessonDate&&String(x.lessonTime||"")===String(row.lessonTime||""));
         if(duplicate){const bookingMatched=await educationBookingMatches(duplicate),hour=await readWaiverCutoffHour();return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true,bookingMatched,bookingDeadlineHour:hour});}
         rows.push(row); await writeWaivers(rows);
@@ -892,7 +892,20 @@ export default {
     }
     if (url.pathname === "/api/admin/waivers" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
-      try { return Response.json({ok:true,waivers:await readWaivers()}); }
+      try {
+        const waivers=await readWaivers();
+        const stored=await env.IMAGES.get("system/members.json");
+        const members=stored?JSON.parse(await stored.text()):[];
+        const byNo=new Map(members.filter(x=>x.memberNo).map(x=>[String(x.memberNo),x]));
+        const byIdentity=new Map(members.filter(x=>x.provider&&x.id).map(x=>[String(x.provider)+":"+String(x.id),x]));
+        for(const w of waivers){
+          if(w.waiverCode==="D-3"||(Array.isArray(w.licenseImages)&&w.licenseImages.some(x=>x.imageUrl)))continue;
+          const m=byNo.get(String(w.memberNo||""))||byIdentity.get(String(w.provider||"")+":"+String(w.memberId||""));
+          const discipline=String(w.discipline||"");
+          w.licenseImages=(Array.isArray(m?.licenses)?m.licenses:[]).filter(x=>String(x.type||"").includes(discipline)&&String(x.level||"")!=="없음"&&/^https:\/\//.test(String(x.imageUrl||""))).map(x=>({type:String(x.type||""),level:String(x.level||""),imageUrl:String(x.imageUrl||"")}));
+        }
+        return Response.json({ok:true,waivers});
+      }
       catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/waivers/delete" && request.method === "POST") {
