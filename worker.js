@@ -18,7 +18,7 @@ export class BookingCoordinator {
       return Response.json({ok:true,requested:true});
     }
     if(payload.action==="adminEdit"){
-      const d=payload.booking,key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],i=rows.findIndex(x=>x.id===d.id);
+      const d=payload.booking||{},key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],i=rows.findIndex(x=>x.id===d.id);
       if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
       const row=rows[i];if(row.status==="cancelled")return Response.json({ok:false,error:"취소된 예약은 수정할 수 없습니다."},{status:409});
       if(row.ticketDeducted!==false&&row.bookingSource!=="admin"&&(d.people!=null&&Number(d.people)!==Number(row.people)||d.date&&d.date!==row.date||d.time&&d.time!==row.time||d.type&&d.type!==row.type))return Response.json({ok:false,error:"입장권이 차감된 예약의 인원·일정 변경은 취소 및 재예약으로 처리해 주세요."},{status:409});
@@ -29,7 +29,7 @@ export class BookingCoordinator {
       row.adminEditedAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,reservation:row});
     }
     if(payload.action==="adminAdd"){
-      const d=payload.booking,people=Number(d.people);
+      const d=payload.booking||{},people=Number(d.people);
       if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
       if(d.type==="강습"){const io=await env.IMAGES.get("system/instructors.json"),registered=io?JSON.parse(await io.text()):[];if(!registered.some(x=>String(x.name||"").trim()===String(d.instructorName||"").trim()))return Response.json({ok:false,error:"등록 강사를 선택해 주세요."},{status:400});}
       const key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];
@@ -59,8 +59,8 @@ export class BookingCoordinator {
       requests[ri].status="completed";requests[ri].completedAt=new Date().toISOString();await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
       return Response.json({ok:true});
     }
-    const member=payload.member;
-    const d=payload.booking;
+    const member=payload.member||{};
+    const d=payload.booking||{};
     const people=Number(d.people);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!Number.isInteger(Number(d.people))||Number(d.people)<1||Number(d.people)>200||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
     const mk="system/members.json",rk="system/reservations.json";
