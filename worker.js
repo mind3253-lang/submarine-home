@@ -74,13 +74,13 @@ export class BookingCoordinator {
     if(!slot)return Response.json({ok:false,error:"예약 타임을 확인해 주세요."},{status:400});
         const io=await env.IMAGES.get("system/instructors.json"),instructors=io?JSON.parse(await io.text()):[];
     const self=instructors.find(x=>String(x.memberNo||"")===String(members[mi].memberNo||""));
-    if(!self)return Response.json({ok:false,error:"등록 강사만 직접 입장권 예약을 할 수 있습니다."},{status:403});
+    if(d.type==="강습"&&!self)return Response.json({ok:false,error:"강습 예약은 등록 강사만 할 수 있습니다. 일반 이용은 펀다이빙으로 예약해 주세요."},{status:403});
     if(d.type==="강습"&&String(self.name||"").trim()!==String(d.instructorName||"").trim())return Response.json({ok:false,error:"등록 강사 본인 이름으로 예약해 주세요."},{status:403});
     const useDate=new Date(String(d.date)+"T00:00:00+09:00");if(!Number.isFinite(useDate.getTime())||new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(useDate)!==String(d.date))return Response.json({ok:false,error:"올바른 예약 날짜를 입력해 주세요."},{status:400});const weekend=[0,6].includes(useDate.getDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
     const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
     if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
     const usePoint=Math.min(point,cost),useCash=cost-usePoint;
-    const row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,status:"confirmed",bookingSource:"instructor",ticketDeducted:true,idempotencyKey:key,createdAt:new Date().toISOString()};
+    const row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,status:"confirmed",bookingSource:self?"instructor":"member",ticketDeducted:true,idempotencyKey:key,createdAt:new Date().toISOString()};
     members[mi].point=point-usePoint;members[mi].cash=cash-useCash;members[mi].balanceUpdatedAt=new Date().toISOString();rows.push(row);
     await env.IMAGES.put(rk,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
     try{await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}})}catch(e){await env.IMAGES.put(rk,JSON.stringify(rows.filter(x=>x.id!==row.id)),{httpMetadata:{contentType:"application/json"}});throw e}
