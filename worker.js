@@ -611,7 +611,7 @@ export default {
       const cutoff2y = Date.now() - 730 * 24 * 60 * 60 * 1000;
       const cutoffHour=Number(env.WAIVER_BOOKING_CUTOFF_HOUR),configured=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim()!==""&&Number.isInteger(cutoffHour)&&cutoffHour>=0&&cutoffHour<=23;
       const bookings=configured?await readReservations():[];
-      const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T"+String(cutoffHour).padStart(2,"0")+":00:00+09:00");if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
+      const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T"+String(cutoffHour).padStart(2,"0")+":00:00+09:00");if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
       if (kept.length !== rows.length) await env.IMAGES.put(key, JSON.stringify(kept), {httpMetadata:{contentType:"application/json"}});
       return kept;
     }
@@ -794,7 +794,7 @@ export default {
         if(duplicate)return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true,bookingMatched:await educationBookingMatches(duplicate)});
         rows.push(row); await writeWaivers(rows);
         const bookingMatched=await educationBookingMatches(row);
-        const bookingDeadlineHour=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return Response.json({ok:true,id:row.id,bookingMatched,bookingDeadlineHour:/^(?:[01]?\\d|2[0-3])$/.test(bookingDeadlineHour)?Number(bookingDeadlineHour):null});
+        const bookingDeadlineHour=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return Response.json({ok:true,id:row.id,bookingMatched,bookingDeadlineHour:/^(?:[01]?\d|2[0-3])$/.test(bookingDeadlineHour)?Number(bookingDeadlineHour):null});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/instructor-waivers" && request.method === "GET") {
@@ -991,13 +991,13 @@ export default {
   },
   async scheduled(event,env,ctx){
     const raw=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();
-    if(!/^(?:[01]?\\d|2[0-3])$/.test(raw))return;
+    if(!/^(?:[01]?\d|2[0-3])$/.test(raw))return;
     const hour=Number(raw),key="system/waivers.json";
     const o=await env.IMAGES.get(key);if(!o)return;
     const rows=JSON.parse(await o.text());
     const r=await env.IMAGES.get("system/reservations.json"),bookings=r?JSON.parse(await r.text()):[];
     const kept=rows.filter(x=>{
-      if(x.hold||x.waiverCode!=="D-2"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(x.lessonDate||"")))return true;
+      if(x.hold||x.waiverCode!=="D-2"||!/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||"")))return true;
       const deadline=Date.parse(x.lessonDate+"T"+String(hour).padStart(2,"0")+":00:00+09:00");
       if(Date.now()<deadline)return true;
       return bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&Number(String(b.time||"").match(/^[1-5]/)?.[0])===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0);
