@@ -1,6 +1,7 @@
 export class BookingCoordinator {
-  constructor(state,env){this.state=state;this.env=env;}
-  async fetch(request){
+  constructor(state,env){this.state=state;this.env=env;this.queue=Promise.resolve();}
+  async fetch(request){const job=this.queue.then(()=>this.process(request));this.queue=job.catch(()=>{});return job;}
+  async process(request){
     const env=this.env;
     const payload=await request.json();
     const member=payload.member;
