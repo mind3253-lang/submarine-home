@@ -26,7 +26,7 @@ export class BookingCoordinator {
           if(booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&mi<0)return Response.json({ok:false,error:"환불 대상 회원을 찾을 수 없습니다."},{status:404});
           if(mi>=0&&booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&!booking.ticketRefunded){
             members[mi].point=Number(members[mi].point||0)+Number(booking.usePoint||0);members[mi].cash=Number(members[mi].cash||0)+Number(booking.useCash||0);
-            booking.ticketRefunded=true;booking.refundProcessedAt=new Date().toISOString();await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+            await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
           }
           booking.status="cancelled";booking.cancelledAt=new Date().toISOString();booking.ticketRefunded=true;
           await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});
