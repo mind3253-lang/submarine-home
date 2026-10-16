@@ -6,7 +6,7 @@ export class BookingCoordinator {
     const payload=await request.json();
     if(payload.action==="adminAdd"){
       const d=payload.booking,people=Number(d.people);
-      if(!Number.isInteger(people)||people<1||people>200||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
+      if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
       if(d.type==="강습"){const io=await env.IMAGES.get("system/instructors.json"),registered=io?JSON.parse(await io.text()):[];if(!registered.some(x=>String(x.name||"").trim()===String(d.instructorName||"").trim()))return Response.json({ok:false,error:"등록 강사를 선택해 주세요."},{status:400});}
       const key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[];
       const row={id:crypto.randomUUID(),memberNo:"ADMIN",name:String(d.name||"관리자입력"),date:String(d.date),time:String(d.time),type:d.type,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",status:"confirmed",adminManual:true,bookingSource:"admin",ticketDeducted:false,createdAt:new Date().toISOString()};
