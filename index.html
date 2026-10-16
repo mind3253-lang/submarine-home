@@ -793,6 +793,11 @@ refreshWaiverInstructors();
 function changeWaiverUseType(value){if(!value||activeWaiverCode==='D-3')return;const lesson=value==='강습',selector=document.getElementById('waiverUseType'),anchor=selector.getBoundingClientRect().top,root=document.scrollingElement||document.documentElement;activeWaiverCode=lesson?'D-2':'D-1';document.getElementById('waiverInstructorField').style.display=lesson?'block':'none';document.getElementById('waiverLevelField').style.display=lesson?'block':'none';if(lesson)refreshWaiverInstructors();else{document.getElementById('waiverInstructorName').value='';document.getElementById('waiverEducationLevel').value=''}waiverBody.innerHTML=lesson?renderD2Agreement():renderD1Agreement();selector.blur();const restore=()=>{const delta=selector.getBoundingClientRect().top-anchor;if(Math.abs(delta)>0.5)root.scrollTop+=delta};restore();requestAnimationFrame(()=>{restore();requestAnimationFrame(restore)})}
 async function submitWaiver(){
  if(waiverSubmitting)return;
+ const selectedUseType=document.getElementById('waiverUseType')?.value;
+ if(activeWaiverCode!=='D-3'){
+  if(selectedUseType!=='펀다이빙'&&selectedUseType!=='강습')return showFieldError(document.getElementById('waiverUseType'),'이용 구분을 선택해 주세요.');
+  activeWaiverCode=selectedUseType==='강습'?'D-2':'D-1';
+ }
  clearAllFieldErrors();waiverResult.textContent='';
  if(!waiverLessonDate.value)return showFieldError(waiverDateButton,'이용일을 선택해 주세요.');
  if(activeWaiverCode!=='D-3'&&!waiverLessonTime.value)return showFieldError(waiverLessonTime,'타임을 선택해 주세요.');
@@ -810,7 +815,7 @@ async function submitWaiver(){
    const r=await fetch('/api/waivers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),j=await r.json();
    if(!r.ok||!j.ok){waiverResult.textContent='';await siteMessage('제출 실패',j.error||'약정서 저장에 실패했습니다.');return}
    const completedWaiver=activeWaiverCode==='D-3'?'장비 확인서':'약정서';clearWaiverSign();waiverForm.style.display='none';waiverBody.innerHTML='';waiverResult.textContent='';waiverResult.classList.remove('success');waiverSuccessTitle.textContent=j.alreadySubmitted?'이미 제출된 '+completedWaiver+'입니다.':completedWaiver+'가 정상적으로 제출되었습니다.';
-   const warning=activeWaiverCode==='D-2'&&j.bookingMatched!==true;
+   const warning=!j.alreadySubmitted&&activeWaiverCode==='D-2'&&j.bookingMatched!==true;
    const detail=document.getElementById('waiverSuccessDetail');
    if(warning){
      waiverSuccessTitle.textContent=activeWaiverCode==='D-2'?'약정서 제출 완료 · 담당 강사 예약 미확인':'약정서 제출 완료 · 해당 타임 예약 미확인';
