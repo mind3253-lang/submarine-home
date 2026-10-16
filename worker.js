@@ -988,5 +988,20 @@ export default {
       return fresh;
     }
     return response;
+  },
+  async scheduled(event,env,ctx){
+    const raw=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();
+    if(!/^(?:[01]?\\d|2[0-3])$/.test(raw))return;
+    const hour=Number(raw),key="system/waivers.json";
+    const o=await env.IMAGES.get(key);if(!o)return;
+    const rows=JSON.parse(await o.text());
+    const r=await env.IMAGES.get("system/reservations.json"),bookings=r?JSON.parse(await r.text()):[];
+    const kept=rows.filter(x=>{
+      if(x.hold||x.waiverCode!=="D-2"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(String(x.lessonDate||"")))return true;
+      const deadline=Date.parse(x.lessonDate+"T"+String(hour).padStart(2,"0")+":00:00+09:00");
+      if(Date.now()<deadline)return true;
+      return bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&Number(String(b.time||"").match(/^[1-5]/)?.[0])===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0);
+    });
+    if(kept.length!==rows.length)await env.IMAGES.put(key,JSON.stringify(kept),{httpMetadata:{contentType:"application/json"}});
   }
 };
