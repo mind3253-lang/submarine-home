@@ -17,6 +17,7 @@ export class BookingCoordinator {
       await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
       return Response.json({ok:true,requested:true});
     }
+    if(payload.action==="adminDelete"){const d=payload.booking||{},key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],row=rows.find(x=>String(x.id)===String(d.id));if(!row)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});row.status="cancelled";row.cancelledAt=new Date().toISOString();row.adminDeleted=true;await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,deleted:true})}
     if(payload.action==="adminEdit"){
       const d=payload.booking||{},key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],i=rows.findIndex(x=>x.id===d.id);
       if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
@@ -533,6 +534,7 @@ export default {
     }
     if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled").map(x=>({date:x.date,time:x.time,type:x.type,discipline:x.discipline||"",people:x.people,instructorName:x.instructorName||"",status:x.status||"confirmed"}))})}
     if (url.pathname === "/api/admin/reservations" && request.method === "GET") {if(!await adminSessionValid())return Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401});const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled")})}
+    if (url.pathname === "/api/admin/reservations/delete" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const booking=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/admin-delete",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"adminDelete",booking})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/admin/reservations/edit" && request.method === "POST") {
       const denied=await requireAdmin();if(denied)return denied;
       try{const booking=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/admin-edit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"adminEdit",booking})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
