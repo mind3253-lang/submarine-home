@@ -21,7 +21,7 @@ export class BookingCoordinator {
       const d=payload.booking,key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],i=rows.findIndex(x=>x.id===d.id);
       if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
       const row=rows[i];if(row.status==="cancelled")return Response.json({ok:false,error:"취소된 예약은 수정할 수 없습니다."},{status:409});
-      if(row.ticketDeducted!==false&&row.bookingSource!=="admin"&&(d.people!=null&&Number(d.people)!==Number(row.people)||d.date&&d.date!==row.date||d.time&&d.time!==row.time))return Response.json({ok:false,error:"입장권이 차감된 예약의 인원·일정 변경은 취소 및 재예약으로 처리해 주세요."},{status:409});
+      if(row.ticketDeducted!==false&&row.bookingSource!=="admin"&&(d.people!=null&&Number(d.people)!==Number(row.people)||d.date&&d.date!==row.date||d.time&&d.time!==row.time||d.type&&d.type!==row.type))return Response.json({ok:false,error:"입장권이 차감된 예약의 인원·일정 변경은 취소 및 재예약으로 처리해 주세요."},{status:409});
       if(d.date){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)))return Response.json({ok:false,error:"날짜를 확인해 주세요."},{status:400});row.date=String(d.date)}
       if(d.time){if(!/^[1-5](?:타임)?$/.test(String(d.time)))return Response.json({ok:false,error:"타임을 확인해 주세요."},{status:400});row.time=String(d.time)}
       if(d.type&&["강습","스킬업","펀다","독립군"].includes(d.type))row.type=d.type;
