@@ -75,7 +75,12 @@ export class BookingCoordinator {
     const useDate=new Date(String(d.date)+"T00:00:00+09:00");if(!Number.isFinite(useDate.getTime())||new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(useDate)!==String(d.date))return Response.json({ok:false,error:"올바른 예약 날짜를 입력해 주세요."},{status:400});    const oo=await env.IMAGES.get("system/open-visit-slots.json"),opened=oo?JSON.parse(await oo.text()):{};
     const openedByAdmin=rows.some(x=>x.adminManual===true&&x.status!=="cancelled"&&x.date===d.date&&Number(String(x.time||"").match(/^[1-5]/)?.[0])===Number(slot[1])&&Number(x.people)>0);
     const closedObj=await env.IMAGES.get("system/closed-visit-slots.json"),closedSlots=closedObj?JSON.parse(await closedObj.text()):{};
-    if((closedSlots[d.date]||[]).map(Number).includes(Number(slot[1]))||(!self&&!((opened[d.date]||[]).map(Number).includes(Number(slot[1]))||openedByAdmin)))return Response.json({ok:false,error:"해당 타임은 아직 오픈되지 않았습니다. 관리자에게 문의해 주세요."},{status:409});
+    const timeBookings=rows.filter(x=>x.status!=="cancelled"&&x.date===d.date&&Number(String(x.time||"").match(/^[1-5]/)?.[0])===Number(slot[1])&&Number(x.people)>0);
+    const existingClass=timeBookings.some(x=>x.type==="강습"&&String(x.instructorName||"").trim()===String(d.instructorName||"").trim());
+    const adminOpened=(opened[d.date]||[]).map(Number).includes(Number(slot[1]))||openedByAdmin;
+    if((closedSlots[d.date]||[]).map(Number).includes(Number(slot[1])))return Response.json({ok:false,error:"해당 타임은 마감되었습니다. 관리자에게 문의해 주세요."},{status:409});
+    if(d.type==="강습"&&!self&&!existingClass&&!adminOpened)return Response.json({ok:false,error:"아직 오픈되지 않은 강습입니다. 담당 강사에게 예약 여부를 확인해 주세요."},{status:409});
+    if(d.type==="펀다"&&!self&&!adminOpened&&timeBookings.length===0&&people===1)return Response.json({ok:false,error:"빈 타임의 펀다이빙 1인 예약은 사전 예약문의가 필요합니다. 관리자에게 문의해 주세요."},{status:409});
 const weekend=[0,6].includes(new Date(String(d.date)+"T12:00:00+09:00").getUTCDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
     const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
     if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
