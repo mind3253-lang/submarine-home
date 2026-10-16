@@ -38,13 +38,13 @@ export class BookingCoordinator {
     const member=payload.member;
     const d=payload.booking;
     const people=Math.max(1,Math.floor(Number(d.people)||1));
-    if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!Number.isInteger(Number(d.people))||Number(d.people)<1||Number(d.people)>200||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
     const mk="system/members.json",rk="system/reservations.json";
     const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[];
     const mi=members.findIndex(x=>String(x.memberNo||"")===String(member.memberNo||"")&&member.memberNo);
     if(mi<0)return Response.json({ok:false,error:"회원 정보를 찾을 수 없습니다."},{status:404});
     const ro=await env.IMAGES.get(rk),rows=ro?JSON.parse(await ro.text()):[];
-    const key=String(payload.idempotencyKey||"");
+    const key=String(payload.idempotencyKey||"");if(!key||key.length<16)return Response.json({ok:false,error:"예약 요청 식별값이 없습니다. 화면을 새로고침해 주세요."},{status:400});
     if(key){const existing=rows.find(x=>x.memberNo===members[mi].memberNo&&x.idempotencyKey===key);if(existing)return Response.json({ok:true,reservation:existing,alreadySubmitted:true,balance:Number(members[mi].point||0)+Number(members[mi].cash||0)});}
     const slot=/^([1-5])(?:타임)?$/.exec(String(d.time||""));
     if(!slot||!rows.some(x=>x.date===d.date&&x.status!=="cancelled"&&Number(x.people)>0&&String(x.time).startsWith(slot[1])))return Response.json({ok:false,error:"스케줄에 등록되지 않은 타임입니다."},{status:400});
