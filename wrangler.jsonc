@@ -13,5 +13,21 @@
       "binding": "IMAGES",
       "bucket_name": "submarine-images"
     }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "BOOKING_COORDINATOR",
+        "class_name": "BookingCoordinator"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "booking-coordinator-v1",
+      "new_sqlite_classes": [
+        "BookingCoordinator"
+      ]
+    }
   ]
 }
