@@ -28,6 +28,17 @@ export class BookingCoordinator {
       if(d.people!=null){const people=Number(d.people);if(!Number.isInteger(people)||people<0||people>200)return Response.json({ok:false,error:"인원을 확인해 주세요."},{status:400});if(people===0){if(row.bookingSource!=="admin")return Response.json({ok:false,error:"차감된 예약은 취소 및 환불 절차를 이용해 주세요."},{status:409});row.status="cancelled";row.cancelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,deleted:true,reservation:row})}row.people=people}
       row.adminEditedAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,reservation:row});
     }
+    if(payload.action==="setOpenSlot"){
+      const d=payload.slot||{},date=String(d.date||""),n=Number(String(d.time||"").match(/^[1-5]/)?.[0]);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isInteger(n)||n<1||n>5)return Response.json({ok:false,error:"날짜와 타임을 확인해 주세요."},{status:400});
+      const k="system/open-visit-slots.json",o=await env.IMAGES.get(k),slots=o?JSON.parse(await o.text()):{};
+      const set=new Set(Array.isArray(slots[date])?slots[date].map(Number):[]);
+      if(d.open===true)set.add(n);else set.delete(n);
+      if(set.size)slots[date]=[...set].sort((a,b)=>a-b);else delete slots[date];
+      await env.IMAGES.put(k,JSON.stringify(slots),{httpMetadata:{contentType:"application/json"}});
+      const ck="system/closed-visit-slots.json",co=await env.IMAGES.get(ck),closed=co?JSON.parse(await co.text()):{},blocked=new Set((closed[date]||[]).map(Number));if(d.open===true)blocked.delete(n);else blocked.add(n);if(blocked.size)closed[date]=[...blocked].sort((a,b)=>a-b);else delete closed[date];await env.IMAGES.put(ck,JSON.stringify(closed),{httpMetadata:{contentType:"application/json"}});
+      return Response.json({ok:true,slots});
+    }
     if(payload.action==="adminAdd"){
       const d=payload.booking||{},people=Number(d.people);
       if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
@@ -41,21 +52,7 @@ export class BookingCoordinator {
       const qo=await env.IMAGES.get(qk),requests=qo?JSON.parse(await qo.text()):[];
       const ri=requests.findIndex(x=>x.id===payload.requestId);if(ri<0)return Response.json({ok:false,error:"접수내역을 찾을 수 없습니다."},{status:404});
       if(requests[ri].status==="completed")return Response.json({ok:true,alreadyCompleted:true});
-      if(requests[ri].kind==="reservation_cancel"){
-        const ro=await env.IMAGES.get(rk),reservations=ro?JSON.parse(await ro.text()):[],bi=reservations.findIndex(x=>x.id===requests[ri].reservationId);
-        if(bi<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
-        const booking=reservations[bi];
-        if(booking.status!=="cancelled"){
-          const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[],mi=members.findIndex(x=>String(x.memberNo||"")===String(booking.memberNo||""));
-          if(booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&mi<0)return Response.json({ok:false,error:"환불 대상 회원을 찾을 수 없습니다."},{status:404});
-          if(mi>=0&&booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&!booking.ticketRefunded){
-            members[mi].point=Number(members[mi].point||0)+Number(booking.usePoint||0);members[mi].cash=Number(members[mi].cash||0)+Number(booking.useCash||0);
-            await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
-          }
-          booking.status="cancelled";booking.cancelledAt=new Date().toISOString();booking.ticketRefunded=true;
-          await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});
-        }
-      }
+      // Administrative acknowledgment only. No automatic refund or cancellation.
       requests[ri].status="completed";requests[ri].completedAt=new Date().toISOString();await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
       return Response.json({ok:true});
     }
@@ -74,9 +71,12 @@ export class BookingCoordinator {
     if(!slot)return Response.json({ok:false,error:"예약 타임을 확인해 주세요."},{status:400});
         const io=await env.IMAGES.get("system/instructors.json"),instructors=io?JSON.parse(await io.text()):[];
     const self=instructors.find(x=>String(x.memberNo||"")===String(members[mi].memberNo||""));
-    if(d.type==="강습"&&!self)return Response.json({ok:false,error:"강습 예약은 등록 강사만 할 수 있습니다. 일반 이용은 펀다이빙으로 예약해 주세요."},{status:403});
-    if(d.type==="강습"&&String(self.name||"").trim()!==String(d.instructorName||"").trim())return Response.json({ok:false,error:"등록 강사 본인 이름으로 예약해 주세요."},{status:403});
-    const useDate=new Date(String(d.date)+"T00:00:00+09:00");if(!Number.isFinite(useDate.getTime())||new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(useDate)!==String(d.date))return Response.json({ok:false,error:"올바른 예약 날짜를 입력해 주세요."},{status:400});const weekend=[0,6].includes(useDate.getDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
+    if(d.type==="강습"&&!instructors.some(x=>String(x.name||"").trim()===String(d.instructorName||"").trim()))return Response.json({ok:false,error:"등록된 강사 이름을 선택해 주세요."},{status:403});
+    const useDate=new Date(String(d.date)+"T00:00:00+09:00");if(!Number.isFinite(useDate.getTime())||new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(useDate)!==String(d.date))return Response.json({ok:false,error:"올바른 예약 날짜를 입력해 주세요."},{status:400});    const oo=await env.IMAGES.get("system/open-visit-slots.json"),opened=oo?JSON.parse(await oo.text()):{};
+    const openedByAdmin=rows.some(x=>x.adminManual===true&&x.status!=="cancelled"&&x.date===d.date&&Number(String(x.time||"").match(/^[1-5]/)?.[0])===Number(slot[1])&&Number(x.people)>0);
+    const closedObj=await env.IMAGES.get("system/closed-visit-slots.json"),closedSlots=closedObj?JSON.parse(await closedObj.text()):{};
+    if((closedSlots[d.date]||[]).map(Number).includes(Number(slot[1]))||!((opened[d.date]||[]).map(Number).includes(Number(slot[1]))||openedByAdmin))return Response.json({ok:false,error:"해당 타임은 아직 오픈되지 않았습니다. 관리자에게 문의해 주세요."},{status:409});
+const weekend=[0,6].includes(new Date(String(d.date)+"T12:00:00+09:00").getUTCDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
     const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
     if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
     const usePoint=Math.min(point,cost),useCash=cost-usePoint;
@@ -518,8 +518,9 @@ export default {
     async function writeReservations(rows){await env.IMAGES.put("system/reservations.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     // C-category administrator schedule is the single source of available visit slots.
     function slotNumber(time){const m=/^([1-5])(?:타임)?$/.exec(String(time||"").trim());return m?Number(m[1]):0}
-    async function readOpenSlots(){const rows=await readReservations(),slots={};for(const row of rows){if(row.status==="cancelled"||!(Number(row.people)>0)||!/^\d{4}-\d{2}-\d{2}$/.test(String(row.date||"")))continue;const n=slotNumber(row.time);if(!n)continue;(slots[row.date]||(slots[row.date]=[]));if(!slots[row.date].includes(n))slots[row.date].push(n)}for(const date of Object.keys(slots))slots[date].sort((a,b)=>a-b);return slots}
+    async function readOpenSlots(){const o=await env.IMAGES.get("system/open-visit-slots.json"),slots=o?JSON.parse(await o.text()):{},rows=await readReservations();for(const row of rows){if(row.adminManual!==true||row.status==="cancelled"||!(Number(row.people)>0)||!/^\d{4}-\d{2}-\d{2}$/.test(String(row.date||"")))continue;const n=slotNumber(row.time);if(!n)continue;(slots[row.date]||(slots[row.date]=[]));if(!slots[row.date].includes(n))slots[row.date].push(n)}const co=await env.IMAGES.get("system/closed-visit-slots.json"),closed=co?JSON.parse(await co.text()):{};for(const date of Object.keys(slots)){slots[date]=slots[date].filter(n=>!(closed[date]||[]).map(Number).includes(n));slots[date].sort((a,b)=>a-b);if(!slots[date].length)delete slots[date]}return slots}
     async function isOpenVisitSlot(date,time){const n=slotNumber(time);if(!n)return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(n)}
+    if(url.pathname==="/api/admin/open-visit-slots"&&request.method==="POST"){const denied=await requireAdmin();if(denied)return denied;try{const slot=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/open-slot",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"setOpenSlot",slot})})}catch(e){return Response.json({ok:false,error:String(e)},{status:500})}}
     if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"스케줄 조회 실패"},{status:500})}}
     if (url.pathname === "/api/reservations" && request.method === "GET") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
@@ -668,13 +669,14 @@ export default {
     }
 
     async function educationBookingMatches(row){if(row.waiverCode!=="D-2")return true;const reservations=await readReservations();return reservations.some(x=>x.status!=="cancelled"&&x.date===row.lessonDate&&slotNumber(x.time)===Number(row.lessonTime)&&String(x.instructorName||"").trim()===String(row.instructorName||"").trim()&&Number(x.people)>0)}
+    async function readWaiverCutoffHour(){const o=await env.IMAGES.get("system/waiver-settings.json"),cfg=o?JSON.parse(await o.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return /^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):null}
     async function readWaivers() {
       const key = "system/waivers.json";
       let rows = [];
       try { const o = await env.IMAGES.get(key); if (o) rows = JSON.parse(await o.text()); } catch {}
       const cutoff1y = Date.now() - 365 * 24 * 60 * 60 * 1000;
       const cutoff2y = Date.now() - 730 * 24 * 60 * 60 * 1000;
-      const cutoffHour=Number(env.WAIVER_BOOKING_CUTOFF_HOUR),configured=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim()!==""&&Number.isInteger(cutoffHour)&&cutoffHour>=0&&cutoffHour<=23;
+      const cutoffHour=await readWaiverCutoffHour(),configured=cutoffHour!==null;
       const bookings=configured?await readReservations():[];
       const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\d{4}-\d{2}-\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T"+String(cutoffHour).padStart(2,"0")+":00:00+09:00");if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
       if (kept.length !== rows.length) await env.IMAGES.put(key, JSON.stringify(kept), {httpMetadata:{contentType:"application/json"}});
@@ -845,6 +847,8 @@ export default {
         return Response.json({ok:true,id});
       }catch(e){return Response.json({ok:false,error:"약정서 저장에 실패했습니다."},{status:500})}
     }
+    if(url.pathname==="/api/admin/waiver-cutoff"&&request.method==="GET"){const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,hour:await readWaiverCutoffHour()})}
+    if(url.pathname==="/api/admin/waiver-cutoff"&&request.method==="POST"){const denied=await requireAdmin();if(denied)return denied;const d=await request.json(),hour=Number(d.hour);if(!Number.isInteger(hour)||hour<0||hour>23)return Response.json({ok:false,error:"0~23시를 입력해 주세요."},{status:400});await env.IMAGES.put("system/waiver-settings.json",JSON.stringify({bookingCutoffHour:hour}),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,hour})}
     if (url.pathname === "/api/waivers" && request.method === "POST") {
       try {
         const member=await sessionMember();
@@ -856,10 +860,10 @@ export default {
         const rows=await readWaivers(), now=new Date().toISOString();if(data.waiverCode==="D-2"){const io=await env.IMAGES.get("system/instructors.json"),registered=io?JSON.parse(await io.text()):[];if(!registered.some(x=>String(x.name||"").trim()===String(data.instructorName||"").trim()))return Response.json({ok:false,error:"등록된 강사를 선택해 주세요."},{status:400});}
         const row={id:crypto.randomUUID(),waiverCode:data.waiverCode,lessonDate:String(data.lessonDate),lessonTime:data.waiverCode==="D-3"?"":String(data.lessonTime).charAt(0),educationLevel:data.waiverCode==="D-2"?String(data.educationLevel||""):"",instructorName:data.waiverCode==="D-2"?String(data.instructorName||"").trim().slice(0,100):"",memberNo:member.memberNo||"",memberName:member.name||"회원",provider:member.provider||"",memberId:member.id||"",agreementHtml:String(data.agreementHtml||"").slice(0,200000),signatureData:String(data.signatureData||"").slice(0,500000),submittedAt:now,hold:false};
         const duplicate=rows.find(x=>String(x.memberId||"")===String(member.id||"")&&x.waiverCode===row.waiverCode&&x.lessonDate===row.lessonDate&&String(x.lessonTime||"")===String(row.lessonTime||""));
-        if(duplicate){const bookingMatched=await educationBookingMatches(duplicate),raw=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true,bookingMatched,bookingDeadlineHour:/^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):null});}
+        if(duplicate){const bookingMatched=await educationBookingMatches(duplicate),hour=await readWaiverCutoffHour();return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true,bookingMatched,bookingDeadlineHour:hour});}
         rows.push(row); await writeWaivers(rows);
         const bookingMatched=await educationBookingMatches(row);
-        const bookingDeadlineHour=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return Response.json({ok:true,id:row.id,bookingMatched,bookingDeadlineHour:/^(?:[01]?\d|2[0-3])$/.test(bookingDeadlineHour)?Number(bookingDeadlineHour):null});
+        const bookingDeadlineHour=await readWaiverCutoffHour();return Response.json({ok:true,id:row.id,bookingMatched,bookingDeadlineHour});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/instructor-waivers" && request.method === "GET") {
@@ -1055,7 +1059,7 @@ export default {
     return response;
   },
   async scheduled(event,env,ctx){
-    const raw=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();
+    const setting=await env.IMAGES.get("system/waiver-settings.json"),cfg=setting?JSON.parse(await setting.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();
     if(!/^(?:[01]?\d|2[0-3])$/.test(raw))return;
     const hour=Number(raw),key="system/waivers.json";
     const o=await env.IMAGES.get(key);if(!o)return;
