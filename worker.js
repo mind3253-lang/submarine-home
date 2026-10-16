@@ -892,20 +892,7 @@ export default {
     }
     if (url.pathname === "/api/admin/waivers" && request.method === "GET") {
       const denied=await requireAdmin(); if(denied)return denied;
-      try {
-        const waivers=await readWaivers();
-        const stored=await env.IMAGES.get("system/members.json");
-        const members=stored?JSON.parse(await stored.text()):[];
-        const byNo=new Map(members.filter(x=>x.memberNo).map(x=>[String(x.memberNo),x]));
-        const byIdentity=new Map(members.filter(x=>x.provider&&x.id).map(x=>[String(x.provider)+":"+String(x.id),x]));
-        for(const w of waivers){
-          if(w.waiverCode==="D-3"||(Array.isArray(w.licenseImages)&&w.licenseImages.some(x=>x.imageUrl)))continue;
-          const m=byNo.get(String(w.memberNo||""))||byIdentity.get(String(w.provider||"")+":"+String(w.memberId||""));
-          const discipline=String(w.discipline||"");
-          w.licenseImages=(Array.isArray(m?.licenses)?m.licenses:[]).filter(x=>String(x.type||"").includes(discipline)&&String(x.level||"")!=="없음"&&/^https:\/\//.test(String(x.imageUrl||""))).map(x=>({type:String(x.type||""),level:String(x.level||""),imageUrl:String(x.imageUrl||"")}));
-        }
-        return Response.json({ok:true,waivers});
-      }
+      try { return Response.json({ok:true,waivers:await readWaivers()}); }
       catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/waivers/delete" && request.method === "POST") {
