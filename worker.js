@@ -586,7 +586,9 @@ export default {
       try { const o = await env.IMAGES.get(key); if (o) rows = JSON.parse(await o.text()); } catch {}
       const cutoff1y = Date.now() - 365 * 24 * 60 * 60 * 1000;
       const cutoff2y = Date.now() - 730 * 24 * 60 * 60 * 1000;
-      const kept = rows.filter(x => x.hold === true || new Date(x.submittedAt || 0).getTime() >= (x.waiverCode === "D-3" ? cutoff2y : cutoff1y));
+      const cutoffHour=Number(env.WAIVER_BOOKING_CUTOFF_HOUR),configured=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim()!==""&&Number.isInteger(cutoffHour)&&cutoffHour>=0&&cutoffHour<=23;
+      const bookings=configured?await readReservations():[];
+      const kept=rows.filter(x=>{if(x.hold===true)return true;if(x.waiverCode==="D-2"&&configured&&/^\\d{4}-\\d{2}-\\d{2}$/.test(String(x.lessonDate||""))){const deadline=Date.parse(x.lessonDate+"T"+String(cutoffHour).padStart(2,"0")+":00:00+09:00");if(Date.now()>=deadline&&!bookings.some(b=>b.status!=="cancelled"&&b.date===x.lessonDate&&slotNumber(b.time)===Number(x.lessonTime)&&String(b.instructorName||"").trim()===String(x.instructorName||"").trim()&&Number(b.people)>0))return false}return new Date(x.submittedAt||0).getTime()>=(x.waiverCode==="D-3"?cutoff2y:cutoff1y)});
       if (kept.length !== rows.length) await env.IMAGES.put(key, JSON.stringify(kept), {httpMetadata:{contentType:"application/json"}});
       return kept;
     }
