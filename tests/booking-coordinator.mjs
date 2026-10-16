@@ -14,6 +14,7 @@ const conflicting=await send({...p,booking:{...booking,people:1}});assert.equal(
 const invalid=await send({...p,idempotencyKey:'invalid-booking-key-0002',booking:{...booking,people:0}});assert.equal(invalid.status,400);
 const outsider=await send({member:{memberNo:'OTHER'},booking,idempotencyKey:'another-booking-key-0003'});assert.equal(outsider.status,404);
 const missing=await send({member:{memberNo:'I01'},idempotencyKey:'missing-payload-000004'});assert.equal(missing.status,400);
+const impossibleDate=await send({member:{memberNo:'I01'},booking:{...booking,date:'2026-02-30'},idempotencyKey:'invalid-date-0000000007'});assert.equal(impossibleDate.status,400);
 const wrongType=await send({member:{memberNo:'I01'},booking:{...booking,type:'잘못된구분'},idempotencyKey:'wrong-type-0000000005'});assert.equal(wrongType.status,400);
 const adminMalformed=await send({action:'adminAdd'});assert.equal(adminMalformed.status,400);
 
