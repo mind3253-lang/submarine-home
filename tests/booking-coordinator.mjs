@@ -9,7 +9,8 @@ const booking={date:'2026-10-19',time:'1타임',type:'강습',people:2,instructo
 const p={member:{memberNo:'I01',name:'Instructor'},booking,idempotencyKey:'fixed-booking-key-0001'};
 const [first,duplicate]=await Promise.all([send(p),send(p)]);
 assert.equal(first.body.ok,true);assert.equal(duplicate.body.ok,true);assert.equal(first.body.reservation.id,duplicate.body.reservation.id);
-assert.equal(JSON.parse(store.get('system/reservations.json')).length,1);assert.equal(JSON.parse(store.get('system/members.json'))[0].point,120000);
+assert.equal(JSON.parse(store.get('system/reservations.json')).length,1);
+const conflicting=await send({...p,booking:{...booking,people:1}});assert.equal(conflicting.status,409);assert.equal(JSON.parse(store.get('system/members.json'))[0].point,120000);
 const invalid=await send({...p,idempotencyKey:'invalid-booking-key-0002',booking:{...booking,people:0}});assert.equal(invalid.status,400);
 const outsider=await send({member:{memberNo:'OTHER'},booking,idempotencyKey:'another-booking-key-0003'});assert.equal(outsider.status,404);
 const missing=await send({member:{memberNo:'I01'},idempotencyKey:'missing-payload-000004'});assert.equal(missing.status,400);
