@@ -24,9 +24,9 @@ export class BookingCoordinator {
         if(booking.status!=="cancelled"){
           const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[],mi=members.findIndex(x=>String(x.memberNo||"")===String(booking.memberNo||""));
           if(booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&mi<0)return Response.json({ok:false,error:"환불 대상 회원을 찾을 수 없습니다."},{status:404});
-          if(mi>=0&&booking.ticketDeducted!==false&&booking.bookingSource!=="admin"){
+          if(mi>=0&&booking.ticketDeducted!==false&&booking.bookingSource!=="admin"&&!booking.ticketRefunded){
             members[mi].point=Number(members[mi].point||0)+Number(booking.usePoint||0);members[mi].cash=Number(members[mi].cash||0)+Number(booking.useCash||0);
-            await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
+            booking.ticketRefunded=true;booking.refundProcessedAt=new Date().toISOString();await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});
           }
           booking.status="cancelled";booking.cancelledAt=new Date().toISOString();booking.ticketRefunded=true;
           await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});
