@@ -21,8 +21,8 @@ jobs:
           const fs=require('node:fs'),vm=require('node:vm');
           const html=fs.readFileSync('index.html','utf8');
           let count=0;
-          for(const m of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)){
-            if(/application\\/ld\\+json/.test(m[1]))continue;
+          for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){
+            if(/application\/ld\+json/.test(m[1]))continue;
             new vm.Script(m[2],{filename:'index.html:inline-'+(++count)});
           }
           if(!count)throw Error('No homepage JavaScript found');
