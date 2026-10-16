@@ -4,19 +4,6 @@ export class BookingCoordinator {
   async process(request){
     const env=this.env;
     const payload=await request.json();
-    if(payload.action==="reconcile"){
-      const mk="system/members.json",rk="system/reservations.json",qk="system/service-requests.json";
-      const [mo,ro,qo]=await Promise.all([env.IMAGES.get(mk),env.IMAGES.get(rk),env.IMAGES.get(qk)]);
-      const members=mo?JSON.parse(await mo.text()):[],reservations=ro?JSON.parse(await ro.text()):[],requests=qo?JSON.parse(await qo.text()):[];
-      let changed=false,refunded=0;
-      for(const b of reservations){if(b.status!=="cancelled"||b.ticketRefunded||b.bookingSource==="admin"||b.ticketDeducted===false)continue;
-        const mi=members.findIndex(m=>String(m.memberNo||"")===String(b.memberNo||""));if(mi<0)continue;
-        members[mi].point=Number(members[mi].point||0)+Number(b.usePoint||0);members[mi].cash=Number(members[mi].cash||0)+Number(b.useCash||0);
-        b.ticketRefunded=true;changed=true;refunded++;
-      }
-      if(changed){await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});await env.IMAGES.put(rk,JSON.stringify(reservations),{httpMetadata:{contentType:"application/json"}});}
-      return Response.json({ok:true,refunded,pending:requests.filter(x=>x.kind==="reservation_cancel"&&x.status!=="completed").length});
-    }
     if(payload.action==="adminAdd"){
       const d=payload.booking,people=Number(d.people);
       if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
