@@ -61,7 +61,7 @@ export class BookingCoordinator {
     }
     const member=payload.member;
     const d=payload.booking;
-    const people=Math.max(1,Math.floor(Number(d.people)||1));
+    const people=Number(d.people);
     if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!Number.isInteger(Number(d.people))||Number(d.people)<1||Number(d.people)>200||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
     const mk="system/members.json",rk="system/reservations.json";
     const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[];
