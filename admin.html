@@ -274,7 +274,7 @@ async function deleteEduPost(){if(!editingEduId)return closeEduPost();if(!confir
 function rewardRates(){return JSON.parse(localStorage.getItem('submarine_a3_reward_rates')||'[3,4,5,7]')}function loadRewardRates(){rewardRates().forEach((v,i)=>{const e=document.querySelector('.rewardRate[data-i="'+i+'"]');if(e)e.value=v})}function saveRewardRates(){localStorage.setItem('submarine_a3_reward_rates',JSON.stringify([...document.querySelectorAll('.rewardRate')].map(x=>Number(x.value)||0)));alert('적립률을 저장했습니다.')}
 
 function instructorData(){try{return JSON.parse(localStorage.getItem('submarine_instructors_v1')||'[]')}catch(e){return []}}
-function saveInstructorData(a){localStorage.setItem('submarine_instructors_v1',JSON.stringify(a))}
+function saveInstructorData(a){localStorage.setItem('submarine_instructors_v1',JSON.stringify(a));syncInstructorAccounting()}
 function instructorSettlements(){try{return JSON.parse(localStorage.getItem('submarine_instructor_settlements_v1')||'[]')}catch(e){return []}}
 function syncInstructorAccounting(){fetch('/api/admin/instructor-accounting',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:instructorData(),settlements:instructorSettlements(),closings:instructorClosings()})}).catch(()=>{})}function saveInstructorSettlements(a){localStorage.setItem('submarine_instructor_settlements_v1',JSON.stringify(a));syncInstructorAccounting()}
 function instructorClosings(){try{return JSON.parse(localStorage.getItem('submarine_instructor_closings_v1')||'[]')}catch(e){return []}}
