@@ -4,6 +4,19 @@ export class BookingCoordinator {
   async process(request){
     const env=this.env;
     const payload=await request.json();
+    if(payload.action==="cancelRequest"){
+      const rk="system/reservations.json",qk="system/service-requests.json",ro=await env.IMAGES.get(rk),reservations=ro?JSON.parse(await ro.text()):[];
+      const booking=reservations.find(x=>x.id===payload.reservationId&&String(x.memberNo||"")===String(payload.memberNo||""));
+      if(!booking)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
+      if(booking.status==="cancelled")return Response.json({ok:false,error:"이미 취소된 예약입니다."},{status:409});
+      const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+      if(String(booking.date||"")<today)return Response.json({ok:false,error:"지난 이용일의 예약은 취소 접수할 수 없습니다."},{status:409});
+      const qo=await env.IMAGES.get(qk),requests=qo?JSON.parse(await qo.text()):[];
+      if(requests.some(x=>x.kind==="reservation_cancel"&&x.reservationId===booking.id&&x.status==="requested"))return Response.json({ok:false,error:"이미 취소 접수된 예약입니다."},{status:409});
+      requests.unshift({id:crypto.randomUUID(),kind:"reservation_cancel",status:"requested",reservationId:booking.id,memberNo:booking.memberNo,name:booking.name||payload.memberName||"회원",date:booking.date,time:booking.time,type:booking.type,people:booking.people,cost:booking.cost||0,submittedAt:new Date().toISOString()});
+      await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
+      return Response.json({ok:true,requested:true});
+    }
     if(payload.action==="adminAdd"){
       const d=payload.booking,people=Number(d.people);
       if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
@@ -514,7 +527,7 @@ export default {
     async function writeRequests(rows){await env.IMAGES.put("system/service-requests.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}})}
     if (url.pathname === "/api/reservations/cancel" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
-      try{const d=await request.json(),reservations=await readReservations(),booking=reservations.find(x=>x.id===d.id&&x.memberNo===member.memberNo);if(!booking)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});const today=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());if(String(booking.date||"")<today)return Response.json({ok:false,error:"지난 이용일의 예약은 취소 접수할 수 없습니다."},{status:409});const requests=await readRequests();if(requests.some(x=>x.kind==="reservation_cancel"&&x.reservationId===booking.id&&x.status==="requested"))return Response.json({ok:false,error:"이미 취소 접수된 예약입니다."},{status:409});requests.unshift({id:crypto.randomUUID(),kind:"reservation_cancel",status:"requested",reservationId:booking.id,memberNo:member.memberNo,name:booking.name||member.name||"회원",date:booking.date,time:booking.time,type:booking.type,people:booking.people,cost:booking.cost||0,submittedAt:new Date().toISOString()});await writeRequests(requests);return Response.json({ok:true,requested:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+      try{const d=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/cancel-request",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancelRequest",reservationId:d.id,memberNo:member.memberNo,memberName:member.name})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/admin/service-requests" && request.method === "GET") {const denied=await requireAdmin();if(denied)return denied;return Response.json({ok:true,requests:await readRequests()})}
     if (url.pathname === "/api/admin/service-requests/complete" && request.method === "POST") {
