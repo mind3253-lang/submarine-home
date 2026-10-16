@@ -1,4 +1,4 @@
-const fs=require('node:fs');const assert=require('node:assert/strict');const crypto=require('node:crypto');
+import fs from 'node:fs';import assert from 'node:assert/strict';
 const code=fs.readFileSync('worker.js','utf8');const classCode=code.slice(0,code.indexOf('\nexport default {'));
 const {BookingCoordinator}=await import('data:text/javascript;base64,'+Buffer.from(classCode).toString('base64'));
 const store=new Map();const puts=new Map();const env={IMAGES:{async get(k){return store.has(k)?{async text(){return store.get(k)}}:null},async put(k,v){store.set(k,v);puts.set(k,(puts.get(k)||0)+1)}}};
