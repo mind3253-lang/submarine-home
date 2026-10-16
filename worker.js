@@ -17,6 +17,17 @@ export class BookingCoordinator {
       await env.IMAGES.put(qk,JSON.stringify(requests),{httpMetadata:{contentType:"application/json"}});
       return Response.json({ok:true,requested:true});
     }
+    if(payload.action==="adminEdit"){
+      const d=payload.booking,key="system/reservations.json",o=await env.IMAGES.get(key),rows=o?JSON.parse(await o.text()):[],i=rows.findIndex(x=>x.id===d.id);
+      if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});
+      const row=rows[i];if(row.status==="cancelled")return Response.json({ok:false,error:"취소된 예약은 수정할 수 없습니다."},{status:409});
+      if(row.ticketDeducted!==false&&row.bookingSource!=="admin"&&(d.people!=null&&Number(d.people)!==Number(row.people)||d.date&&d.date!==row.date||d.time&&d.time!==row.time))return Response.json({ok:false,error:"입장권이 차감된 예약의 인원·일정 변경은 취소 및 재예약으로 처리해 주세요."},{status:409});
+      if(d.date){if(!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)))return Response.json({ok:false,error:"날짜를 확인해 주세요."},{status:400});row.date=String(d.date)}
+      if(d.time){if(!/^[1-5](?:타임)?$/.test(String(d.time)))return Response.json({ok:false,error:"타임을 확인해 주세요."},{status:400});row.time=String(d.time)}
+      if(d.type&&["강습","스킬업","펀다","독립군"].includes(d.type))row.type=d.type;
+      if(d.people!=null){const people=Number(d.people);if(!Number.isInteger(people)||people<0||people>200)return Response.json({ok:false,error:"인원을 확인해 주세요."},{status:400});if(people===0){if(row.bookingSource!=="admin")return Response.json({ok:false,error:"차감된 예약은 취소 및 환불 절차를 이용해 주세요."},{status:409});row.status="cancelled";row.cancelledAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,deleted:true,reservation:row})}row.people=people}
+      row.adminEditedAt=new Date().toISOString();await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,reservation:row});
+    }
     if(payload.action==="adminAdd"){
       const d=payload.booking,people=Number(d.people);
       if(!Number.isInteger(people)||people<1||people>200||!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date||""))||!/^[1-5](?:타임)?$/.test(String(d.time||""))||!["강습","펀다"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
@@ -513,7 +524,10 @@ export default {
     }
     if (url.pathname === "/api/reservations/public" && request.method === "GET") {const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled").map(x=>({date:x.date,time:x.time,type:x.type,people:x.people,instructorName:x.instructorName||"",status:x.status||"confirmed"}))})}
     if (url.pathname === "/api/admin/reservations" && request.method === "GET") {if(!await adminSessionValid())return Response.json({ok:false,error:"관리자 로그인이 필요합니다."},{status:401});const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.status!=="cancelled")})}
-    if (url.pathname === "/api/admin/reservations/edit" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),rows=await readReservations(),i=rows.findIndex(x=>x.id===d.id);if(i<0)return Response.json({ok:false,error:"예약을 찾을 수 없습니다."},{status:404});if(d.date)rows[i].date=String(d.date);if(d.time)rows[i].time=String(d.time);if(d.type&&["강습","스킬업","펀다","독립군"].includes(d.type))rows[i].type=d.type;if(d.people!=null){const people=Math.max(0,Math.floor(Number(d.people)||0));if(people===0){const removed=rows[i];rows.splice(i,1);await writeReservations(rows);return Response.json({ok:true,deleted:true,reservation:removed})}rows[i].people=people}rows[i].adminEditedAt=new Date().toISOString();await writeReservations(rows);return Response.json({ok:true,reservation:rows[i]})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
+    if (url.pathname === "/api/admin/reservations/edit" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{const booking=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/admin-edit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"adminEdit",booking})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/admin/reservations/add" && request.method === "POST") {
       const denied=await requireAdmin();if(denied)return denied;
       try{const booking=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/admin-add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"adminAdd",booking})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
