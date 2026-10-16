@@ -15,6 +15,19 @@ jobs:
         run: node --check worker.js
       - name: Execute booking coordinator integration tests
         run: node tests/booking-coordinator.mjs
+      - name: Check homepage inline JavaScript syntax
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs'),vm=require('node:vm');
+          const html=fs.readFileSync('index.html','utf8');
+          let count=0;
+          for(const m of html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)){
+            if(/application\\/ld\\+json/.test(m[1]))continue;
+            new vm.Script(m[2],{filename:'index.html:inline-'+(++count)});
+          }
+          if(!count)throw Error('No homepage JavaScript found');
+          console.log('Homepage inline scripts syntax OK:',count);
+          NODE
       - name: Check Cloudflare config
         run: node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));if(!c.durable_objects?.bindings?.some(x=>x.name==='BOOKING_COORDINATOR'))process.exit(1);if(!c.triggers?.crons?.length)process.exit(1)"
       - name: Validate reservation invariants
