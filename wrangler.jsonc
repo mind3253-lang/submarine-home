@@ -29,5 +29,10 @@
         "BookingCoordinator"
       ]
     }
-  ]
+  ],
+  "triggers": {
+    "crons": [
+      "0 * * * *"
+    ]
+  }
 }
