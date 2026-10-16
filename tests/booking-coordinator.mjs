@@ -13,6 +13,11 @@ assert.equal(JSON.parse(store.get('system/reservations.json')).length,1);
 const conflicting=await send({...p,booking:{...booking,people:1}});assert.equal(conflicting.status,409);assert.equal(JSON.parse(store.get('system/members.json'))[0].point,120000);
 const invalid=await send({...p,idempotencyKey:'invalid-booking-key-0002',booking:{...booking,people:0}});assert.equal(invalid.status,400);
 const outsider=await send({member:{memberNo:'OTHER'},booking,idempotencyKey:'another-booking-key-0003'});assert.equal(outsider.status,404);
+// A normal member can reserve fun diving, but cannot reserve teaching under a registered instructor.
+const membersForFun=JSON.parse(store.get('system/members.json'));membersForFun.push({memberNo:'G01',name:'Guest',point:200000,cash:0});store.set('system/members.json',JSON.stringify(membersForFun));
+const fun=await send({member:{memberNo:'G01'},booking:{...booking,type:'펀다',instructorName:''},idempotencyKey:'guest-fun-booking-0008'});assert.equal(fun.body.ok,true);assert.equal(fun.body.reservation.bookingSource,'member');
+const guestTeaching=await send({member:{memberNo:'G01'},booking,idempotencyKey:'guest-class-booking-0009'});assert.equal(guestTeaching.status,403);
+
 const missing=await send({member:{memberNo:'I01'},idempotencyKey:'missing-payload-000004'});assert.equal(missing.status,400);
 const impossibleDate=await send({member:{memberNo:'I01'},booking:{...booking,date:'2026-02-30'},idempotencyKey:'invalid-date-0000000007'});assert.equal(impossibleDate.status,400);
 const wrongType=await send({member:{memberNo:'I01'},booking:{...booking,type:'잘못된구분'},idempotencyKey:'wrong-type-0000000005'});assert.equal(wrongType.status,400);
