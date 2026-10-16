@@ -771,7 +771,7 @@ export default {
         if(duplicate)return Response.json({ok:true,id:duplicate.id,alreadySubmitted:true,bookingMatched:await educationBookingMatches(duplicate)});
         rows.push(row); await writeWaivers(rows);
         const bookingMatched=await educationBookingMatches(row);
-        return Response.json({ok:true,id:row.id,bookingMatched});
+        const bookingDeadlineHour=String(env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return Response.json({ok:true,id:row.id,bookingMatched,bookingDeadlineHour:/^(?:[01]?\\d|2[0-3])$/.test(bookingDeadlineHour)?Number(bookingDeadlineHour):null});
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
     if (url.pathname === "/api/instructor-waivers" && request.method === "GET") {
