@@ -1,3 +1,34 @@
+export class BookingCoordinator {
+  constructor(state,env){this.state=state;this.env=env;}
+  async fetch(request){
+    const env=this.env;
+    const payload=await request.json();
+    const member=payload.member;
+    const d=payload.booking;
+    const people=Math.max(1,Math.floor(Number(d.people)||1));
+    if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});
+    const mk="system/members.json",rk="system/reservations.json";
+    const mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[];
+    const mi=members.findIndex(x=>String(x.memberNo||"")===String(member.memberNo||"")&&member.memberNo);
+    if(mi<0)return Response.json({ok:false,error:"회원 정보를 찾을 수 없습니다."},{status:404});
+    const ro=await env.IMAGES.get(rk),rows=ro?JSON.parse(await ro.text()):[];
+    const key=String(payload.idempotencyKey||"");
+    if(key){const existing=rows.find(x=>x.memberNo===members[mi].memberNo&&x.idempotencyKey===key);if(existing)return Response.json({ok:true,reservation:existing,alreadySubmitted:true,balance:Number(members[mi].point||0)+Number(members[mi].cash||0)});}
+    const slot=/^([1-5])(?:타임)?$/.exec(String(d.time||""));
+    if(!slot||!rows.some(x=>x.date===d.date&&x.status!=="cancelled"&&Number(x.people)>0&&String(x.time).startsWith(slot[1])))return Response.json({ok:false,error:"스케줄에 등록되지 않은 타임입니다."},{status:400});
+    if(d.type==="강습"){const io=await env.IMAGES.get("system/instructors.json"),instructors=io?JSON.parse(await io.text()):[],self=instructors.find(x=>String(x.memberNo||"")===String(members[mi].memberNo||""));if(!self||String(self.name||"").trim()!==String(d.instructorName||"").trim())return Response.json({ok:false,error:"등록 강사 본인만 강습 예약을 할 수 있습니다."},{status:403});}
+    const useDate=new Date(String(d.date)+"T00:00:00"),weekend=[0,6].includes(useDate.getDay()),holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date));
+    const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
+    if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
+    const usePoint=Math.min(point,cost),useCash=cost-usePoint;
+    const row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,status:"confirmed",bookingSource:"instructor",ticketDeducted:true,idempotencyKey:key,createdAt:new Date().toISOString()};
+    members[mi].point=point-usePoint;members[mi].cash=cash-useCash;members[mi].balanceUpdatedAt=new Date().toISOString();rows.push(row);
+    await env.IMAGES.put(rk,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+    try{await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}})}catch(e){await env.IMAGES.put(rk,JSON.stringify(rows.filter(x=>x.id!==row.id)),{httpMetadata:{contentType:"application/json"}});throw e}
+    return Response.json({ok:true,reservation:row,balance:members[mi].point+members[mi].cash});
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -442,16 +473,7 @@ export default {
 
     if (url.pathname === "/api/reservations" && request.method === "POST") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
-      try{const d=await request.json(),people=Math.max(1,Math.floor(Number(d.people)||1));if(!d.date||!d.time||!["강습","스킬업","펀다","독립군"].includes(d.type))return Response.json({ok:false,error:"예약 정보를 확인해 주세요."},{status:400});if(!await isOpenVisitSlot(d.date,d.time))return Response.json({ok:false,error:"C방 스케줄에 등록되지 않은 날짜 또는 타임입니다. 고객센터로 문의해 주세요."},{status:400});
-        const mk="system/members.json",mo=await env.IMAGES.get(mk),members=mo?JSON.parse(await mo.text()):[],mi=members.findIndex(x=>(member.memberNo&&x.memberNo===member.memberNo)||(x.provider===member.provider&&x.id===member.id)||(member.phone&&String(x.phone||"").replace(/[^0-9]/g,"")===String(member.phone||"").replace(/[^0-9]/g,"")));
-        if(mi<0)return Response.json({ok:false,error:"회원 정보를 찾을 수 없습니다."},{status:404});
-        const useDate=new Date(String(d.date)+"T00:00:00"),weekend=useDate.getDay()===0||useDate.getDay()===6,holiday=["2026-01-01","2026-02-16","2026-02-17","2026-02-18","2026-03-01","2026-03-02","2026-05-05","2026-05-24","2026-05-25","2026-06-03","2026-06-06","2026-08-15","2026-08-17","2026-09-24","2026-09-25","2026-09-26","2026-10-03","2026-10-05","2026-10-09","2026-12-25"].includes(String(d.date)),unit=weekend||holiday?55000:40000,cost=unit*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
-        if(d.type==="강습"){const io=await env.IMAGES.get("system/instructors.json"),instructors=io?JSON.parse(await io.text()):[],self=instructors.find(x=>String(x.memberNo||"")===String(members[mi].memberNo||""));if(!self)return Response.json({ok:false,error:"등록 강사만 강습 예약을 할 수 있습니다."},{status:403});if(String(d.instructorName||"").trim()!==String(self.name||"").trim())return Response.json({ok:false,error:"본인 강사 이름으로만 예약할 수 있습니다."},{status:403});}
-        if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
-        const usePoint=Math.min(point,cost),useCash=cost-usePoint;members[mi].point=point-usePoint;members[mi].cash=cash-useCash;members[mi].balanceUpdatedAt=new Date().toISOString();
-        const rows=await readReservations(),row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,status:"confirmed",bookingSource:"instructor",ticketDeducted:true,createdAt:new Date().toISOString()};
-        rows.push(row);await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});try{await writeReservations(rows)}catch(e){members[mi].point=point;members[mi].cash=cash;await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}});throw e}return Response.json({ok:true,reservation:row,balance:members[mi].point+members[mi].cash})
-      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+      try{const booking=await request.json();const id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");const stub=env.BOOKING_COORDINATOR.get(id);return await stub.fetch("https://booking.internal/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({member,booking,idempotencyKey:String(booking.idempotencyKey||"").slice(0,100)})})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
     async function readRequests(){try{const o=await env.IMAGES.get("system/service-requests.json");return o?JSON.parse(await o.text()):[]}catch{return []}}
