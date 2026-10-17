@@ -789,6 +789,22 @@ export default {
         const key="system/sm-instructor-applications/"+id+".json",obj=await env.IMAGES.get(key);
         if(!obj)return Response.json({ok:false,error:"지원서를 찾을 수 없습니다."},{status:404});
         const row=JSON.parse(await obj.text());
+        // F instructor accounting is the sole authoritative registration source.
+        // Approval must preserve existing instructor IDs and settlement references.
+        if(status==="approved"){
+          const memberNo=String(row.memberNo||"").trim();
+          if(!memberNo)return Response.json({ok:false,error:"회원번호가 없어 F 강사등록에 연결할 수 없습니다."},{status:400});
+          const instructorKey="system/instructors.json";
+          const existing=await env.IMAGES.get(instructorKey),instructors=existing?JSON.parse(await existing.text()):[];
+          if(!Array.isArray(instructors))return Response.json({ok:false,error:"F 강사 데이터 형식 오류"},{status:500});
+          const current=instructors.find(x=>String(x.memberNo||"").trim()===memberNo);
+          if(!current){
+            const ids=new Set(instructors.map(x=>String(x.id)));
+            let newId=Date.now();while(ids.has(String(newId)))newId++;
+            instructors.push({id:newId,memberNo,name:String(row.name||"").trim()||"회원",voucher:40000,experience:20000,lesson:30000,skillup:5000,success:30000,level3:60000,license:0});
+            await env.IMAGES.put(instructorKey,JSON.stringify(instructors),{httpMetadata:{contentType:"application/json"}});
+          }
+        }
         row.status=status;row.reviewedAt=new Date().toISOString();
         await env.IMAGES.put(key,JSON.stringify(row),{httpMetadata:{contentType:"application/json"}});
         return Response.json({ok:true,status});
