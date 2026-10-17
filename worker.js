@@ -324,8 +324,22 @@ export default {
         return Response.json({ok:true,instructors,settlements,closings},{headers:{"Cache-Control":"no-store"}});
       }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
-    if (url.pathname === "/api/admin/instructor-accounting" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),instructors=Array.isArray(d.instructors)?d.instructors:[],settlements=Array.isArray(d.settlements)?d.settlements:[],closings=Array.isArray(d.closings)?d.closings:[];await Promise.all([env.IMAGES.put("system/instructors.json",JSON.stringify(instructors),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-settlements.json",JSON.stringify(settlements),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-closings.json",JSON.stringify(closings),{httpMetadata:{contentType:"application/json"}})]);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
-    if(url.pathname==="/api/public/instructors"&&request.method==="GET"){try{const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[];return Response.json({ok:true,instructors:rows.filter(x=>x.name).map(x=>({name:String(x.name).trim()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name,'ko'))},{headers:{"Cache-Control":"no-store"}})}catch{return Response.json({ok:false,instructors:[]},{status:500})}}
+    if (url.pathname === "/api/admin/instructor-accounting" && request.method === "POST") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const d=await request.json();
+        const keys={instructors:"system/instructors.json",settlements:"system/instructor-settlements.json",closings:"system/instructor-closings.json"};
+        const parts=Object.keys(keys).filter(k=>Object.prototype.hasOwnProperty.call(d,k));
+        if(!parts.length||parts.some(k=>!Array.isArray(d[k])))return Response.json({ok:false,error:"저장할 자료 형식 오류"},{status:400});
+        for(const part of parts){
+          const key=keys[part],old=await env.IMAGES.get(key),previous=old?await old.text():"[]";
+          await env.IMAGES.put("system/instructor-backups/"+part+"-"+Date.now()+"-"+crypto.randomUUID()+".json",previous,{httpMetadata:{contentType:"application/json"}});
+          await env.IMAGES.put(key,JSON.stringify(d[part]),{httpMetadata:{contentType:"application/json"}});
+        }
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
+        if(url.pathname==="/api/public/instructors"&&request.method==="GET"){try{const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[];return Response.json({ok:true,instructors:rows.filter(x=>x.name).map(x=>({name:String(x.name).trim()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name,'ko'))},{headers:{"Cache-Control":"no-store"}})}catch{return Response.json({ok:false,instructors:[]},{status:500})}}
     if(url.pathname==="/api/my-instructor"&&request.method==="GET"){const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[],self=rows.find(x=>String(x.memberNo||"")===String(member.memberNo||""));return Response.json({ok:true,isInstructor:!!self,name:self?String(self.name||"").trim():""},{headers:{"Cache-Control":"no-store"}})}
     if (url.pathname === "/api/instructor-membership" && request.method === "GET") {
       const member=await sessionMember();if(!member)return Response.json({ok:true,loggedIn:false,grade:"일반회원",isInstructor:false});
