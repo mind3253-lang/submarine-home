@@ -343,7 +343,17 @@ async function publishPcInstructors(){
  const settlementIds=new Set([...(j.settlements||[]),...instructorSettlements()].map(x=>String(x.instructorId??'')));
  const ids=new Set(local.map(x=>String(x.id)));
  const orphan=[...settlementIds].filter(x=>x&&!ids.has(x));
- if(orphan.length){alert('정산 연결된 강사 ID가 PC 명단에 없어 중단했습니다: '+orphan.join(', '));return}
+ if(orphan.length){
+   const details=orphan.map(id=>{
+     const matches=[...(j.settlements||[]).map(x=>({...x,_source:'서버 정산'})),...instructorSettlements().map(x=>({...x,_source:'PC 정산'}))].filter(x=>String(x.instructorId??'')===id);
+     const serverInstructor=(j.instructors||[]).find(x=>String(x.id)===id);
+     return '강사 ID '+id+' / 서버 등록명 '+(serverInstructor?.name||'없음')+' / 정산 '+matches.length+'건\n'+matches.slice(0,10).map(x=>x._source+' · '+JSON.stringify(x)).join('\n');
+   }).join('\n\n');
+   const report=document.getElementById('instructorCompareReport');
+   if(report)report.textContent='PC 기준 확정 중단 — 정산 연결 확인 필요\n'+details;
+   alert('정산 연결 ID '+orphan.join(', ')+' 확인이 필요합니다. 아래 대조 보고서에 해당 정산의 상세 내용을 표시했습니다. 기존 데이터는 변경하지 않았습니다.');
+   return;
+ }
  if(!confirm('반드시 기존 강사 명단이 있는 원본 PC에서만 실행하세요. 이 PC의 강사 '+local.length+'명을 공통 서버 기준으로 확정하고 서버의 기존 명단은 백업합니다. 계속할까요?'))return;
  const res=await fetch('/api/admin/instructor-accounting',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:local})}),out=await res.json();
  if(!res.ok||!out.ok){alert('반영 실패: '+(out.error||res.status));return}
