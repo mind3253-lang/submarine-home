@@ -303,6 +303,18 @@ export default {
       }
     }
 
+    if(url.pathname==="/api/admin/instructor-accounting/recover"&&request.method==="POST"){
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const existing=await env.IMAGES.get("system/instructors.json");
+        const current=existing?JSON.parse(await existing.text()):[];
+        if(current.length)return Response.json({ok:false,error:"서버에 이미 강사 명단이 있어 덮어쓰기를 중단했습니다."},{status:409});
+        const d=await request.json(),rows=d.instructors;
+        if(!Array.isArray(rows)||!rows.length||rows.some(x=>!x.name||!x.memberNo))return Response.json({ok:false,error:"유효한 강사 명단이 필요합니다."},{status:400});
+        await env.IMAGES.put("system/instructors.json",JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true,count:rows.length});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/admin/instructor-accounting" && request.method === "GET") {
       const denied=await requireAdmin();if(denied)return denied;
       try{
