@@ -303,6 +303,15 @@ export default {
       }
     }
 
+    if (url.pathname === "/api/admin/instructor-accounting" && request.method === "GET") {
+      const denied=await requireAdmin();if(denied)return denied;
+      try{
+        const keys=["system/instructors.json","system/instructor-settlements.json","system/instructor-closings.json"];
+        const objects=await Promise.all(keys.map(k=>env.IMAGES.get(k)));
+        const [instructors,settlements,closings]=await Promise.all(objects.map(async o=>o?JSON.parse(await o.text()):[]));
+        return Response.json({ok:true,instructors,settlements,closings},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/admin/instructor-accounting" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),instructors=Array.isArray(d.instructors)?d.instructors:[],settlements=Array.isArray(d.settlements)?d.settlements:[],closings=Array.isArray(d.closings)?d.closings:[];await Promise.all([env.IMAGES.put("system/instructors.json",JSON.stringify(instructors),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-settlements.json",JSON.stringify(settlements),{httpMetadata:{contentType:"application/json"}}),env.IMAGES.put("system/instructor-closings.json",JSON.stringify(closings),{httpMetadata:{contentType:"application/json"}})]);return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if(url.pathname==="/api/public/instructors"&&request.method==="GET"){try{const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[];return Response.json({ok:true,instructors:rows.filter(x=>x.name).map(x=>({name:String(x.name).trim()})).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name,'ko'))},{headers:{"Cache-Control":"no-store"}})}catch{return Response.json({ok:false,instructors:[]},{status:500})}}
     if(url.pathname==="/api/my-instructor"&&request.method==="GET"){const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});const o=await env.IMAGES.get("system/instructors.json"),rows=o?JSON.parse(await o.text()):[],self=rows.find(x=>String(x.memberNo||"")===String(member.memberNo||""));return Response.json({ok:true,isInstructor:!!self,name:self?String(self.name||"").trim():""},{headers:{"Cache-Control":"no-store"}})}
