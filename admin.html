@@ -330,8 +330,24 @@ function renderInstructorRecovery(){
  const box=document.getElementById('instructorBox');if(!box)return;
  let b=document.getElementById('instructorRecoveryButton');
  if(!b){b=document.createElement('button');b.id='instructorRecoveryButton';b.className='btn';b.type='button';b.textContent='이 PC의 강사 명단을 서버로 복구';b.style.cssText='margin:10px 0;background:#fff4d6;color:#493800;border:1px solid #d9b64d';b.onclick=recoverInstructorData;box.insertBefore(b,box.firstChild)}
- b.style.display='none'; // Disable recovery until instructor IDs and settlements have been reconciled.
+ b.style.display='none'; // Keep the legacy recovery action disabled.
+ let pc=document.getElementById('instructorPcPublishButton');
+ if(!pc){pc=document.createElement('button');pc.id='instructorPcPublishButton';pc.type='button';pc.className='btn';pc.textContent='이 PC 명단을 공통 서버 기준으로 확정';pc.onclick=publishPcInstructors;box.insertBefore(pc,box.firstChild)}
+
  let compare=document.getElementById('instructorCompareButton');if(!compare){compare=document.createElement('button');compare.id='instructorCompareButton';compare.className='btn';compare.textContent='PC · 서버 강사/정산 대조 (읽기 전용)';compare.onclick=compareInstructorRecords;box.insertBefore(compare,box.firstChild);const report=document.createElement('pre');report.id='instructorCompareReport';report.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px';compare.after(report)}
+}
+async function publishPcInstructors(){
+ const local=instructorData();if(!local.length){alert('이 브라우저에 강사 명단이 없습니다. PC 원본에서만 실행하세요.');return}
+ const r=await fetch('/api/admin/instructor-accounting',{credentials:'same-origin',cache:'no-store'}),j=await r.json();
+ if(!r.ok||!j.ok){alert('서버 명단을 확인할 수 없습니다.');return}
+ const settlementIds=new Set([...(j.settlements||[]),...instructorSettlements()].map(x=>String(x.instructorId??'')));
+ const ids=new Set(local.map(x=>String(x.id)));
+ const orphan=[...settlementIds].filter(x=>x&&!ids.has(x));
+ if(orphan.length){alert('정산 연결된 강사 ID가 PC 명단에 없어 중단했습니다: '+orphan.join(', '));return}
+ if(!confirm('반드시 기존 강사 명단이 있는 원본 PC에서만 실행하세요. 이 PC의 강사 '+local.length+'명을 공통 서버 기준으로 확정하고 서버의 기존 명단은 백업합니다. 계속할까요?'))return;
+ const res=await fetch('/api/admin/instructor-accounting',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:local})}),out=await res.json();
+ if(!res.ok||!out.ok){alert('반영 실패: '+(out.error||res.status));return}
+ await loadInstructorAccounting();alert('PC 강사 '+local.length+'명을 공통 서버에 반영했습니다.');
 }
 async function recoverInstructorData(){
  const local=instructorData();if(!local.length){alert('이 기기에 저장된 강사 명단이 없습니다.');return}
@@ -343,11 +359,19 @@ async function recoverInstructorData(){
  }catch(e){alert('복구 실패: '+e.message)}
 }
 function instructorData(){try{return JSON.parse(localStorage.getItem('submarine_instructors_v1')||'[]')}catch(e){return []}}
-function saveInstructorData(a){localStorage.setItem('submarine_instructors_v1',JSON.stringify(a));syncInstructorAccounting()}
+function saveInstructorData(a){localStorage.setItem('submarine_instructors_v1',JSON.stringify(a));return syncInstructorAccounting('instructors')}
 function instructorSettlements(){try{return JSON.parse(localStorage.getItem('submarine_instructor_settlements_v1')||'[]')}catch(e){return []}}
-function syncInstructorAccounting(){if(!instructorServerLoaded){alert('서버 강사 정보를 먼저 불러와야 합니다. 새로고침 후 다시 시도하세요.');return Promise.reject(Error('강사 데이터 미동기화'))}return fetch('/api/admin/instructor-accounting',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:instructorData(),settlements:instructorSettlements(),closings:instructorClosings()})}).catch(()=>{})}function saveInstructorSettlements(a){localStorage.setItem('submarine_instructor_settlements_v1',JSON.stringify(a));syncInstructorAccounting()}
+async function syncInstructorAccounting(part){
+ if(!instructorServerLoaded){alert('서버 강사 정보를 먼저 불러와야 합니다.');throw Error('강사 데이터 미동기화')}
+ const values={instructors:instructorData,settlements:instructorSettlements,closings:instructorClosings};
+ if(!values[part])throw Error('저장 구분 오류');
+ const r=await fetch('/api/admin/instructor-accounting',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({[part]:values[part]()})});
+ const j=await r.json();if(!r.ok||!j.ok){alert('서버 저장 실패: '+(j.error||r.status));throw Error(j.error||'서버 저장 실패')}
+ return j;
+}
+function saveInstructorSettlements(a){localStorage.setItem('submarine_instructor_settlements_v1',JSON.stringify(a));return syncInstructorAccounting('settlements')}
 function instructorClosings(){try{return JSON.parse(localStorage.getItem('submarine_instructor_closings_v1')||'[]')}catch(e){return []}}
-function saveInstructorClosings(a){localStorage.setItem('submarine_instructor_closings_v1',JSON.stringify(a));syncInstructorAccounting()}
+function saveInstructorClosings(a){localStorage.setItem('submarine_instructor_closings_v1',JSON.stringify(a));return syncInstructorAccounting('closings')}
 function monthKey(d){return (d||'').slice(0,7)}
 let activeInstructorId=0,editingSettlementId=0,editingInstructorRateId=0;
 function searchInstructorMember(){const q=instructorMemberSearch.value.trim().toLowerCase();instructorMemberResults.innerHTML=q?adminMembers.filter(m=>(m.name||'').toLowerCase().includes(q)||String(m.phone||'').includes(q)||String(m.memberNo||'').toLowerCase().includes(q)).map(m=>'<button class="btn" data-no="'+m.memberNo+'" onclick="addInstructorFromMember(this.dataset.no)">'+(m.name||'회원')+' · '+m.memberNo+' · '+(m.phone||'')+'</button>').join(''):''}
