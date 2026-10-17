@@ -340,24 +340,21 @@ async function publishPcInstructors(){
  const local=instructorData();if(!local.length){alert('이 브라우저에 강사 명단이 없습니다. PC 원본에서만 실행하세요.');return}
  const r=await fetch('/api/admin/instructor-accounting',{credentials:'same-origin',cache:'no-store'}),j=await r.json();
  if(!r.ok||!j.ok){alert('서버 명단을 확인할 수 없습니다.');return}
- const settlementIds=new Set([...(j.settlements||[]),...instructorSettlements()].map(x=>String(x.instructorId??'')));
+
  const ids=new Set(local.map(x=>String(x.id)));
- const orphan=[...settlementIds].filter(x=>x&&!ids.has(x));
- if(orphan.length){
-   const details=orphan.map(id=>{
-     const matches=[...(j.settlements||[]).map(x=>({...x,_source:'서버 정산'})),...instructorSettlements().map(x=>({...x,_source:'PC 정산'}))].filter(x=>String(x.instructorId??'')===id);
-     const serverInstructor=(j.instructors||[]).find(x=>String(x.id)===id);
-     return '강사 ID '+id+' / 서버 등록명 '+(serverInstructor?.name||'없음')+' / 정산 '+matches.length+'건\n'+matches.slice(0,10).map(x=>x._source+' · '+JSON.stringify(x)).join('\n');
-   }).join('\n\n');
-   const report=document.getElementById('instructorCompareReport');
-   if(report)report.textContent='PC 기준 확정 중단 — 정산 연결 확인 필요\n'+details;
-   alert('정산 연결 ID '+orphan.join(', ')+' 확인이 필요합니다. 아래 대조 보고서에 해당 정산의 상세 내용을 표시했습니다. 기존 데이터는 변경하지 않았습니다.');
-   return;
- }
- if(!confirm('반드시 기존 강사 명단이 있는 원본 PC에서만 실행하세요. 이 PC의 강사 '+local.length+'명을 공통 서버 기준으로 확정하고 서버의 기존 명단은 백업합니다. 계속할까요?'))return;
- const res=await fetch('/api/admin/instructor-accounting',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:local})}),out=await res.json();
+ const allSettlements=[...(j.settlements||[]),...instructorSettlements()];
+ const allClosings=[...(j.closings||[]),...instructorClosings()];
+ const excludedSettlements=allSettlements.filter(x=>x.instructorId!=null&&!ids.has(String(x.instructorId)));
+ const excludedClosings=allClosings.filter(x=>x.instructorId!=null&&!ids.has(String(x.instructorId)));
+ const pcSettlements=instructorSettlements().filter(x=>x.instructorId==null||ids.has(String(x.instructorId)));
+ const pcClosings=instructorClosings().filter(x=>x.instructorId==null||ids.has(String(x.instructorId)));
+ const report=document.getElementById('instructorCompareReport');
+ if(report)report.textContent='PC 강사 '+local.length+'명 / 보존할 PC 정산 '+pcSettlements.length+'건 / 보존할 PC 마감 '+pcClosings.length+'건 / 제외할 연결 없는 정산 '+excludedSettlements.length+'건 / 제외할 연결 없는 마감 '+excludedClosings.length+'건';
+ if(!confirm('이 PC 강사 '+local.length+'명을 기준으로 서버 명단을 확정합니다.\nPC 정산 '+pcSettlements.length+'건, 마감 '+pcClosings.length+'건을 서버에 반영합니다.\n등록 강사와 연결되지 않는 임시 기록은 서버 백업 후 제외합니다.\n※ 실제 퇴출 강사의 과거 정산도 제외될 수 있습니다. 계속할까요?'))return;
+ const res=await fetch('/api/admin/instructor-accounting',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({instructors:local,settlements:pcSettlements,closings:pcClosings})}),out=await res.json();
  if(!res.ok||!out.ok){alert('반영 실패: '+(out.error||res.status));return}
- await loadInstructorAccounting();alert('PC 강사 '+local.length+'명을 공통 서버에 반영했습니다.');
+ await loadInstructorAccounting();alert('PC 강사 '+local.length+'명과 정산 '+pcSettlements.length+'건, 마감 '+pcClosings.length+'건을 서버 기준으로 반영했습니다.');
+
 }
 async function recoverInstructorData(){
  const local=instructorData();if(!local.length){alert('이 기기에 저장된 강사 명단이 없습니다.');return}
