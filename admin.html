@@ -299,11 +299,39 @@ async function loadInstructorAccounting(){
  renderInstructorRecovery();
  if(currentCat==='F')drawInstructors();
 }
+async function compareInstructorRecords(){
+ const out=document.getElementById('instructorCompareReport');if(!out)return;
+ out.textContent='PC와 서버의 강사·정산 데이터를 대조하는 중...';
+ try{
+  const r=await fetch('/api/admin/instructor-accounting',{credentials:'same-origin',cache:'no-store'}),j=await r.json();
+  if(!r.ok||!j.ok)throw Error(j.error||'서버 조회 실패');
+  const localI=instructorData(),serverI=j.instructors||[];
+  const localS=instructorSettlements(),serverS=j.settlements||[];
+  const localC=instructorClosings(),serverC=j.closings||[];
+  const id=x=>String(x?.id??'');
+  const serverIds=new Set(serverI.map(id)),localIds=new Set(localI.map(id));
+  const onlyLocal=localI.filter(x=>!serverIds.has(id(x)));
+  const onlyServer=serverI.filter(x=>!localIds.has(id(x)));
+  const settlementIds=new Set(serverS.map(x=>String(x.instructorId??'')));
+  const orphaned=[...settlementIds].filter(x=>!serverIds.has(x));
+  const lines=[
+   'PC 강사 '+localI.length+'명 / 서버 강사 '+serverI.length+'명',
+   'PC 정산 '+localS.length+'건 / 서버 정산 '+serverS.length+'건',
+   'PC 마감 '+localC.length+'건 / 서버 마감 '+serverC.length+'건',
+   'PC에만 있는 강사 ID: '+(onlyLocal.map(x=>id(x)+' '+x.name).join(', ')||'없음'),
+   '서버에만 있는 강사 ID: '+(onlyServer.map(x=>id(x)+' '+x.name).join(', ')||'없음'),
+   '서버 정산에서 강사 ID 미연결: '+(orphaned.join(', ')||'없음'),
+   '※ 조회만 수행했습니다. 기존 데이터는 변경하지 않았습니다.'
+  ];
+  out.textContent=lines.join('\\n');
+ }catch(e){out.textContent='대조 실패: '+e.message}
+}
 function renderInstructorRecovery(){
  const box=document.getElementById('instructorBox');if(!box)return;
  let b=document.getElementById('instructorRecoveryButton');
  if(!b){b=document.createElement('button');b.id='instructorRecoveryButton';b.className='btn';b.type='button';b.textContent='이 PC의 강사 명단을 서버로 복구';b.style.cssText='margin:10px 0;background:#fff4d6;color:#493800;border:1px solid #d9b64d';b.onclick=recoverInstructorData;box.insertBefore(b,box.firstChild)}
- b.style.display=instructorData().length?'inline-block':'none';
+ b.style.display='none'; // Disable recovery until instructor IDs and settlements have been reconciled.
+ let compare=document.getElementById('instructorCompareButton');if(!compare){compare=document.createElement('button');compare.id='instructorCompareButton';compare.className='btn';compare.textContent='PC · 서버 강사/정산 대조 (읽기 전용)';compare.onclick=compareInstructorRecords;box.insertBefore(compare,box.firstChild);const report=document.createElement('pre');report.id='instructorCompareReport';report.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px';compare.after(report)}
 }
 async function recoverInstructorData(){
  const local=instructorData();if(!local.length){alert('이 기기에 저장된 강사 명단이 없습니다.');return}
