@@ -1,0 +1,33 @@
+name: Read-only desktop and mobile audit
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'tests/e2e-readonly-audit.mjs'
+      - '.github/workflows/e2e-readonly-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install isolated browser tooling
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Audit desktop and mobile browser profiles (read only)
+        run: node tests/e2e-readonly-audit.mjs
+        env:
+          AUDIT_BASE_URL: https://submarine.asia
+      - name: Upload audit report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: submarine-readonly-audit
+          path: audit-results/
+          if-no-files-found: warn
