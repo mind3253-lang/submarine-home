@@ -818,7 +818,7 @@ async function submitWaiver(){
    if(!r.ok||!j.ok){waiverResult.textContent='';await siteMessage('제출 실패',j.error||'약정서 저장에 실패했습니다.');return}
    if(j.alreadySubmitted&&j.waiverCode&&j.waiverCode!==activeWaiverCode){waiverResult.textContent='';await siteMessage('약정서 종류 확인 필요','다른 종류의 약정서 제출 이력이 반환되었습니다. 현재 약정서는 제출 완료로 처리하지 않았습니다.');return}
    const completedWaiver=activeWaiverCode==='D-3'?'장비 확인서':'약정서';clearWaiverSign();waiverForm.style.display='none';waiverBody.innerHTML='';waiverResult.textContent='';waiverResult.classList.remove('success');waiverSuccessTitle.textContent=j.alreadySubmitted?(activeWaiverCode==='D-2'?'이 시간대에 교육 약정서가 이미 제출되어 있습니다.':activeWaiverCode==='D-1'?'이 시간대에 시설 약정서가 이미 제출되어 있습니다.':'이미 제출된 '+completedWaiver+'입니다.'):completedWaiver+'가 정상적으로 제출되었습니다.';
-   const warning=!j.alreadySubmitted&&activeWaiverCode==='D-2'&&j.bookingMatched!==true;
+   const warning=!j.alreadySubmitted&&(activeWaiverCode==='D-1'||activeWaiverCode==='D-2')&&j.bookingMatched!==true;
    const detail=document.getElementById('waiverSuccessDetail');
    if(warning){
      waiverSuccessTitle.textContent=activeWaiverCode==='D-2'?'약정서 제출 완료 · 담당 강사 예약 미확인':'약정서 제출 완료 · 해당 타임 예약 미확인';
