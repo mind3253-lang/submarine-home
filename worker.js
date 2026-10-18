@@ -710,7 +710,7 @@ export default {
       } catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
-    async function educationBookingMatches(row){if(row.waiverCode!=="D-2")return true;const reservations=await readReservations();return reservations.some(x=>x.status!=="cancelled"&&x.date===row.lessonDate&&slotNumber(x.time)===Number(row.lessonTime)&&Number(x.people)>0&&(row.waiverCode!=="D-2"||(x.type==="강습"&&String(x.instructorName||"").trim()===String(row.instructorName||"").trim())))}
+    async function educationBookingMatches(row){if(row.waiverCode==="D-3")return true;const reservations=await readReservations();return reservations.some(x=>x.status!=="cancelled"&&x.date===row.lessonDate&&slotNumber(x.time)===Number(row.lessonTime)&&Number(x.people)>0&&((row.waiverCode==="D-2"||row.useType==="강습")?(x.type==="강습"&&String(x.instructorName||"").trim()===String(row.instructorName||"").trim()):true))}
     async function readWaiverCutoffHour(){const o=await env.IMAGES.get("system/waiver-settings.json"),cfg=o?JSON.parse(await o.text()):{},raw=String(cfg.bookingCutoffHour??env.WAIVER_BOOKING_CUTOFF_HOUR??"").trim();return /^(?:[01]?\d|2[0-3])$/.test(raw)?Number(raw):23}
     async function readWaivers() {
       // Reading waivers must never delete submitted legal records.
