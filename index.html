@@ -875,8 +875,8 @@ function renderLessonCalendar(){
  const weekdays=["일","월","화","수","목","금","토"];let html=weekdays.map((w,i)=>'<div class="dow '+(i===0?"sun":i===6?"sat":"")+'">'+w+"</div>").join("");
  for(let i=0;i<first.getDay();i++)html+='<div class="day empty"></div>';
  for(let day=1;day<=last.getDate();day++){
-  const d=new Date(first.getFullYear(),first.getMonth(),day),iso=lessonDateLocal(d),past=iso<lessonToday(),count=lessonBoardRows.filter(x=>x.date===iso).length,wd=d.getDay();
-  html+='<button type="button" class="day c3-day'+(past?" c3-past":"")+'" '+(past?"disabled":'onclick="lessonOpenDate(\''+iso+'\')"')+'><div class="date '+(wd===0?"sun":wd===6?"sat":"")+'">'+day+'</div>'+(count?'<small class="c3-count">강습 '+count+'건</small>':"")+"</button>";
+  const d=new Date(first.getFullYear(),first.getMonth(),day),iso=lessonDateLocal(d),past=iso<lessonToday(),dayLessons=lessonBoardRows.filter(x=>x.date===iso).sort((a,b)=>a.time-b.time||String(a.instructorName).localeCompare(String(b.instructorName),"ko")),wd=d.getDay();
+  html+='<button type="button" class="day c3-day'+(past?" c3-past":"")+'" '+(past?"disabled":'onclick="lessonOpenDate(\''+iso+'\')"')+'><div class="date '+(wd===0?"sun":wd===6?"sat":"")+'">'+day+'</div>'+(dayLessons.length?'<div class="c3-day-lessons">'+dayLessons.map(x=>'<small class="c3-count">'+lessonEsc(x.time)+'타임 '+lessonEsc(x.instructorName)+'</small>').join("")+'</div>':"")+"</button>";
  }
  grid.innerHTML=html;
 }
@@ -898,9 +898,18 @@ async function lessonOpenDate(date){
  document.getElementById("lessonModal").style.display="flex";
 }
 async function lessonRequest(body){
- const r=await fetch("/api/lesson-board",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),d=await r.json();if(!r.ok||!d.ok)throw Error(d.error||"요청 실패");await lessonRefresh();
+ const r=await fetch("/api/lesson-board",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),d=await r.json();
+ if(!r.ok||!d.ok)throw Error(d.error||"요청 실패");
+ lessonClose();
+ await lessonRefresh();
 }
-async function lessonAction(action,id){try{await lessonRequest({action,id})}catch(e){alert(e.message)}}
+async function lessonAction(action,id){
+ try{
+  await lessonRequest({action,id});
+  if(action==="join")alert("강습 신청이 완료되었습니다.");
+  else if(action==="cancelJoin")alert("강습 신청이 취소되었습니다.");
+ }catch(e){alert(e.message)}
+}
 async function lessonCreate(){
  const time=Number(document.getElementById("c3Time").value),capacity=Number(document.getElementById("c3Capacity").value),instructorName=lessonBoardRole.admin?document.getElementById("c3Instructor").value:lessonBoardRole.instructorName;
  try{await lessonRequest({action:"create",date:lessonSelectedDate,time,capacity,instructorName})}catch(e){alert(e.message)}
