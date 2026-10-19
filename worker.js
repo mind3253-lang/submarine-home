@@ -470,6 +470,66 @@ export default {
       try{const id=String(url.searchParams.get("id")||""),key="system/logbooks/"+encodeURIComponent(String(member.memberNo||member.provider+"-"+member.id))+".json",o=await env.IMAGES.get(key),logs=o?JSON.parse(await o.text()):[];await env.IMAGES.put(key,JSON.stringify(logs.filter(x=>String(x.id)!==id)),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
     }
 
+    // C-3 standalone lesson-board; intentionally isolated from payments, tickets and reservations.
+    if (url.pathname === "/api/lesson-board" && ["GET","POST"].includes(request.method)) {
+      try {
+        const member=await sessionMember(), admin=await adminSessionValid();
+        const instructorsObj=await env.IMAGES.get("system/instructors.json");
+        const instructors=instructorsObj?JSON.parse(await instructorsObj.text()):[];
+        const norm=v=>String(v||"").replace(/[^0-9]/g,"");
+        const me=instructors.find(x=>member&&(
+          (x.memberNo&&member.memberNo&&String(x.memberNo)===String(member.memberNo))||
+          (x.phone&&member.phone&&norm(x.phone)===norm(member.phone)&&norm(x.phone).length>=10)
+        ));
+        const canCreate=!!(admin||me);
+        const key="system/lesson-board.json";
+        const stored=await env.IMAGES.get(key),rows=stored?JSON.parse(await stored.text()):[];
+        const now=Date.now();
+        let changed=false;
+        for(const row of rows){
+          if(row.status!=="open")continue;
+          const cutoff=new Date(row.date+"T"+String(row.startTime||"09:00")+":00+09:00").getTime()-86400000;
+          if(Number.isFinite(cutoff)&&now>=cutoff&&row.applicants.length<2){row.status="cancelled";row.cancelledAt=new Date().toISOString();changed=true;}
+        }
+        if(changed)await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+        const publicRows=rows.filter(x=>x.status==="open"&&new Date(x.date+"T23:59:59+09:00").getTime()>=now).map(x=>({id:x.id,date:x.date,time:x.time,startTime:x.startTime,instructorName:x.instructorName,capacity:x.capacity,applied:x.applicants.length,status:x.status,joined:!!member&&x.applicants.some(a=>a.memberKey===String(member.memberNo||member.provider+":"+member.id))}));
+        if(request.method==="GET")return Response.json({ok:true,rows:publicRows,canCreate,admin,instructorName:me?.name||""});
+        if(!member&&!admin)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+        const d=await request.json(),action=String(d.action||"");
+        const memberKey=String(member?.memberNo||((member?.provider||"local")+":"+(member?.id||"")));
+        const date=String(d.date||"");
+        const todaySeoul=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+        if(action==="create"){
+          if(!canCreate)return Response.json({ok:false,error:"등록 강사 또는 관리자만 개설할 수 있습니다."},{status:403});
+          const time=Number(d.time),capacity=Number(d.capacity),startTime=String(d.startTime||"");
+          const instructorName=admin?String(d.instructorName||me?.name||"").trim():String(me.name||"").trim();
+          if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date<todaySeoul||![1,2,3,4,5].includes(time)||!Number.isInteger(capacity)||capacity<2||capacity>30||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime)||!instructorName)return Response.json({ok:false,error:"날짜, 타임, 시작 시각, 정원, 강사명을 확인하세요."},{status:400});
+          const start=new Date(date+"T"+startTime+":00+09:00").getTime();
+          if(start<=now+86400000)return Response.json({ok:false,error:"강습 시작 24시간 전까지만 개설할 수 있습니다."},{status:400});
+          if(rows.some(x=>x.status==="open"&&x.date===date&&x.time===time&&x.instructorName===instructorName))return Response.json({ok:false,error:"이미 개설된 강습입니다."},{status:409});
+          const row={id:crypto.randomUUID(),date,time,startTime,capacity,instructorName,instructorKey:admin?"admin":memberKey,applicants:[],status:"open",createdAt:new Date().toISOString()};
+          rows.push(row);await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,row:{id:row.id}});
+        }
+        const row=rows.find(x=>x.id===String(d.id||""));
+        if(!row||row.status!=="open")return Response.json({ok:false,error:"신청 가능한 강습이 아닙니다."},{status:404});
+        const start=new Date(row.date+"T"+row.startTime+":00+09:00").getTime();
+        if(action==="join"){
+          if(!member)return Response.json({ok:false,error:"회원 로그인이 필요합니다."},{status:401});
+          if(start<=now)return Response.json({ok:false,error:"이미 시작된 강습입니다."},{status:400});
+          if(row.applicants.some(x=>x.memberKey===memberKey))return Response.json({ok:false,error:"이미 신청한 강습입니다."},{status:409});
+          if(row.applicants.length>=row.capacity)return Response.json({ok:false,error:"마감된 강습입니다."},{status:409});
+          row.applicants.push({memberKey,name:String(member.name||member.nickname||"회원"),createdAt:new Date().toISOString()});
+        }else if(action==="cancelJoin"){
+          if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+          row.applicants=row.applicants.filter(x=>x.memberKey!==memberKey);
+        }else if(action==="delete"){
+          if(!admin&&(!me||row.instructorKey!==memberKey))return Response.json({ok:false,error:"개설 강사만 취소할 수 있습니다."},{status:403});
+          row.status="cancelled";row.cancelledAt=new Date().toISOString();
+        }else return Response.json({ok:false,error:"지원하지 않는 요청입니다."},{status:400});
+        await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
+        return Response.json({ok:true});
+      }catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}
+    }
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       try {
         const member=await sessionMember();
