@@ -482,6 +482,7 @@ export default {
           (x.phone&&member.phone&&norm(x.phone)===norm(member.phone)&&norm(x.phone).length>=10)
         ));
         const canCreate=!!(admin||me);
+        const instructorNames=instructors.map(x=>String(x.name||"").trim()).filter(Boolean);
         const key="system/lesson-board.json";
         const stored=await env.IMAGES.get(key),rows=stored?JSON.parse(await stored.text()):[];
         const now=Date.now();
@@ -493,7 +494,7 @@ export default {
         }
         if(changed)await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
         const publicRows=rows.filter(x=>x.status==="open"&&new Date(x.date+"T23:59:59+09:00").getTime()>=now).map(x=>({id:x.id,date:x.date,time:x.time,startTime:x.startTime,courseName:x.courseName||"강습",instructorName:x.instructorName,capacity:x.capacity,applied:x.applicants.length,status:x.status,joined:!!member&&x.applicants.some(a=>a.memberKey===String(member.memberNo||member.provider+":"+member.id))}));
-        if(request.method==="GET")return Response.json({ok:true,rows:publicRows,canCreate,admin,loggedIn:!!(member||admin),instructorName:me?.name||""});
+        if(request.method==="GET")return Response.json({ok:true,rows:member||admin?publicRows:[],canCreate,admin,loggedIn:!!(member||admin),instructorName:me?.name||"",instructorNames:canCreate?instructorNames:[]});
         if(!member&&!admin)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
         const d=await request.json(),action=String(d.action||"");
         const memberKey=String(member?.memberNo||((member?.provider||"local")+":"+(member?.id||"")));
@@ -501,13 +502,13 @@ export default {
         const todaySeoul=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
         if(action==="create"){
           if(!canCreate)return Response.json({ok:false,error:"등록 강사 또는 관리자만 개설할 수 있습니다."},{status:403});
-          const time=Number(d.time),capacity=Number(d.capacity),startTime=({1:"07:00",2:"10:00",3:"13:00",4:"16:00",5:"19:00"})[time],courseName=String(d.courseName||"").trim();
+          const time=Number(d.time),capacity=Number(d.capacity),startTime=({1:"07:00",2:"10:00",3:"13:00",4:"16:00",5:"19:00"})[time];
           const instructorName=admin?String(d.instructorName||me?.name||"").trim():String(me.name||"").trim();
-          if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<todaySeoul||![1,2,3,4,5].includes(time)||!Number.isInteger(capacity)||capacity<2||capacity>30||!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)||!instructorName||!["프리다이빙 체험","프리다이빙 1레벨","프리다이빙 2레벨","프리다이빙 3레벨","프리다이빙 4레벨","프리다이빙 더블","스쿠버다이빙","머메이드"].includes(courseName))return Response.json({ok:false,error:"날짜, 타임, 시작 시각, 정원, 강사명을 확인하세요."},{status:400});
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<todaySeoul||![1,2,3,4,5].includes(time)||!Number.isInteger(capacity)||capacity<2||capacity>30||!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)||!instructorName||(admin&&!instructorNames.includes(instructorName)))return Response.json({ok:false,error:"날짜, 타임, 시작 시각, 정원, 강사명을 확인하세요."},{status:400});
           const start=new Date(date+"T"+startTime+":00+09:00").getTime();
           if(start<=now+86400000)return Response.json({ok:false,error:"강습 시작 24시간 전까지만 개설할 수 있습니다."},{status:400});
           if(rows.some(x=>x.status==="open"&&x.date===date&&x.time===time&&x.instructorName===instructorName))return Response.json({ok:false,error:"이미 개설된 강습입니다."},{status:409});
-          const row={id:crypto.randomUUID(),date,time,startTime,courseName,capacity,instructorName,instructorKey:admin?"admin":memberKey,applicants:[],status:"open",createdAt:new Date().toISOString()};
+          const row={id:crypto.randomUUID(),date,time,startTime,capacity,instructorName,instructorKey:admin?"admin":memberKey,applicants:[],status:"open",createdAt:new Date().toISOString()};
           rows.push(row);await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true,row:{id:row.id}});
         }
         const row=rows.find(x=>x.id===String(d.id||""));
