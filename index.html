@@ -910,6 +910,10 @@ async function lessonAction(action,id){
   else if(action==="cancelJoin")alert("강습 신청이 취소되었습니다.");
  }catch(e){alert(e.message)}
 }
+async function lessonCancelSlot(id){
+ if(!confirm("이 강습을 취소할까요? 신청한 회원에게도 영향을 줍니다."))return;
+ try{await lessonRequest({action:"delete",id});alert("강습이 취소되었습니다.")}catch(e){alert(e.message)}
+}
 async function lessonCreate(){
  const time=Number(document.getElementById("c3Time").value),capacity=Number(document.getElementById("c3Capacity").value),instructorName=lessonBoardRole.admin?document.getElementById("c3Instructor").value:lessonBoardRole.instructorName;
  try{await lessonRequest({action:"create",date:lessonSelectedDate,time,capacity,instructorName})}catch(e){alert(e.message)}
