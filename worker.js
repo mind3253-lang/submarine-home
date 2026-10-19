@@ -493,7 +493,7 @@ export default {
           if(Number.isFinite(cutoff)&&now>=cutoff&&row.applicants.length<2){row.status="cancelled";row.cancelledAt=new Date().toISOString();changed=true;}
         }
         if(changed)await env.IMAGES.put(key,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
-        const publicRows=rows.filter(x=>x.status==="open"&&new Date(x.date+"T23:59:59+09:00").getTime()>=now).map(x=>({id:x.id,date:x.date,time:x.time,startTime:x.startTime,courseName:x.courseName||"강습",instructorName:x.instructorName,capacity:x.capacity,applied:x.applicants.length,status:x.status,joined:!!member&&x.applicants.some(a=>a.memberKey===String(member.memberNo||member.provider+":"+member.id))}));
+        const publicRows=rows.filter(x=>x.status==="open"&&new Date(x.date+"T23:59:59+09:00").getTime()>=now).map(x=>({id:x.id,date:x.date,time:x.time,startTime:x.startTime,courseName:x.courseName||"강습",instructorName:x.instructorName,capacity:x.capacity,applied:x.applicants.length,status:x.status,canManage:!!admin||!!me&&x.instructorKey===String(member?.memberNo||((member?.provider||"local")+":"+(member?.id||""))),joined:!!member&&x.applicants.some(a=>a.memberKey===String(member.memberNo||member.provider+":"+member.id))}));
         if(request.method==="GET")return Response.json({ok:true,rows:member||admin?publicRows:[],canCreate,admin,loggedIn:!!(member||admin),instructorName:me?.name||"",instructorNames:canCreate?instructorNames:[]});
         if(!member&&!admin)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
         const d=await request.json(),action=String(d.action||"");
