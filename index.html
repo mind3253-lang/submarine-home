@@ -290,7 +290,7 @@ nav{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:now
 <div id="scheduleMenu" class="visual-menu visual-menu-two c3-menu">
 <div class="visual-card" onclick="showSchedulePanel('status')"><img src="C-1.webp" alt="예약현황"><div class="visual-label"><strong>Schedule</strong><span>— 예약현황</span></div></div>
 <div class="visual-card" onclick="showSchedulePanel('reserve')"><img src="C-2.webp" alt="예약"><div class="visual-label"><strong>Reservation</strong><span>— 예약</span></div></div>
-<div class="visual-card c3-card" onclick="showSchedulePanel('lesson')"><div class="c3-card-art" aria-hidden="true">📅</div><div class="visual-label"><strong>Lesson Schedule</strong><span>— 강습스케줄</span></div></div>
+<div class="visual-card c3-card" onclick="showSchedulePanel('lesson')"><img src="https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-19/501f51c9-38d8-449a-8dab-7ea28ccb7248.jpg" alt="강습스케줄"><div class="visual-label"><strong>Lesson Schedule</strong><span>— 강습스케줄</span></div></div>
 </div>
 <div id="scheduleStatus" style="display:none;padding:36px 0 70px"><div class="month-nav"><button id="calPrev" class="month-arrow" type="button" aria-label="이전 달">‹</button><h2 id="calTitle"></h2><button id="calNext" class="month-arrow" type="button" aria-label="다음 달">›</button></div><div id="calendar" class="calgrid"></div></div>
 <div id="scheduleLesson" style="display:none;padding:36px 0 70px"><div class="month-nav"><button id="lessonPrev" class="month-arrow" type="button" aria-label="이전 달">‹</button><h2 id="lessonCalTitle"></h2><button id="lessonNext" class="month-arrow" type="button" aria-label="다음 달">›</button></div><div id="lessonCalendar" class="calgrid" aria-label="강습스케줄 달력"></div><p class="c3-note">강습스케줄 등록 기능은 준비 중입니다.</p></div>
@@ -620,7 +620,7 @@ function show(id){document.querySelectorAll('.page').forEach(x=>x.classList.remo
 const menuGroups={
  A:[['A-1.webp','소개',()=>openContent('A-1','소개')],['https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-09-27/393fd9ba-7f54-45f5-a90d-f6f6d2c871b5.png','다이빙 교육',()=>openContent('A-2','다이빙 교육')],['A-3.webp','이용권 · 교육상품',()=>openProducts()]],
  B:[['B-1.webp','사용료',()=>openContent('B-1','사용료')],['https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-09-27/33ea629f-3b04-40b6-9f63-962a4eb769c1.jpg','시설 안내',()=>openContent('B-2','시설 안내')]],
- C:[['C-1.webp','예약현황',()=>showSchedulePanel('status')],['C-2.webp','예약',()=>showSchedulePanel('reserve')],['C-1.webp','강습스케줄',()=>showSchedulePanel('lesson')]],
+ C:[['C-1.webp','예약현황',()=>showSchedulePanel('status')],['C-2.webp','예약',()=>showSchedulePanel('reserve')],['https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-10-19/501f51c9-38d8-449a-8dab-7ea28ccb7248.jpg','강습스케줄',()=>showSchedulePanel('lesson')]],
  D:[['D-1.webp','서브마린 약정서',()=>openWaiver('D-1','서브마린 약정서')],['D-2.webp','교육 약정서',()=>openWaiver('D-2','교육 약정서')],['https://pub-8216b63561af42ecb148b7864ed54e6b.r2.dev/uploads/2026-09-28/0aede81a-99e8-4d2d-a07c-31a34b652d8c.jpg','장비 확인서',()=>openWaiver('D-3','장비 확인서')]],
  E:[['E-1.webp','나의 기록',()=>openMemberE1()],['E-2.webp','교육자료실',()=>openEducationLibrary()]]
 };
