@@ -503,7 +503,7 @@ export default {
           if(!canCreate)return Response.json({ok:false,error:"등록 강사 또는 관리자만 개설할 수 있습니다."},{status:403});
           const time=Number(d.time),capacity=Number(d.capacity),startTime=String(d.startTime||"");
           const instructorName=admin?String(d.instructorName||me?.name||"").trim():String(me.name||"").trim();
-          if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||date<todaySeoul||![1,2,3,4,5].includes(time)||!Number.isInteger(capacity)||capacity<2||capacity>30||!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime)||!instructorName)return Response.json({ok:false,error:"날짜, 타임, 시작 시각, 정원, 강사명을 확인하세요."},{status:400});
+          if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<todaySeoul||![1,2,3,4,5].includes(time)||!Number.isInteger(capacity)||capacity<2||capacity>30||!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime)||!instructorName)return Response.json({ok:false,error:"날짜, 타임, 시작 시각, 정원, 강사명을 확인하세요."},{status:400});
           const start=new Date(date+"T"+startTime+":00+09:00").getTime();
           if(start<=now+86400000)return Response.json({ok:false,error:"강습 시작 24시간 전까지만 개설할 수 있습니다."},{status:400});
           if(rows.some(x=>x.status==="open"&&x.date===date&&x.time===time&&x.instructorName===instructorName))return Response.json({ok:false,error:"이미 개설된 강습입니다."},{status:409});
