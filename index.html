@@ -889,8 +889,12 @@ async function lessonOpenDate(date){
  if(!member||!member.ok||!member.member){lessonClose();alert("회원 로그인 후 이용할 수 있습니다.");return;}
  if(!lessonBoardRole.loggedIn){await lessonRefresh();return;}
  lessonSelectedDate=date;const rows=lessonBoardRows.filter(x=>x.date===date).sort((a,b)=>a.time-b.time);
- let html=rows.map(x=>{const remain=x.capacity-x.applied,st=remain===0?"마감":remain===1?"마감임박":"예약가능";
- return '<div class="c3-slot"><div><strong>'+lessonEsc(x.instructorName)+' 강사 · '+x.time+'타임 ('+lessonTimeText(x.time)+')</strong><div class="c3-sub">'+lessonEsc(x.startTime)+' · 신청 '+x.applied+'/'+x.capacity+'명</div></div><div class="c3-slot-actions"><span class="c3-status '+(remain===0?"full":remain===1?"soon":"available")+'">'+st+'</span>'+(x.joined?'<button onclick="lessonAction(\'cancelJoin\',\''+x.id+'\')">신청 취소</button>':remain>0?'<button onclick="lessonAction(\'join\',\''+x.id+'\')">강습 신청</button>':'')+'</div></div>'
+ let html=rows.map(x=>{
+ const remain=x.capacity-x.applied,st=remain===0?"마감":remain===1?"마감임박":"예약가능";
+ const buttons=x.canManage
+  ?'<button onclick="lessonCancelSlot(\''+x.id+'\')">강습 취소</button>'
+  :'<span class="c3-status '+(remain===0?"full":remain===1?"soon":"available")+'">'+st+'</span>'+(x.joined?'<button onclick="lessonAction(\'cancelJoin\',\''+x.id+'\')">신청 취소</button>':remain>0?'<button onclick="lessonAction(\'join\',\''+x.id+'\')">강습 신청</button>':'');
+ return '<div class="c3-slot"><div><strong>'+lessonEsc(x.instructorName)+' 강사 · '+x.time+'타임 ('+lessonTimeText(x.time)+')</strong><div class="c3-sub">'+lessonEsc(x.startTime)+' · 신청 '+x.applied+'/'+x.capacity+'명</div></div><div class="c3-slot-actions">'+buttons+'</div></div>'
  }).join("")||'<p class="c3-empty">이 날짜에 개설된 강습이 없습니다.</p>';
  if(lessonBoardRole.canCreate&&lessonBoardRole.loggedIn)html+='<div class="c3-create"><h3>강습 개설</h3><div class="c3-fields">'+(lessonBoardRole.admin?'<select id="c3Instructor"><option value="">강사 이름 선택</option>'+lessonBoardRole.instructorNames.map(name=>'<option value="'+lessonEsc(name)+'">'+lessonEsc(name)+'</option>').join("")+'</select>':'<p>개설 강사: '+lessonEsc(lessonBoardRole.instructorName)+'</p>')+'<select id="c3Time"><option value="">타임 선택</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+'타임 ('+lessonTimeText(n)+')</option>').join("")+'</select><label>모집 정원 <input id="c3Capacity" type="number" min="2" max="30" value="4"></label></div><button class="c3-primary" onclick="lessonCreate()">강습 개설</button></div>';
  document.getElementById("lessonModalTitle").textContent=date+" 강습스케줄";
