@@ -849,12 +849,12 @@ function openScheduleMenu(){show('schedule');navPush({view:'scheduleMenu'},'view
 function showSchedulePanel(which,skipHistory){show('schedule');if(!skipHistory&&which!=='menu')navPush({view:'schedule',panel:which},'schedule='+which);if(which!=='menu')bindPageBrand(scheduleBrand,'C');scheduleMenu.style.display=which==='menu'?'grid':'none';scheduleStatus.style.display=which==='status'?'block':'none';scheduleReserve.style.display=which==='reserve'?'block':'none';scheduleLesson.style.display=which==='lesson'?'block':'none';if(which==='lesson')lessonRefresh();}
 
 /* C-3 independent lesson board */
-let lessonMonthOffset=0,lessonBoardRows=[],lessonBoardRole={canCreate:false,admin:false,loggedIn:false,instructorName:""},lessonSelectedDate="";
+let lessonMonthOffset=0,lessonBoardRows=[],lessonBoardRole={canCreate:false,admin:false,loggedIn:false,instructorName:"",instructorNames:[]},lessonSelectedDate="";
 const lessonEsc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const lessonDateLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const lessonToday=()=>lessonDateLocal(new Date());
 async function lessonRefresh(){
- try{const r=await fetch("/api/lesson-board",{credentials:"include"}),d=await r.json();if(!d.ok)throw Error(d.error||"조회 실패");lessonBoardRows=d.rows||[];lessonBoardRole={canCreate:!!d.canCreate,admin:!!d.admin,loggedIn:!!d.loggedIn,instructorName:d.instructorName||""};renderLessonCalendar();if(lessonSelectedDate)lessonOpenDate(lessonSelectedDate)}
+ try{const r=await fetch("/api/lesson-board",{credentials:"include"}),d=await r.json();if(!d.ok)throw Error(d.error||"조회 실패");lessonBoardRows=d.rows||[];lessonBoardRole={canCreate:!!d.canCreate,admin:!!d.admin,loggedIn:!!d.loggedIn,instructorName:d.instructorName||"",instructorNames:d.instructorNames||[]};renderLessonCalendar();if(lessonSelectedDate)lessonOpenDate(lessonSelectedDate)}
  catch(e){console.warn("C-3:",e);renderLessonCalendar();}
 }
 function renderLessonCalendar(){
@@ -876,9 +876,9 @@ function lessonOpenDate(date){
  if(!lessonBoardRole.loggedIn){alert("강습스케줄은 로그인한 회원만 이용할 수 있습니다.");return;}
  lessonSelectedDate=date;const rows=lessonBoardRows.filter(x=>x.date===date).sort((a,b)=>a.time-b.time);
  let html=rows.map(x=>{const remain=x.capacity-x.applied,st=remain===0?"마감":remain===1?"마감임박":"예약가능";
- return '<div class="c3-slot"><div><strong>'+lessonEsc(x.instructorName)+' 강사 · '+x.time+'타임 ('+lessonTimeText(x.time)+')</strong><div class="c3-sub">'+lessonEsc(x.startTime)+' · '+lessonEsc(x.courseName||'강습')+' · 신청 '+x.applied+'/'+x.capacity+'명</div></div><div class="c3-slot-actions"><span class="c3-status '+(remain===0?"full":remain===1?"soon":"available")+'">'+st+'</span>'+(x.joined?'<button onclick="lessonAction(\'cancelJoin\',\''+x.id+'\')">신청 취소</button>':remain>0?'<button onclick="lessonAction(\'join\',\''+x.id+'\')">강습 신청</button>':'')+'</div></div>'
+ return '<div class="c3-slot"><div><strong>'+lessonEsc(x.instructorName)+' 강사 · '+x.time+'타임 ('+lessonTimeText(x.time)+')</strong><div class="c3-sub">'+lessonEsc(x.startTime)+' · 신청 '+x.applied+'/'+x.capacity+'명</div></div><div class="c3-slot-actions"><span class="c3-status '+(remain===0?"full":remain===1?"soon":"available")+'">'+st+'</span>'+(x.joined?'<button onclick="lessonAction(\'cancelJoin\',\''+x.id+'\')">신청 취소</button>':remain>0?'<button onclick="lessonAction(\'join\',\''+x.id+'\')">강습 신청</button>':'')+'</div></div>'
  }).join("")||'<p class="c3-empty">이 날짜에 개설된 강습이 없습니다.</p>';
- if(lessonBoardRole.canCreate)html+='<div class="c3-create"><h3>강습 개설</h3><div class="c3-fields">'+(lessonBoardRole.admin?'<input id="c3Instructor" placeholder="강사 이름" value="'+lessonEsc(lessonBoardRole.instructorName)+'">':'<p>개설 강사: '+lessonEsc(lessonBoardRole.instructorName)+'</p>')+'<select id="c3Course"><option value="">강습 이름 선택</option>'+['프리다이빙 체험','프리다이빙 1레벨','프리다이빙 2레벨','프리다이빙 3레벨','프리다이빙 4레벨','프리다이빙 더블','스쿠버다이빙','머메이드'].map(n=>'<option value="'+n+'">'+n+'</option>').join("")+'</select><select id="c3Time"><option value="">타임 선택</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+'타임 ('+lessonTimeText(n)+')</option>').join("")+'</select><label>모집 정원 <input id="c3Capacity" type="number" min="2" max="30" value="4"></label></div><button class="c3-primary" onclick="lessonCreate()">강습 개설</button></div>';
+ if(lessonBoardRole.canCreate)html+='<div class="c3-create"><h3>강습 개설</h3><div class="c3-fields">'+(lessonBoardRole.admin?'<select id="c3Instructor"><option value="">강사 이름 선택</option>'+lessonBoardRole.instructorNames.map(name=>'<option value="'+lessonEsc(name)+'">'+lessonEsc(name)+'</option>').join("")+'</select>':'<p>개설 강사: '+lessonEsc(lessonBoardRole.instructorName)+'</p>')+'<select id="c3Time"><option value="">타임 선택</option>'+[1,2,3,4,5].map(n=>'<option value="'+n+'">'+n+'타임 ('+lessonTimeText(n)+')</option>').join("")+'</select><label>모집 정원 <input id="c3Capacity" type="number" min="2" max="30" value="4"></label></div><button class="c3-primary" onclick="lessonCreate()">강습 개설</button></div>';
  document.getElementById("lessonModalTitle").textContent=date+" 강습스케줄";
  document.getElementById("lessonModalBody").innerHTML=html;
  document.getElementById("lessonModal").style.display="flex";
@@ -888,8 +888,8 @@ async function lessonRequest(body){
 }
 async function lessonAction(action,id){try{await lessonRequest({action,id})}catch(e){alert(e.message)}}
 async function lessonCreate(){
- const time=Number(document.getElementById("c3Time").value),courseName=document.getElementById("c3Course").value,capacity=Number(document.getElementById("c3Capacity").value),instructorName=lessonBoardRole.admin?document.getElementById("c3Instructor").value:lessonBoardRole.instructorName;
- try{await lessonRequest({action:"create",date:lessonSelectedDate,time,courseName,capacity,instructorName})}catch(e){alert(e.message)}
+ const time=Number(document.getElementById("c3Time").value),capacity=Number(document.getElementById("c3Capacity").value),instructorName=lessonBoardRole.admin?document.getElementById("c3Instructor").value:lessonBoardRole.instructorName;
+ try{await lessonRequest({action:"create",date:lessonSelectedDate,time,capacity,instructorName})}catch(e){alert(e.message)}
 }
 document.getElementById("lessonPrev").addEventListener("click",()=>{lessonMonthOffset--;renderLessonCalendar()});
 document.getElementById("lessonNext").addEventListener("click",()=>{lessonMonthOffset++;renderLessonCalendar()});
