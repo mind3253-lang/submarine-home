@@ -637,6 +637,14 @@ export default {
     async function isOpenVisitSlot(date,time){const n=slotNumber(time);if(!n)return false;const slots=await readOpenSlots();return Array.isArray(slots[date])&&slots[date].includes(n)}
     if(url.pathname==="/api/admin/open-visit-slots"&&request.method==="POST"){const denied=await requireAdmin();if(denied)return denied;try{const slot=await request.json(),id=env.BOOKING_COORDINATOR.idFromName("submarine-reservations");return await env.BOOKING_COORDINATOR.get(id).fetch("https://booking.internal/open-slot",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"setOpenSlot",slot})})}catch(e){return Response.json({ok:false,error:String(e)},{status:500})}}
     if(url.pathname==="/api/open-visit-slots"&&request.method==="GET"){try{return Response.json({ok:true,slots:await readOpenSlots()},{headers:{"Cache-Control":"no-store"}})}catch(e){return Response.json({ok:false,error:"스케줄 조회 실패"},{status:500})}}
+    if (url.pathname === "/api/my-mileage-credits" && request.method === "GET") {
+      const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
+      try{const read=async k=>{const o=await env.IMAGES.get(k);return o?JSON.parse(await o.text()):[]};const [payments,audit]=await Promise.all([read("system/payments.json"),read("system/member-audit.json")]);const no=String(member.memberNo||"");const events=[];
+        for(const p of payments){if(String(p.memberNo||"")!==no||p.status!=="completed")continue;const value=p.purchaseMileagePoint!=null||p.rewardPoint!=null?Number(p.purchaseMileagePoint||0)+Number(p.rewardPoint||0):null;if(value!=null&&Number.isFinite(value)&&value!==0)events.push({id:"payment-"+p.id,at:p.completedAt||p.paidAt||p.createdAt||"",label:"상품 결제 · 마일리지 충전",delta:value});}
+        for(const a of audit){if(String(a.memberNo||"")!==no)continue;const value=Number(a.cashDelta||0)+Number(a.pointDelta||0);if(Number.isFinite(value)&&value!==0)events.push({id:"adjust-"+a.id,at:a.at||"",label:value>0?"관리자 마일리지 지급":"관리자 마일리지 조정",delta:value});}
+        events.sort((a,b)=>String(b.at).localeCompare(String(a.at)));return Response.json({ok:true,events},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:"마일리지 내역 조회 실패"},{status:500})}
+    }
     if (url.pathname === "/api/reservations" && request.method === "GET") {
       const member=await sessionMember();if(!member)return Response.json({ok:false,error:"로그인이 필요합니다."},{status:401});
       const rows=await readReservations();return Response.json({ok:true,reservations:rows.filter(x=>x.memberNo===member.memberNo)});
