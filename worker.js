@@ -86,7 +86,7 @@ const weekend=[0,6].includes(new Date(String(d.date)+"T12:00:00+09:00").getUTCDa
     const cost=(weekend||holiday?55000:40000)*people,point=Number(members[mi].point||0),cash=Number(members[mi].cash||0);
     if(point+cash<cost)return Response.json({ok:false,error:"마일리지가 부족합니다.",balance:point+cash,required:cost},{status:400});
     const usePoint=Math.min(point,cost),useCash=cost-usePoint;
-    const row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,discipline:d.discipline,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,status:"confirmed",bookingSource:self?"instructor":"member",ticketDeducted:true,idempotencyKey:key,createdAt:new Date().toISOString()};
+    const row={id:crypto.randomUUID(),memberNo:members[mi].memberNo,name:members[mi].name||member.name||"회원",date:d.date,time:d.time,type:d.type,discipline:d.discipline,people,instructorName:d.type==="강습"?String(d.instructorName||"").trim().slice(0,100):"",cost,usePoint,useCash,balanceBefore:point+cash,balanceAfter:point+cash-cost,status:"confirmed",bookingSource:self?"instructor":"member",ticketDeducted:true,idempotencyKey:key,createdAt:new Date().toISOString()};
     members[mi].point=point-usePoint;members[mi].cash=cash-useCash;members[mi].balanceUpdatedAt=new Date().toISOString();rows.push(row);
     await env.IMAGES.put(rk,JSON.stringify(rows),{httpMetadata:{contentType:"application/json"}});
     try{await env.IMAGES.put(mk,JSON.stringify(members),{httpMetadata:{contentType:"application/json"}})}catch(e){await env.IMAGES.put(rk,JSON.stringify(rows.filter(x=>x.id!==row.id)),{httpMetadata:{contentType:"application/json"}});throw e}
