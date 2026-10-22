@@ -483,14 +483,14 @@ function openGuideMenu(){show('guide');navPush({view:'guide'},'view=guide');}
 function openProducts(){show('products');renderA3Shop();const d=document.getElementById('a3ProductPage');if(d)d.style.display='none';const old=document.querySelector('.a3-old-products');if(old)old.style.display='none';navPush({view:'products'},'view=products');}
 function openInstructorRegistrationMenu(){show('instructorRegistration');document.getElementById('instructorCardInfo').style.display='none';document.getElementById('instructorLandingCards').style.display='grid';document.getElementById('instructorLandingBenefits').style.display='block';navPush({view:'instructorRegistration'},'view=instructorRegistration')}
 const instructorAgreementClauses=[
-"매년 강사 자격을 갱신하여 유효한 강사 신분을 유지해야 한다. 자격을 갱신하지 않거나, 갱신하지 않았음을 알리지 아니한 상태에서 발생한 사고는 강사의 책임으로 한다.",
-"평균 강사와 학생의 비율(1:4)보다 더 큰 규모의 강습을 진행한다면, 다른 강사 또는 보조자를 참여시켜야 한다.",
-"시설 이용 전, 강사와 강습생 사이에 반드시 면책동의서를 작성해야 하고, 서류 미작성에 따른 강습생과의 민형사상의 책임 및 배상 문제가 생길 경우, 면책동의서를 작성하지 않은 강사의 책임으로 한다.",
-"강사는 동행한 다이버들에게 단체의 다이빙 규정, 서브마린다이빙풀의 이용규정 및 풀장 내 구조물에 대한 위험성 및 사용방법에 대하여 설명한다.",
-"강사는 동행한 다이버들의 안전에 대해 책임지고 감독을 한다.",
-"노핀다이빙 시, 강사의 인솔 시에만 가능하며, 인솔 강사는 이를 책임지고 집중 감독한다.",
-"강사 또는 다이빙업체의 권유로 보내는 자격증 취득 이전 연습반 또는 기타 교육생에 대해서도 강사의 위 사항과 동일한 책임이 따른다.",
-"강사의 고객이 아니더라도, 위험에 처한 다이버를 발견하면 즉각 구조에 동참해야 한다."
+["강사 자격 유지","매년 강사 자격을 갱신하여 유효한 강사 신분을 유지해야 한다. 자격을 갱신하지 않거나, 갱신하지 않았음을 알리지 아니한 상태에서 발생한 사고는 강사의 책임으로 한다."],
+["강습 인원 및 보조강사","평균 강사와 학생의 비율(1:4)보다 더 큰 규모의 강습을 진행한다면, 다른 강사 또는 보조자를 참여시켜야 한다."],
+["강습생 면책동의서","시설 이용 전, 강사와 강습생 사이에 반드시 면책동의서를 작성해야 하고, 서류 미작성에 따른 강습생과의 민형사상의 책임 및 배상 문제가 생길 경우, 면책동의서를 작성하지 않은 강사의 책임으로 한다."],
+["이용규정 및 위험 고지","강사는 동행한 다이버들에게 단체의 다이빙 규정, 서브마린다이빙풀의 이용규정 및 풀장 내 구조물에 대한 위험성 및 사용방법에 대하여 설명한다."],
+["강습생 안전관리","강사는 동행한 다이버들의 안전에 대해 책임지고 감독을 한다."],
+["노핀다이빙 감독","노핀다이빙 시, 강사의 인솔 시에만 가능하며, 인솔 강사는 이를 책임지고 집중 감독한다."],
+["연습반 및 교육생 책임","강사 또는 다이빙업체의 권유로 보내는 자격증 취득 이전 연습반 또는 기타 교육생에 대해서도 강사의 위 사항과 동일한 책임이 따른다."],
+["위험 상황 구조 협조","강사의 고객이 아니더라도, 위험에 처한 다이버를 발견하면 즉각 구조에 동참해야 한다."],["강사 본인의 시설 이용 동의","강사는 본 약정서에 서명함으로써 서브마린다이빙풀의 시설 이용규정 및 안전수칙 준수에 동의하며, 해당 동의는 강사등록 유지기간 중 교육생을 동반한 강습 목적의 시설 이용에도 적용된다. 강사는 이 경우 매회 별도의 시설 이용 약정서를 작성하지 않는다. 시설 운영자의 법령상 책임 및 안전관리 의무는 면제되지 않는다."]
 ];
 const instructorAgreementEnding="위 사항에 모두 동의하며, 동행 강습생 및 참여자의 안전을 최우선으로 고려한다. 또한 이후 서브마린다이빙풀의 규정에 반하여 발생하는 제재에 대하여 이의 제기를 하지 않을 것이며, 사고 발생 시 서브마린다이빙풀, 그에 소속된 이들에게 어떠한 민/형사상의 책임을 물을 수 없다. 본 약정은 서브마린다이빙풀 또는 강사가 약정해지의 뜻을 서면고지하기 이전까지 유지된다.";
 let instructorSigned=false;
@@ -553,7 +553,7 @@ async function openInstructorCardInfo(kind){
  <label>강사번호 *<input name="instructorNo" required maxlength="100" placeholder="강사 자격증에 기재된 번호"></label>
  </div>
  <label class="instructor-attachment-label">강사 자격증 및 기타 증빙파일 첨부 (최대 4개, 파일당 5MB / JPG·PNG) *<span class="instructor-file-picker"><input name="attachments" type="file" accept=".jpg,.jpeg,.png" multiple required onchange="showInstructorSelectedFiles(this)"><span class="instructor-file-label">파일 선택</span><span class="instructor-file-names" aria-live="polite">선택된 파일 없음</span></span></label><label class="instructor-attachment-label">책임보험 가입증명서 첨부 *<span class="instructor-file-picker"><input name="insurance" type="file" accept=".jpg,.jpeg,.png" required onchange="showInstructorSelectedFiles(this)"><span class="instructor-file-label">파일 선택</span><span class="instructor-file-names" aria-live="polite">선택된 파일 없음</span></span></label>
- <h3>약정 내용</h3><ol class="instructor-clauses">${instructorAgreementClauses.map(x=>'<li>'+x+'</li>').join('')}</ol>
+ <h3>약정 내용</h3><ol class="instructor-clauses">${instructorAgreementClauses.map(x=>'<li><strong style="display:block;margin-bottom:5px">'+x[0]+'</strong><div>'+x[1]+'</div></li>').join('')}</ol>
  <p class="instructor-agreement-ending">${instructorAgreementEnding}</p>
  <label class="instructor-agree-check"><input type="checkbox" name="agree" required> 위 약정 내용을 읽고 동의합니다.</label>
  <h3>강사 서명 *</h3><p>아래 서명란에 손가락 또는 마우스로 직접 서명해 주세요.</p>
