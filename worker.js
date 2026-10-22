@@ -572,6 +572,19 @@ export default {
     }
 
     async function readSiteContent(){try{const o=await env.IMAGES.get("system/site-content.json");return o?JSON.parse(await o.text()):{}}catch{return {}}}
+    // Read-only instructor rankings from signed facility waivers; no mutation of legal records.
+    if (url.pathname === "/api/featured-instructor-ranking" && request.method === "GET") {
+      try {
+        const waivers=await readWaivers(), counts={}, seen=new Set();
+        for(const w of waivers){
+          if(w.waiverCode!=="D-1"||String(w.useType||"")!=="강습"||!w.signatureData||!String(w.instructorName||"").trim())continue;
+          const name=String(w.instructorName).trim(), member=String(w.memberNo||"").trim()||(String(w.provider||"")+"|"+String(w.memberId||""));
+          const key=JSON.stringify([member,w.lessonDate,name]);if(seen.has(key))continue;seen.add(key);
+          counts[name]=(counts[name]||0)+1;
+        }
+        return Response.json({ok:true,counts},{headers:{"Cache-Control":"no-store"}});
+      }catch(e){return Response.json({ok:false,error:"강사 실적을 불러오지 못했습니다."},{status:500})}
+    }
     if (url.pathname === "/api/site-content" && request.method === "GET") {return Response.json({ok:true,content:await readSiteContent()})}
     if (url.pathname === "/api/admin/site-content" && request.method === "POST") {const denied=await requireAdmin();if(denied)return denied;try{const d=await request.json(),content=d.content&&typeof d.content==="object"?d.content:{};await env.IMAGES.put("system/site-content.json",JSON.stringify(content),{httpMetadata:{contentType:"application/json"}});return Response.json({ok:true})}catch(e){return Response.json({ok:false,error:e?.message||String(e)},{status:500})}}
     if (url.pathname === "/api/admin/member-history" && request.method === "GET") {
